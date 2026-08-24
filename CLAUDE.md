@@ -1,71 +1,53 @@
-<!-- BEGIN @przeprogramowani/10x-cli -->
+# CLAUDE.md
 
-## 10xDevs AI Toolkit — Module 1, Lesson 3
+Guidance for Claude Code working in this repository. Product intent: @context/foundation/prd.md — stack rationale: @context/foundation/tech-stack.md — rules earned from past runs: @context/foundation/lessons.md
 
-Scaffold the project for the stack you picked in Lesson 2, with the **bootstrap chain**:
+## Tripwires
 
-```
-(/10x-init  →  /10x-shape  →  /10x-prd)  →  /10x-tech-stack-selector  →  /10x-bootstrapper
-```
+- **`npm run lint` fails on a clean checkout on Windows.** All 26 files in `src/` carry CRLF: there is no `.gitattributes`, `core.autocrlf=true`, and `.prettierrc.json` sets no `endOfLine`, so Prettier's `lf` default reports `Delete ␍` on every line (~1040 errors repo-wide). Verified 2026-08-24. Until this is fixed at the root, lint the files you touched, not the whole repo, and do not read a full-repo lint failure as caused by your change.
+- **CI never runs on this repo as configured.** `.github/workflows/ci.yml` triggers on `master`; the branch here is `main`. Fix the trigger before relying on CI. The build step also needs `SUPABASE_URL` / `SUPABASE_KEY` repository secrets. Note this masks the tripwire above — CI runs on Linux, where the CRLF errors do not appear.
+- **Zod is not installed** even though @context/foundation/tech-stack.md and the starter's own rules call for Zod validation at API boundaries. Install it before writing code that assumes it.
+- **The response shape for non-auth API endpoints is undecided.** Existing auth endpoints redirect with `?error=`; three independent agent runs adding `/api/generate` each invented a JSON shape instead. Decide deliberately and record the decision here — see "Milczenie reguły to nie zgoda" in @context/foundation/lessons.md.
+- The LLM provider the PRD depends on is not part of the starter and is not installed yet.
+- `.nvmrc` pins Node 22.14.0; the machine that scaffolded this ran 22.18.0.
+- The scaffolded dependency tree shipped with 1 critical and 13 high npm-audit findings (1 direct: `astro`). Full breakdown in @context/changes/bootstrap-verification/verification.md.
 
-The PRD chain ships from Lesson 1 and the tech-stack-selector ships from Lesson 2 — both re-included in this lesson so you can fix the PRD or swap the stack mid-flight. `/10x-bootstrapper` is the lesson's main topic. The chain ends here in v1; a future Lesson 4 will set up agent context (`CLAUDE.md`, `AGENTS.md`).
+## Architecture
 
-### Task Router — Where to start
+Everything is server-rendered (`output: "server"`). No file in `src/` exports `prerender`. Do not add the export — if a route appears to need it, stop and raise it rather than deciding alone.
 
-| Skill | Use it when |
-| --- | --- |
-| **Bootstrap (lesson focus)** | |
-| `/10x-bootstrapper` | You have a hand-off at `context/foundation/tech-stack.md` (written by `/10x-tech-stack-selector`) and you are ready to scaffold the project into the current directory. The skill reads the hand-off, looks up the chosen card in the starter registry, runs its CLI through one of three cwd strategies (scaffold into a temp directory then move files up; scaffold directly into the current directory; clone a starter repo without keeping its git history), preserves `context/` always, sidelines other clashes as `.scaffold` siblings, runs a light pre-scaffold recency check and a deeper post-scaffold audit, and writes a verification log to `context/changes/bootstrap-verification/verification.md`. Use AFTER `/10x-tech-stack-selector`. |
-| **Re-run upstream if needed** | |
-| `/10x-init` / `/10x-shape` / `/10x-prd` / `/10x-tech-stack-selector` | Bundled so you can fix the PRD or swap the stack mid-flight. If `/10x-bootstrapper` surfaces a registry-drift refusal or you change your mind on the starter, re-run `/10x-tech-stack-selector` to regenerate `tech-stack.md` and re-invoke. |
+**Supabase client is nullable by design.** `createClient()` in `src/lib/supabase.ts` returns `null` when `SUPABASE_URL`/`SUPABASE_KEY` are absent (both are declared `optional` in the `astro:env` schema). Every call site must handle `null` — that is what lets the app boot unconfigured. `src/lib/config-status.ts` collects the missing-config state and `Banner.astro` renders it.
 
-### How the chain hands off
+**Auth is middleware-driven.** `src/middleware.ts` resolves the user on every request into `context.locals.user` (typed in `src/env.d.ts`) and redirects unauthenticated traffic away from anything matching `PROTECTED_ROUTES`. To protect a new route, extend that array — per-page auth checks are not the pattern here. `context.locals.user` is `null` both when there is no session and when Supabase is unconfigured, so a handler reading it needs no separate `createClient()` null check.
 
-- `/10x-tech-stack-selector` (Lesson 2) writes `context/foundation/tech-stack.md` with a 4-key frontmatter (`starter_id`, `package_manager`, `project_name`, `hints`) plus a one-paragraph `## Why this stack` body.
-- `/10x-bootstrapper` reads that file FULLY (no fallback to conversation history). If it is absent, the skill refuses with a one-sentence redirect to `/10x-tech-stack-selector` and stops — no inline mini-handoff, no standalone-mode in v1.
-- The chosen `starter_id` is looked up in `/skills/10x-tech-stack-selector/references/starter-registry.yaml`. The skill consumes that registry; it does not own it. A CI validator (`scripts/validate-starter-registry-sync.mjs`) prevents bootstrapper from referencing a `starter_id` absent from the registry.
-- The skill writes `context/changes/bootstrap-verification/verification.md` as the audit-trail log for the run. Schema in `/skills/10x-bootstrapper/references/verification-log-schema.md`.
+**Auth endpoints are form-post + redirect, not JSON.** `src/pages/api/auth/{signin,signup,signout}.ts` read `request.formData()` and answer with `context.redirect("/auth/...?error=" + encodeURIComponent(msg))`. The React forms (`src/components/auth/`) post natively and only add client-side validation and error display on top — keep them progressive-enhancement, not fetch-driven.
 
-### What bootstrapper captures (and what it does NOT)
+## Conventions
 
-- **Captured (v1)**: scaffold via the chosen card's `cmd_template` (CLI delegation, not inline file generation), three cwd strategies dispatched from `bootstrapper-config.yaml` (`subdir-then-move`, `native-cwd`, `git-clone`), strict conflict policy producing `.scaffold` siblings + always preserving `context/`, two verification slots (light pre-scaffold recency check + deep post-scaffold language-aware audit), severity-tiered audit summary, full verification log on disk.
-- **NOT captured in v1 (deliberate)**: `AGENTS.md` / `CLAUDE.md` generation (deferred to a future Lesson 4 — "Memory Architecture"); per-starter cert-element placement overlays (live with the future agent-context skill, not here); CI workflow files; AI-as-bridge fallback for stacks outside the registry (deferred to v2 — in v1 chain-mode tech-stack-selector already gates on the registry, so the case cannot arise); standalone-mode where the user names a stack inline without a hand-off (deferred to v2); compensation actions for `bootstrapper_confidence: best-effort` or `quality_override: true` (surfaced in conversation but no automated follow-up — that, too, is the future memory-architecture skill's job).
+- `@/*` → `./src/*` (tsconfig paths).
+- Astro components for static content and layout; React islands only where interactivity is required. No `"use client"`.
+- Merge classes with `cn()` from `@/lib/utils` — never concatenate class strings.
+- shadcn/ui components live in `src/components/ui/` ("new-york" variant); add with `npx shadcn@latest add [name]`.
+- Services and extracted business logic go in `src/lib/`, or `src/lib/services/` once the logic warrants its own folder.
+- Shared entity/DTO types go in `src/types.ts` at first use, not at second. Extracted React hooks go in `src/components/hooks/`. Neither path exists yet; create on first need rather than inventing a different location.
+- ESLint runs `strictTypeChecked` + `stylisticTypeChecked` against the real TS project, so lint is slow and type-aware; `no-console` is a warning, unused vars are errors unless prefixed `_`.
+- Supabase migrations belong in `supabase/migrations/` named `YYYYMMDDHHmmss_short_description.sql`, with RLS enabled and granular per-operation, per-role policies. The directory does not exist yet — the first migration creates it.
+- Never write to `context/archive/`. Archived changes are immutable; if a resolved target path starts with `context/archive/`, stop and say so instead of writing.
 
-### The conflict policy
+## Commands
 
-When the skill moves files from a temp scaffold directory up into your current working directory, it applies a strict matrix:
+Full script list and Supabase setup live in @README.md. The non-obvious ones:
 
-- **`context/**`** — anything the scaffold tried to write under `context/` is **dropped**. Your `context/` is the source of truth for the bootstrap chain (PRD, tech-stack hand-off, plans, frames) and is never overwritten.
-- **`.gitignore`** — append-merged: your existing lines stay in order, then the scaffold's lines are de-duped against your set and appended with a separator comment. Git's ignore semantics are additive, so combining is safe.
-- **`package.json`, `README.md`, `CLAUDE.md`, `AGENTS.md`, root-level `*.md`** — your existing file wins; the scaffold's copy lands as `<filename>.scaffold` sibling. You can `diff README.md README.md.scaffold` to see what the starter shipped vs what you had.
-- **Anything else** — moves silently if no conflict, sidelined as `<filename>.scaffold` if there is one. The matrix never deletes user files.
+- `npx astro sync` — regenerates `.astro/types.d.ts`. Stale types surface as `@typescript-eslint/no-unsafe-*` errors in `src/middleware.ts`; run it after changing `astro.config.mjs` or its `env.schema`, and before blaming your own code.
+- `npm run dev` runs on the Cloudflare workerd runtime, not plain Node.
+- `npx supabase start` needs Docker and ~7 GB RAM.
 
-For the `git-clone` strategy (10x-astro-starter and similar): the cloned `.git/` is deleted before move-up, so the upstream starter's history does not leak into your repo. You initialise your own history afterwards (`git init`).
+**No test runner is configured.** There is no `test` script and no test framework installed, so there is no "run a single test" command yet. Picking one is an open decision, not an existing convention.
 
-### Verification log
+Pre-commit runs `lint-staged` via husky: `eslint --fix` on `*.{ts,tsx,astro}`, `prettier --write` on `*.{json,css,md}`. A `PostToolUse` hook (`.claude/hooks/format.mjs`) formats each edited file immediately, so the pre-commit pass should normally be a no-op.
 
-Every run writes `context/changes/bootstrap-verification/verification.md`. Sections:
+## Project
 
-- **`## Hand-off`** — verbatim copy of the tech-stack.md frontmatter and `## Why this stack` body.
-- **`## Pre-scaffold verification`** — recency findings table (npm package version + `time.modified` for JS starters; GitHub `pushed_at` for any starter with a GitHub `docs_url`).
-- **`## Scaffold log`** — the resolved CLI invocation, exit code, files moved, conflicts surfaced as `.scaffold` siblings, `.gitignore` handling.
-- **`## Post-scaffold audit`** — full per-language audit output (`npm audit --json` for JS, `pip-audit` for Python, `cargo audit` for Rust, etc.). Severity-tiered: CRITICAL and HIGH surfaced inline in chat, MODERATE and LOW log-only. Direct-vs-transitive split where the tool supports it.
-- **`## Hints recorded but not acted on`** — every hint from the hand-off bootstrapper read but did not act on in v1. Audit-trail completeness for the future memory-architecture skill.
-- **`## Next steps`** — pointer text. v1 names "your project is scaffolded and verified — happy hacking" and flags the future Lesson 4 skill as the next chain link.
+Storygen — an Astro 6 SSR app deployed to Cloudflare Workers, with Supabase email/password auth. Scaffolded from `10x-astro-starter`; `package.json` still carries the starter's `name` and `version`.
 
-The folder (`context/changes/bootstrap-verification/`) deliberately has no `change.md`. Bootstrap runs are one-shot artifacts, not tracked workflow changes — the folder hosts the log and nothing else. Re-runs apply a warn-and-confirm guard before overwriting; the escape hatch is `verification-v2.md` (and so on).
-
-### Foundation paths used by this lesson
-
-- `context/foundation/tech-stack.md` — input (from Lesson 2)
-- `context/changes/bootstrap-verification/verification.md` — output (the audit-trail log)
-- `context/foundation/lessons.md` — recurring rules & pitfalls
-- `docs/reference/contract-surfaces.md` — load-bearing names registry
-
-### Universal language
-
-The shipped skill carries no 10xDevs / cohort / certification references. The post-scaffold audit dispatches by `language_family` against a small lookup table; cohorts whose stack lands in `java`, `php`, `dart`, or a multi-language combination see a "no built-in audit tool for this ecosystem" log line and a recommended external tool, not a fake "0 findings" record.
-
-Skills must not write to `context/archive/`. Archived changes are immutable; if a resolved target path starts with `context/archive/`, abort with: "This change is archived. Open a new change with `/10x-new` instead."
-
-<!-- END @przeprogramowani/10x-cli -->
+Course tooling — the 10xDevs skill chain, which documents the toolkit rather than this codebase: @docs/10xdevs/lesson-m1l4.md
