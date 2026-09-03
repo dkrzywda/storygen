@@ -445,18 +445,18 @@ Rollback samej migracji wymaga migracji odwrotnej, nie `git revert`.
 
 #### Automated
 
-- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [x] 3.3 Typy przechodzą: `npx astro check`
-- [x] 3.4 Lint na zmienionych plikach przechodzi
-- [x] 3.5 Handler nie porównuje właściciela w kodzie
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` — 1d45a97
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration` — 1d45a97
+- [x] 3.3 Typy przechodzą: `npx astro check` — 1d45a97
+- [x] 3.4 Lint na zmienionych plikach przechodzi — 1d45a97
+- [x] 3.5 Handler nie porównuje właściciela w kodzie — 1d45a97
 
 #### Manual
 
-- [x] 3.6 Zmiana własnego tytułu zwraca 200 i zaktualizowany rekord
-- [x] 3.7 Zmiana cudzego tytułu zwraca 404 nieujawniające istnienia rekordu
-- [x] 3.8 Tytuł ponad 80 znaków zwraca 400 z komunikatem przy polu
-- [x] 3.9 Pusty tytuł czyści nazwę zamiast zapisywać pusty tekst
+- [x] 3.6 Zmiana własnego tytułu zwraca 200 i zaktualizowany rekord — 1d45a97
+- [x] 3.7 Zmiana cudzego tytułu zwraca 404 nieujawniające istnienia rekordu — 1d45a97
+- [x] 3.8 Tytuł ponad 80 znaków zwraca 400 z komunikatem przy polu — 1d45a97
+- [x] 3.9 Pusty tytuł czyści nazwę zamiast zapisywać pusty tekst — 1d45a97
 
 ### Phase 4: Minimalna lista historii z edycją tytułu
 
