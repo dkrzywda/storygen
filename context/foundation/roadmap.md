@@ -62,16 +62,16 @@ sekwencjonowania `learn` decyduje o remisach.
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status   |
-| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | -------- |
-| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | ready    |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | blocked  |
-| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed |
-| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | blocked  |
-| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed |
-| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed |
-| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed |
+| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
+| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
+| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | in-progress |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | blocked     |
+| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed    |
+| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed    |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | blocked     |
+| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
+| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
+| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
 
 ## Streams
 
@@ -130,7 +130,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   puste i użytkownik dostaje pustą czerwoną ramkę (`lessons.md`, wpis o pustym komunikacie).
   Sekwencjonowane pierwsze, bo dokładanie tego po generowaniu znaczy retrofit czterech
   trybów awarii zamiast jednego.
-- **Status:** ready
+- **Status:** in-progress
 
 ## Slices
 
