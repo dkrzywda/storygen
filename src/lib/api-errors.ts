@@ -37,6 +37,17 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 503,
     message: "Aplikacja nie jest w pełni skonfigurowana — ta funkcja jest teraz niedostępna.",
   },
+  UNAUTHORIZED: {
+    status: 401,
+    message: "Ta operacja wymaga zalogowania.",
+  },
+  NOT_FOUND: {
+    // Ten sam kod dla "nie istnieje" i dla "nie należy do Ciebie" — celowo.
+    // Rozróżnienie potwierdzałoby istnienie cudzego rekordu, a wyliczanie
+    // identyfikatorów pozwalałoby mapować, kto co ma.
+    status: 404,
+    message: "Nie znaleziono takiej pozycji.",
+  },
   INTERNAL: {
     status: 500,
     message: "Coś poszło nie tak. Spróbuj ponownie za chwilę.",

@@ -427,62 +427,62 @@ Rollback samej migracji wymaga migracji odwrotnej, nie `git revert`.
 
 #### Manual
 
-- [ ] 1.4 Przegląd polityk — każda ograniczona do wierszy własnych i roli uwierzytelnionej
+- [x] 1.4 Przegląd polityk — każda ograniczona do wierszy własnych i roli uwierzytelnionej — 34edbec
 
 ### Phase 2: Harness testów integracyjnych i test izolacji (R-05)
 
 #### Automated
 
-- [x] 2.1 Testy integracyjne przechodzą: `npm run test:integration`
-- [x] 2.2 Testy jednostkowe przechodzą bez Dockera: `npm test`
-- [x] 2.3 Lint na nowych plikach przechodzi
+- [x] 2.1 Testy integracyjne przechodzą: `npm run test:integration` — 6ee35a5
+- [x] 2.2 Testy jednostkowe przechodzą bez Dockera: `npm test` — 6ee35a5
+- [x] 2.3 Lint na nowych plikach przechodzi — 6ee35a5
 
 #### Manual
 
-- [x] 2.4 Rozszerzenie polityk select i update daje czerwony wynik; po cofnięciu zielony
+- [x] 2.4 Rozszerzenie polityk select i update daje czerwony wynik; po cofnięciu zielony — 6ee35a5
 
 ### Phase 3: Endpoint aktualizacji tytułu
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [ ] 3.3 Typy przechodzą: `npx astro check`
-- [ ] 3.4 Lint na zmienionych plikach przechodzi
-- [ ] 3.5 Handler nie porównuje właściciela w kodzie
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
+- [x] 3.3 Typy przechodzą: `npx astro check`
+- [x] 3.4 Lint na zmienionych plikach przechodzi
+- [x] 3.5 Handler nie porównuje właściciela w kodzie
 
 #### Manual
 
-- [ ] 3.6 Zmiana własnego tytułu zwraca 200 i zaktualizowany rekord
-- [ ] 3.7 Zmiana cudzego tytułu zwraca 404 nieujawniające istnienia rekordu
-- [ ] 3.8 Tytuł ponad 80 znaków zwraca 400 z komunikatem przy polu
-- [ ] 3.9 Pusty tytuł czyści nazwę zamiast zapisywać pusty tekst
+- [x] 3.6 Zmiana własnego tytułu zwraca 200 i zaktualizowany rekord
+- [x] 3.7 Zmiana cudzego tytułu zwraca 404 nieujawniające istnienia rekordu
+- [x] 3.8 Tytuł ponad 80 znaków zwraca 400 z komunikatem przy polu
+- [x] 3.9 Pusty tytuł czyści nazwę zamiast zapisywać pusty tekst
 
 ### Phase 4: Minimalna lista historii z edycją tytułu
 
 #### Automated
 
-- [ ] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
-- [ ] 4.2 Typy przechodzą: `npx astro check`
-- [ ] 4.3 Lint na zmienionych plikach przechodzi
-- [ ] 4.4 Żądanie anonimowe do `/generations` zwraca przekierowanie
+- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
+- [x] 4.2 Typy przechodzą: `npx astro check`
+- [x] 4.3 Lint na zmienionych plikach przechodzi
+- [x] 4.4 Żądanie anonimowe do `/generations` zwraca przekierowanie
 
 #### Manual
 
-- [ ] 4.5 Zalogowany widzi wyłącznie własne pozycje
-- [ ] 4.6 Nadanie tytułu widoczne od razu i po odświeżeniu
-- [ ] 4.7 Zmiana istniejącego tytułu działa
-- [ ] 4.8 Wyczyszczenie tytułu przywraca początek tekstu
-- [ ] 4.9 Pusta historia pokazuje zrozumiały stan
-- [ ] 4.10 Zbyt długi tytuł pokazuje komunikat przy polu
+- [x] 4.5 Zalogowany widzi wyłącznie własne pozycje
+- [x] 4.6 Nadanie tytułu widoczne od razu i po odświeżeniu
+- [x] 4.7 Zmiana istniejącego tytułu działa
+- [x] 4.8 Wyczyszczenie tytułu przywraca początek tekstu
+- [x] 4.9 Pusta historia pokazuje zrozumiały stan
+- [x] 4.10 Zbyt długi tytuł pokazuje komunikat przy polu
 
 ### Phase 5: Aktualizacja test-planu i roadmapy
 
 #### Automated
 
-- [ ] 5.1 R-05 ma w test-planie status pokryte
-- [ ] 5.2 Prettier przechodzi na zmienionych dokumentach
+- [x] 5.1 R-05 ma w test-planie status pokryte
+- [x] 5.2 Prettier przechodzi na zmienionych dokumentach
 
 #### Manual
 
-- [ ] 5.3 Czytelnik `S-03` rozumie, że tabela już istnieje, bez otwierania tego planu
+- [x] 5.3 Czytelnik `S-03` rozumie, że tabela już istnieje, bez otwierania tego planu

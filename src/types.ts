@@ -22,6 +22,8 @@ export type ApiErrorCode =
   | "EMAIL_ALREADY_REGISTERED"
   | "PROVIDER_UNAVAILABLE"
   | "NOT_CONFIGURED"
+  | "UNAUTHORIZED"
+  | "NOT_FOUND"
   | "INTERNAL";
 
 /** Mapa nazwa pola → komunikat po polsku. Puste pole klucza (`_`) oznacza blad calego formularza. */
