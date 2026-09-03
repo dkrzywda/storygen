@@ -83,7 +83,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
-| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | S-05          | MS-01                                         | proposed    |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | in-progress    |
 
 ## Streams
 
@@ -97,7 +97,7 @@ równoległych torów.
 | B      | Powierzchnia po polsku          | `S-02`                                     | Dołącza do strumienia A przy `F-01`; dalej biegnie równolegle do `S-01`.                          |
 | C      | Sufit kosztu                    | `S-04`                                     | Dołącza do A przy `S-03` — dzieli z nim migracje i wzorzec RLS.                                   |
 | D      | Drugi format                    | `S-07`                                     | Dołącza do A przy `S-01`; ta sama integracja, ostrzejszy kontrakt formatu.                        |
-| E      | Metadane pozycji                | `S-08`                                     | Dołącza do A przy `S-05`; jedyny tor niezależny od dostawcy LLM.                                  |
+| E      | Metadane pozycji                | `S-08`                                     | Dołącza do A przy `F-01`; jedyny tor niezależny od dostawcy LLM.                                  |
 
 ## Baseline
 
@@ -288,8 +288,8 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   dzięki czemu odnajduje swoje teksty po tym, jak je nazwał, a nie po pierwszych słowach.
 - **Change ID:** `annotate-generation`
 - **PRD refs:** MS-01 (kotwica z wymagań certyfikacyjnych — patrz `## Milestone`)
-- **Prerequisites:** S-05
-- **Parallel with:** S-04, S-06, S-07
+- **Prerequisites:** F-01
+- **Parallel with:** S-02, S-04, S-07
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** To jedyny plaster bez śladu w PRD — powstał, bo wymagania certyfikacyjne żądają
@@ -300,7 +300,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   następnym krokiem jest regeneracja w miejscu — ale ta wymaga przeredagowania Non-Goala,
   więc jest decyzją produktową, nie implementacyjną. Nie zależy od dostawcy LLM, więc da się
   ją zaplanować i dowieźć niezależnie od blokady na `S-01`.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 
@@ -314,7 +314,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 | S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                   |
 | S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                   |
 | S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                   |
-| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | no                    | Czeka na S-05                                   |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                    | Plan gotowy — `/10x-implement annotate-generation phase 1`   |
 
 ## Open Roadmap Questions
 
