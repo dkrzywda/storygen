@@ -22,3 +22,23 @@
   istniejące miejsce. Możesz zrobić inaczej, jeśli masz powód — ale wtedy
   napisz to wprost w podsumowaniu zmiany. Zła jest tylko cicha decyzja.
 - **Applies to**: plan, implement, impl-review
+
+## Komunikat błędu od zewnętrznej usługi może być pusty
+
+- **Context**: Wołasz zewnętrzną usługę (Supabase Auth, dostawca LLM) i
+  przekazujesz jej komunikat błędu użytkownikowi — przez `?error=`, przez pole
+  formularza, przez toast. Dotyczy `src/pages/api/**` i każdego miejsca, gdzie
+  `error.message` z SDK trafia na powierzchnię produktu.
+- **Problem**: SDK zwraca obiekt błędu, ale `message` bywa pusty. Sprawdziliśmy
+  to na produkcji (2026-08-24, pierwsza próba rejestracji): Supabase Auth
+  zwrócił 502 Bad Gateway, `src/pages/api/auth/signup.ts` zrobił
+  `?error=${encodeURIComponent(error.message)}`, a użytkownik zobaczył pustą
+  czerwoną ramkę bez tekstu. Kod nie zawiódł — `error` istniał, redirect
+  wykonał się poprawnie. Zawiodło założenie, że skoro błąd jest, to ma treść.
+  PRD wymaga komunikatu po polsku właśnie dla przypadku „niedostępny dostawca",
+  więc pusta ramka to naruszenie wymogu, nie kosmetyka.
+- **Rule**: Nigdy nie przekazuj `error.message` z zewnętrznego SDK wprost na
+  powierzchnię produktu. Mapuj znane przypadki na własne komunikaty, a dla
+  nieznanych i pustych trzymaj jeden komunikat domyślny. Traktuj brak treści
+  błędu jako normalny stan do obsłużenia, nie jako sytuację niemożliwą.
+- **Applies to**: plan, implement, impl-review
