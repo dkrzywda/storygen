@@ -19,8 +19,8 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# 10x Agents `MD`
- 
+# 10x Agents MD
+
 Produce an `AGENTS.md` that serves as an onboarding document for AI coding agents in this repository. The file is short, specific to the repo, and structured so the most important rules appear first.
 
 ## Input resolution
