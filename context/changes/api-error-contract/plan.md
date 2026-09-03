@@ -443,10 +443,10 @@ przed tą zmianą przestanie pokazywać tamten tekst i pokaże komunikat domyśl
 
 #### Automated
 
-- [x] 3.1 Testy przechodzą: `npm test`
-- [x] 3.2 Typy przechodzą: `npx astro check`
-- [x] 3.3 Lint na zmienionych plikach przechodzi
-- [x] 3.4 `grep -rn "error.message" src/pages/api/auth/` nie zwraca nic
+- [x] 3.1 Testy przechodzą: `npm test` — c59250c
+- [x] 3.2 Typy przechodzą: `npx astro check` — c59250c
+- [x] 3.3 Lint na zmienionych plikach przechodzi — c59250c
+- [x] 3.4 `grep -rn "error.message" src/pages/api/auth/` nie zwraca nic — c59250c
 
 #### Manual
 
