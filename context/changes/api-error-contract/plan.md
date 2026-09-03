@@ -431,22 +431,22 @@ przed tą zmianą przestanie pokazywać tamten tekst i pokaże komunikat domyśl
 
 #### Automated
 
-- [x] 2.1 Testy przechodzą: `npm test`
-- [x] 2.2 Typy przechodzą: `npx astro check`
-- [x] 2.3 Lint na nowych plikach przechodzi
+- [x] 2.1 Testy przechodzą: `npm test` — a60146d
+- [x] 2.2 Typy przechodzą: `npx astro check` — a60146d
+- [x] 2.3 Lint na nowych plikach przechodzi — a60146d
 
 #### Manual
 
-- [x] 2.4 Przegląd słownika — każdy komunikat po polsku, żaden nie cytuje dostawcy
+- [x] 2.4 Przegląd słownika — każdy komunikat po polsku, żaden nie cytuje dostawcy — a60146d
 
 ### Phase 3: Retrofit trzech endpointów auth
 
 #### Automated
 
-- [ ] 3.1 Testy przechodzą: `npm test`
-- [ ] 3.2 Typy przechodzą: `npx astro check`
-- [ ] 3.3 Lint na zmienionych plikach przechodzi
-- [ ] 3.4 `grep -rn "error.message" src/pages/api/auth/` nie zwraca nic
+- [x] 3.1 Testy przechodzą: `npm test`
+- [x] 3.2 Typy przechodzą: `npx astro check`
+- [x] 3.3 Lint na zmienionych plikach przechodzi
+- [x] 3.4 `grep -rn "error.message" src/pages/api/auth/` nie zwraca nic
 
 #### Manual
 
@@ -459,8 +459,8 @@ przed tą zmianą przestanie pokazywać tamten tekst i pokaże komunikat domyśl
 
 #### Automated
 
-- [ ] 4.1 Nieaktualne zapisy zniknęły z CLAUDE.md
-- [ ] 4.2 `npx prettier --check CLAUDE.md` przechodzi
+- [x] 4.1 Nieaktualne zapisy zniknęły z CLAUDE.md
+- [x] 4.2 `npx prettier --check CLAUDE.md` przechodzi
 
 #### Manual
 

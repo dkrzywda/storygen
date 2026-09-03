@@ -1,8 +1,12 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import SignInForm from "@/components/auth/SignInForm";
+import { messageForCode } from "@/lib/api-errors";
 
-const error = Astro.url.searchParams.get("error");
+// Parametr niesie KOD, nie tresc. Wartosc nierozpoznana daje komunikat domyslny,
+// nigdy samej wartosci — inaczej dowolny tekst z URL-a trafialby na ekran.
+const errorCode = Astro.url.searchParams.get("error");
+const error = errorCode === null ? null : messageForCode(errorCode);
 ---
 
 <Layout title="Sign in">

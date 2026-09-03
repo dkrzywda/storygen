@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
+import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 
 export const POST: APIRoute = async (context) => {
   const form = await context.request.formData();
@@ -8,12 +9,15 @@ export const POST: APIRoute = async (context) => {
 
   const supabase = createClient(context.request.headers, context.cookies);
   if (!supabase) {
-    return context.redirect(`/auth/signup?error=${encodeURIComponent("Supabase is not configured")}`);
+    return context.redirect("/auth/signup?error=NOT_CONFIGURED");
   }
   const { error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
-    return context.redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`);
+    // `?error=` niesie kod, nigdy tresci — strona rozwiazuje go przez slownik.
+    const code = toApiErrorCode(error);
+    logApiError("auth/signup", code, error);
+    return context.redirect(`/auth/signup?error=${code}`);
   }
 
   return context.redirect("/auth/confirm-email");
