@@ -28,11 +28,22 @@ milestone_status: open
 - **Intent:** Dowieźć wszystkie trzynaście wymagań must-have z PRD, tak żeby zadeklarowany
   cel edukacyjny — przejście całej ścieżki technicznej auth → generowanie → zapis → deploy —
   był faktycznie przejściem, a nie deklaracją. Kamień milowy zamyka się na wyniku, nie na dacie.
-- **Source materials:** `context/foundation/prd.md` (v1)
+- **Source materials:** `context/foundation/prd.md` (v1) + wymagania certyfikacyjne MVP
+  (moduły 1–3), dołączone 2026-09-03 jako drugie źródło.
 - **Done when:** każdy `F-NN` i `S-NN` poniżej ma Status `done`.
 - **Scope anchors:** FR-001 … FR-013 (wszystkie trzynaście, wszystkie must-have), US-01,
   oraz wymagania niefunkcjonalne bramkujące wydanie: izolacja kont, komunikaty po polsku,
   odczuwalne 15 s / 30 s z ciągłym postępem.
+- **Kotwice z wymagań certyfikacyjnych** (dla pozycji, które nie mają odpowiednika w PRD):
+  - MS-01: pełne CRUD — tworzenie, odczyt, **aktualizacja** i usuwanie, w sposób sensowny
+    dla domeny. PRD pokrywa C/R/D (FR-009, FR-010, FR-011); aktualizacji nie ma, bo
+    `## Non-Goals` zakazuje edycji wygenerowanego tekstu. `S-08` domyka „U" na metadanych
+    pozycji, nie na treści — zakaz zostaje nienaruszony.
+  - MS-02: logika biznesowa — pokryta kontraktem formatu (`S-01`, `S-07`).
+  - MS-03: co najmniej jeden zestaw testów adresujący konkretne ryzyko z dokumentu
+    test-planu — dokument: `context/foundation/test-plan.md`.
+  - MS-04: dostęp powiązany z użytkownikiem, który widzi wyłącznie swoje zasoby —
+    pokryte przez istniejące auth plus RLS w `S-03` i `S-05`.
 
 ## Vision recap
 
@@ -72,6 +83,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | S-05          | MS-01                                         | proposed    |
 
 ## Streams
 
@@ -85,6 +97,7 @@ równoległych torów.
 | B      | Powierzchnia po polsku          | `S-02`                                     | Dołącza do strumienia A przy `F-01`; dalej biegnie równolegle do `S-01`.                          |
 | C      | Sufit kosztu                    | `S-04`                                     | Dołącza do A przy `S-03` — dzieli z nim migracje i wzorzec RLS.                                   |
 | D      | Drugi format                    | `S-07`                                     | Dołącza do A przy `S-01`; ta sama integracja, ostrzejszy kontrakt formatu.                        |
+| E      | Metadane pozycji                | `S-08`                                     | Dołącza do A przy `S-05`; jedyny tor niezależny od dostawcy LLM.                                  |
 
 ## Baseline
 
@@ -269,6 +282,26 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   czas poza to, co użytkownik zaakceptuje.
 - **Status:** proposed
 
+### S-08: Użytkownik nadaje własny tytuł zapisanej generacji
+
+- **Outcome:** użytkownik nadaje pozycji w historii własny tytuł i może go później zmienić,
+  dzięki czemu odnajduje swoje teksty po tym, jak je nazwał, a nie po pierwszych słowach.
+- **Change ID:** `annotate-generation`
+- **PRD refs:** MS-01 (kotwica z wymagań certyfikacyjnych — patrz `## Milestone`)
+- **Prerequisites:** S-05
+- **Parallel with:** S-04, S-06, S-07
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** To jedyny plaster bez śladu w PRD — powstał, bo wymagania certyfikacyjne żądają
+  pełnego CRUD, a PRD `## Non-Goals` zakazuje edycji wygenerowanego tekstu („the format
+  contract governs the whole output or nothing"). Rozwiązanie omija konflikt, zamiast go
+  rozstrzygać: aktualizacja dotyczy **metadanych** pozycji, nie treści, więc zakaz zostaje
+  nienaruszony i teza produktu też. Jeśli oceniający uzna edycję tytułu za zbyt cienkie „U",
+  następnym krokiem jest regeneracja w miejscu — ale ta wymaga przeredagowania Non-Goala,
+  więc jest decyzją produktową, nie implementacyjną. Nie zależy od dostawcy LLM, więc da się
+  ją zaplanować i dowieźć niezależnie od blokady na `S-01`.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                           |
@@ -281,6 +314,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 | S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                   |
 | S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                   |
 | S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                   |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | no                    | Czeka na S-05                                   |
 
 ## Open Roadmap Questions
 
