@@ -419,25 +419,25 @@ przed tą zmianą przestanie pokazywać tamten tekst i pokaże komunikat domyśl
 
 #### Automated
 
-- [x] 1.1 Testy przechodzą: `npm test`
-- [x] 1.2 Typy przechodzą: `npx astro check`
-- [x] 1.3 Lint na zmienionych plikach przechodzi
+- [x] 1.1 Testy przechodzą: `npm test` — 245e477
+- [x] 1.2 Typy przechodzą: `npx astro check` — 245e477
+- [x] 1.3 Lint na zmienionych plikach przechodzi — 245e477
 
 #### Manual
 
-- [x] 1.4 Celowo zepsuty assert daje czerwony wynik, po cofnięciu znowu zielony
+- [x] 1.4 Celowo zepsuty assert daje czerwony wynik, po cofnięciu znowu zielony — 245e477
 
 ### Phase 2: Kontrakt i komunikaty
 
 #### Automated
 
-- [ ] 2.1 Testy przechodzą: `npm test`
-- [ ] 2.2 Typy przechodzą: `npx astro check`
-- [ ] 2.3 Lint na nowych plikach przechodzi
+- [x] 2.1 Testy przechodzą: `npm test`
+- [x] 2.2 Typy przechodzą: `npx astro check`
+- [x] 2.3 Lint na nowych plikach przechodzi
 
 #### Manual
 
-- [ ] 2.4 Przegląd słownika — każdy komunikat po polsku, żaden nie cytuje dostawcy
+- [x] 2.4 Przegląd słownika — każdy komunikat po polsku, żaden nie cytuje dostawcy
 
 ### Phase 3: Retrofit trzech endpointów auth
 
