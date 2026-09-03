@@ -70,6 +70,9 @@ const astroConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  // Wyjscie `supabase gen types typescript` — plik generowany, nie pisany recznie.
+  // Regeneracja nadpisuje kazda poprawke, wiec lintowanie go tylko szumi.
+  { ignores: ["src/lib/database.types.ts"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],

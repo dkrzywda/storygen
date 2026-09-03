@@ -421,9 +421,9 @@ Rollback samej migracji wymaga migracji odwrotnej, nie `git revert`.
 
 #### Automated
 
-- [x] 1.1 Migracja aplikuje się na czystej bazie: `npx supabase db reset`
-- [x] 1.2 Nazwa pliku pasuje do konwencji `YYYYMMDDHHmmss_short_description.sql`
-- [x] 1.3 RLS włączony; polityki select/insert/update istnieją, delete nie
+- [x] 1.1 Migracja aplikuje się na czystej bazie: `npx supabase db reset` — 34edbec
+- [x] 1.2 Nazwa pliku pasuje do konwencji `YYYYMMDDHHmmss_short_description.sql` — 34edbec
+- [x] 1.3 RLS włączony; polityki select/insert/update istnieją, delete nie — 34edbec
 
 #### Manual
 
