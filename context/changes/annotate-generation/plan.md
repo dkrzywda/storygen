@@ -480,9 +480,9 @@ Rollback samej migracji wymaga migracji odwrotnej, nie `git revert`.
 
 #### Automated
 
-- [x] 5.1 R-05 ma w test-planie status pokryte
-- [x] 5.2 Prettier przechodzi na zmienionych dokumentach
+- [x] 5.1 R-05 ma w test-planie status pokryte — d35c61c
+- [x] 5.2 Prettier przechodzi na zmienionych dokumentach — d35c61c
 
 #### Manual
 
-- [x] 5.3 Czytelnik `S-03` rozumie, że tabela już istnieje, bez otwierania tego planu
+- [x] 5.3 Czytelnik `S-03` rozumie, że tabela już istnieje, bez otwierania tego planu — d35c61c

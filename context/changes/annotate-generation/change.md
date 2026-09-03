@@ -1,7 +1,7 @@
 ---
 change_id: annotate-generation
 title: "Wlasny tytul zapisanej generacji"
-status: implementing
+status: implemented
 created: 2026-09-03
 updated: 2026-09-03
 archived_at: null
