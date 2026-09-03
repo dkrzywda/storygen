@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository. Product intent: @context/fo
 
 - **`npm run lint` fails on a clean checkout on Windows.** All 26 files in `src/` carry CRLF: there is no `.gitattributes`, `core.autocrlf=true`, and `.prettierrc.json` sets no `endOfLine`, so Prettier's `lf` default reports `Delete ␍` on every line (~1040 errors repo-wide). Verified 2026-08-24. Until this is fixed at the root, lint the files you touched, not the whole repo, and do not read a full-repo lint failure as caused by your change.
 - **CI never runs on this repo as configured.** `.github/workflows/ci.yml` triggers on `master`; the branch here is `main`. Fix the trigger before relying on CI. The build step also needs `SUPABASE_URL` / `SUPABASE_KEY` repository secrets. Note this masks the tripwire above — CI runs on Linux, where the CRLF errors do not appear.
-- The LLM provider the PRD depends on is not part of the starter and is not installed yet.
+- **The LLM provider is decided but not wired.** Cloudflare Workers AI, model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, reached through a Workers **binding** — there is no API key, and there must never be one: that is what makes the credentials guardrail structural. Do not introduce a keyed provider without raising it. Adapter v13 removed `Astro.locals.runtime`, so reach the binding via `import { env } from "cloudflare:workers"`. Rationale, free-tier maths and the unverified Polish-quality risk: @context/foundation/tech-stack.md.
 - `.nvmrc` pins Node 22.14.0; the machine that scaffolded this ran 22.18.0.
 - The scaffolded dependency tree shipped with 1 critical and 13 high npm-audit findings (1 direct: `astro`). Full breakdown in @context/changes/bootstrap-verification/verification.md.
 

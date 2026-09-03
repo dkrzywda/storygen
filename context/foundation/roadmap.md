@@ -76,10 +76,10 @@ sekwencjonowania `learn` decyduje o remisach.
 | ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
 | ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
 | F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | in-progress |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | blocked     |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | proposed    |
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed    |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed    |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | blocked     |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
@@ -117,7 +117,8 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   `master`, a gałąź to `main`, więc CI nie uruchamia się nigdy.
 - **Observability:** partial — observability Cloudflare włączona; brak logowania i śledzenia
   błędów na poziomie aplikacji.
-- **Dostawca LLM:** absent — żadnego SDK dostawcy w `package.json`. To jedyna integracja,
+- **Dostawca LLM:** wybrany 2026-09-03, jeszcze niepodłączony — Cloudflare Workers AI
+  (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) przez binding, bez klucza API. To jedyna integracja,
   od której PRD zależy, a której starter nie niesie.
 
 ## Foundations
@@ -157,9 +158,13 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:**
-  - Który dostawca i model? Wybór przesądza koszt, odczuwalne opóźnienie (NFR pinuje 15 s / 30 s)
-    i to, czy limity z FR-012/FR-013 mają sensowne liczby. `shape-notes.md` notuje to wprost jako
-    nierozstrzygnięte. — Owner: autor. Block: yes.
+  - ~~Który dostawca i model?~~ Rozstrzygnięte 2026-09-03: Cloudflare Workers AI,
+    `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, przez binding (bez klucza API). Szczegóły
+    i pozostałe ryzyko jakościowe w `## Open Roadmap Questions` #1. — Block: no.
+  - Czy Llama 3.3 70B utrzyma kontrakt formatu po polsku — dowcip z puentą w 60 słowach?
+    Nie zweryfikowane. To nie blokuje planowania (interfejs do dostawcy jest ten sam
+    niezależnie od odpowiedzi), ale jest głównym ryzykiem dowiezienia tego plastra.
+    Zmierz promptem, zanim napiszesz walidator. — Owner: autor. Block: no.
   - Jak zdefiniowany jest „temat niedozwolony"? `## Business Logic` zobowiązuje się do odmowy,
     ale granicy kategorii nie definiuje. Kontrola długości 3–80 znaków da się zaplanować bez
     tego; odmowa treściowa nie. — Owner: autor. Block: no.
@@ -173,7 +178,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   kosztowe i wynika z kolejności: między dowiezieniem `S-01` a `S-04` generowanie stoi pod
   publicznym adresem z otwartą rejestracją i bez żadnego sufitu. Jeśli to nie do przyjęcia,
   przestaw `S-04` przed `S-03` albo trzymaj rejestrację zamkniętą do czasu `S-04`.
-- **Status:** blocked
+- **Status:** proposed
 
 ### S-02: Użytkownik przechodzi rejestrację i logowanie w całości po polsku
 
@@ -228,10 +233,12 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Parallel with:** S-05, S-07
 - **Blockers:** —
 - **Unknowns:**
-  - Jakie są liczby — ile generacji na konto na dobę, ile w sumie na całą aplikację — i czy
-    limit na konto ma się różnić dla dowcipu i opowiadania? PRD zostawia oba bez liczby.
-    Bez tego nie da się zaplanować ani mechaniki (jeden licznik czy dwa), ani odmowy. —
-    Owner: autor. Block: yes.
+  - ~~Jakie są liczby limitów?~~ Odpowiedziane 2026-09-03 przez wybór dostawcy: darmowy
+    tier to 10 000 neuronów dziennie ≈ 300 dowcipów albo 66 opowiadań. Proponowany sufit
+    FR-013: **50 generacji dziennie na całą aplikację**. Rozróżnienie per format zbędne —
+    sufit neuronowy sam wycenia opowiadanie ~4,5× drożej niż dowcip. Liczba dla FR-012
+    (na konto) do dobrania w planie; przy jednym realnym użytkowniku wystarczy ułamek. —
+    Block: no.
 - **Risk:** To jedyna bariera kosztowa w całym projekcie — rejestracja jest otwarta z wyboru,
   a aplikacja stoi pod publicznym adresem. Sekwencjonowane zaraz po `S-03`, bo liczniki
   potrzebują tej samej warstwy danych; może zostać przestawione **przed** `S-03`, jeśli
@@ -239,7 +246,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   zamiast wspólnej. Uwaga na środowisko: adapter Cloudflare v13 usunął
   `Astro.locals.runtime`, więc odczyt liczników przez niego zwróci `undefined` w runtime,
   a nie błąd typu (`infrastructure.md`, § rejestr ryzyk).
-- **Status:** blocked
+- **Status:** proposed
 
 ### S-05: Użytkownik przegląda własną historię i otwiera pozycje
 
@@ -328,13 +335,26 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 
 ## Open Roadmap Questions
 
-1. **Który dostawca i model LLM?** Wybór przesądza koszt, odczuwalne opóźnienie (NFR pinuje
-   15 s dla krótkich i 30 s dla długich generacji) oraz to, czy limity z FR-012/FR-013 mają
-   sensowne liczby. `shape-notes.md` notuje to jako nierozstrzygnięte od 2026-08-11. —
-   Owner: autor. Block: `S-01`, `S-03`, `S-07` (przez `S-01`), pośrednio `S-04`.
-2. **Jakie są liczby limitów i czy limit na konto ma się różnić dla dowcipu i opowiadania?**
-   PRD `## Open Questions` #1. Opowiadanie kosztuje więcej niż dowcip, a żadne z FR-012
-   i FR-013 nie ma przypisanej liczby. — Owner: autor. Block: `S-04`.
+1. ~~**Który dostawca i model LLM?**~~ **ROZSTRZYGNIĘTE 2026-09-03: Cloudflare Workers AI,
+   model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.** Otwarte wagi, ta sama platforma co
+   deploy, **binding zamiast klucza API** — dzięki temu guardrail z `## Success Criteria`
+   („poświadczenia nigdy nie są obserwowalne z produktu") spełnia się strukturalnie, a nie
+   przez dyscyplinę. Darmowy tier: 10 000 neuronów dziennie, bez karty.
+   Pozostałe ryzyko, **niezweryfikowane**: jakość polskiego dowcipu z puentą w 60 słowach.
+   Jeśli kontrakt formatu będzie pękał, reguła jednej ponownej próby odpali się częściej,
+   podwajając zużycie neuronów i czas wobec NFR 15 s. Wagi są otwarte, więc przesiadka na
+   inny model albo hosting jest zmianą w jednym module — pod warunkiem, że `S-01` schowa
+   wywołanie dostawcy za wąskim interfejsem, tak jak `F-01` zrobił z błędami.
+   Uwaga wdrożeniowa: adapter Cloudflare v13 usunął `Astro.locals.runtime`, więc do bindingu
+   sięga się przez `import { env } from "cloudflare:workers"` (patrz `infrastructure.md`).
+2. ~~**Jakie są liczby limitów?**~~ **ODPOWIEDZIANE 2026-09-03 przez wybór z #1.** Zużycie
+   przy ~300 tokenach promptu: dowcip ~33 neurony, opowiadanie ~151. Darmowy dzienny limit
+   10 000 neuronów to **~300 dowcipów albo ~66 opowiadań na dobę dla całej aplikacji**.
+   Proponowany sufit FR-013: **50 generacji dziennie** — mieści się w darmowym tierze nawet
+   przy samych opowiadaniach, z zapasem na ponowne próby. FR-012 (na konto): przy jednym
+   realnym użytkowniku wystarczy ułamek tego; liczba do dobrania w planie `S-04`.
+   Rozróżnienie limitu per format **nie jest potrzebne** — sufit neuronowy sam w sobie
+   wycenia opowiadanie drożej niż dowcip.
 3. **Jak zdefiniowany jest „temat niedozwolony"?** PRD `## Open Questions` #3. Sekcja
    `## Business Logic` zobowiązuje się do odmowy bez wyznaczenia granicy kategorii. Nie blokuje planowania
    `S-01` (kontrola długości 3–80 znaków stoi osobno), ale blokuje ścieżkę odmowy treściowej
