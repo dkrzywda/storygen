@@ -42,7 +42,10 @@ Full script list and Supabase setup live in @README.md. The non-obvious ones:
 - `npm run dev` runs on the Cloudflare workerd runtime, not plain Node.
 - `npx supabase start` needs Docker and ~7 GB RAM.
 
-- `npm test` — Vitest, single pass. `npm run test:watch` for the continuous mode. Tests live next to their subject as `src/**/*.test.ts`; the runner resolves `@/*` through `vitest.config.ts`, which mirrors the `tsconfig.json` paths — keep the two in step or test imports silently diverge from build imports.
+- `npm test` — Vitest unit pass, no Docker. `npm run test:watch` for the continuous mode. Tests live next to their subject as `src/**/*.test.ts`; the runner resolves `@/*` through `vitest.config.ts`, which mirrors the `tsconfig.json` paths — keep the two in step or test imports silently diverge from build imports.
+- `npm run test:integration` — separate Vitest project (`vitest.integration.config.ts`) over `src/**/*.integration.test.ts`, **requires `npx supabase start`**. The unit config excludes these so `npm test` stays Docker-free; adding an integration test to the wrong pattern makes the fast suite need Docker.
+- **A test that exercises RLS must use the publishable/anon key.** `service_role` bypasses RLS, so such a test passes even against a wide-open policy — a green light on the one guarantee the whole access model rests on. `src/lib/generations.integration.test.ts` refuses to run against a non-local host or a secret key; copy that guard into any new RLS test.
+- `npx supabase gen types typescript --local > src/lib/database.types.ts` regenerates the DB types (then `npx prettier --write` on it — the CLI does not know Prettier). The file sits next to `src/lib/supabase.ts`, is ESLint-ignored as generated output, and types the shared client via `createServerClient<Database>`, so every query in the app is typed without per-call generics.
 
 **Installing a package while `npm run dev` is running breaks the dev server.** The lockfile change makes Vite re-optimize dependencies and leaves a stale SSR cache; pages then render as HTTP 200 with an empty body, and the log shows `TypeError: jsxDEV is not a function` pointing at a React island you did not touch. Fix: stop the server, `rm -rf node_modules/.vite`, restart. Verified 2026-09-03 while adding `zod`.
 

@@ -83,7 +83,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
-| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | in-progress    |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | in-progress |
 
 ## Streams
 
@@ -203,7 +203,12 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** To pierwsza migracja w tym repo — `supabase/migrations/` jeszcze nie istnieje.
+- **Zakres zwężony 2026-09-03 przez `S-08`:** tabela `generations` i polityki RLS
+  `select`/`insert`/`update` **już istnieją** (migracja `20260903125113_create_generations.sql`).
+  Ten plaster dokłada wyłącznie zapis z generowania — nie tworzy tabeli i nie projektuje
+  schematu. Kolumny `topic`, `format`, `length_preset`, `content` czekają gotowe.
+- **Risk:** ~~To pierwsza migracja w tym repo~~ — nieaktualne, patrz wyżej. Historyczne
+  uzasadnienie zostaje, bo nadal obowiązuje przy każdej kolejnej migracji:
   RLS musi powstać w tej samej migracji co tabela: dołożenie polityk później zostawia okno,
   w którym gwarancja izolacji kont nie obowiązuje, a nic w kodzie tego nie wykryje. Drugi,
   udowodniony sposób cichego złamania tej samej gwarancji: użycie klucza `service_role`
@@ -246,9 +251,14 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Parallel with:** S-04, S-07
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** To pierwszy ekran, na którym izolacja kont jest widoczna, a nie tylko
-  zadeklarowana — i pierwszy, na którym da się ją realnie sprawdzić drugim kontem. Jeśli
-  polityki RLS z `S-03` są za szerokie, wyjdzie to tutaj albo nigdy.
+- **Zakres zwężony 2026-09-03 przez `S-08`:** minimalna lista własnych pozycji już istnieje
+  (`src/pages/generations.astro`) — pokazuje tytuł albo początek tekstu, ma stan pustej
+  historii i jest w `PROTECTED_ROUTES`. Ten plaster dokłada to, czego tam nie ma: otwieranie
+  pozycji w całości, sortowanie i paginację, jeśli okażą się potrzebne.
+- **Risk:** ~~To pierwszy ekran, na którym izolacja kont jest widoczna~~ — nieaktualne:
+  izolację widać już na liście z `S-08` i pokrywa ją test integracyjny (R-05 w test-planie).
+  Zostaje ryzyko właściwe temu plastrowi: otwarcie pozycji w całości wprowadza drugi punkt
+  odczytu, a każdy nowy odczyt to nowa okazja do obejścia RLS filtrem w kodzie.
 - **Status:** proposed
 
 ### S-06: Użytkownik usuwa pozycję z własnej historii
@@ -304,17 +314,17 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                           |
-| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
-| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                  |
-| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | no                    | Blokada: nierozstrzygnięty dostawca i model LLM |
-| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | no                    | Czeka na F-01                                   |
-| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | no                    | Czeka na S-01                                   |
-| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013           |
-| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                   |
-| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                   |
-| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                   |
-| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                    | Plan gotowy — `/10x-implement annotate-generation phase 1`   |
+| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                      |
+| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ---------------------------------------------------------- |
+| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                             |
+| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | no                    | Blokada: nierozstrzygnięty dostawca i model LLM            |
+| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | no                    | Czeka na F-01                                              |
+| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | no                    | Czeka na S-01                                              |
+| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                      |
+| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                              |
+| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                              |
+| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                              |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1` |
 
 ## Open Roadmap Questions
 

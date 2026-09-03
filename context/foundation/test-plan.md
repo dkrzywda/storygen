@@ -17,17 +17,17 @@ odpowiada 200, wygląda normalnie, a gwarancja jest już naruszona.
 
 ## Rejestr ryzyk
 
-| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                | Stan                          |
-| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- | ----------------------------- |
-| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts` | **pokryte**                   |
-| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts` | **pokryte**                   |
-| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts` | **pokryte**                   |
-| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts` | **pokryte**                   |
-| R-05 | Konto czyta cudze generacje                                                                   | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | —                            | luka, wchodzi z `S-03`/`S-05` |
-| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | —                            | luka, wchodzi z `S-01`        |
-| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | —                            | luka, wchodzi z `S-04`        |
+| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                             | Stan                   |
+| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ----------------------------------------- | ---------------------- |
+| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**            |
+| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**            |
+| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts`              | **pokryte**            |
+| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts`              | **pokryte**            |
+| R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts` | **pokryte**            |
+| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | —                                         | luka, wchodzi z `S-01` |
+| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | —                                         | luka, wchodzi z `S-04` |
 
-Ryzyka R-05 … R-07 są zapisane celowo, mimo że nie mają jeszcze testów: kod, którego dotyczą,
+Ryzyka R-06 i R-07 są zapisane celowo, mimo że nie mają jeszcze testów: kod, którego dotyczą,
 nie istnieje. Wchodzą razem ze swoimi plastrami z roadmapy.
 
 ## Zestaw R-01 — pusty komunikat błędu
@@ -82,22 +82,53 @@ a `lessons.md` zakazuje przekazywania cudzych komunikatów na powierzchnię prod
 w schemacie**, każde niepoprawne pole osobno, a błąd całego formularza ląduje pod kluczem
 formularza. Dodatkowo `jsonError` wyprowadza status z kodu, a nie z ręcznego wpisu.
 
+## Zestaw R-05 — izolacja kont
+
+**Ryzyko.** Zbyt szeroka polityka RLS nie rzuca błędem. Zapytanie zwraca wiersze, aplikacja
+je renderuje, status jest 200 — a gwarancja izolacji kont, na której stoi cały model dostępu,
+już nie obowiązuje. Drugi, udowodniony sposób złamania tego samego: użycie klucza
+`service_role` zamiast publishable — omija RLS bez błędu i bez testu, który by to złapał
+(`context/deployment/deploy-plan.md`, § Bramki ludzkie).
+
+**Co jest testowane.** Dwa świeże konta na lokalnym stacku. Konto B nie zmienia tytułu wiersza
+konta A (zero zmienionych wierszy), nie widzi go przy odczycie, i nie zapisze wiersza na konto
+A. Kontrola pozytywna w tym samym pliku: konto A zmienia własny wiersz — bez niej zielony wynik
+mógłby oznaczać, że aktualizacja nie działa dla nikogo. Dodatkowo: brak polityki `delete`
+sprawia, że nikt nie usuwa wierszy.
+
+Sam test ma dwie bariery przeciw fałszywemu zielonemu: odmawia uruchomienia przeciwko
+nielokalnej bazie i odrzuca klucz `service_role`.
+
+**Czego test nie dowodzi — sprawdzone eksperymentalnie 2026-09-03.** Postgres wymaga spełnienia
+polityki `SELECT` także przy `UPDATE ... WHERE`, bo instrukcja czyta istniejące wiersze. Skutek:
+rozszerzenie **samej** polityki `UPDATE` do `using (true)` nie robi tego zestawu czerwonym —
+konto B nadal blokuje polityka odczytu. Czerwony wynik pojawia się dopiero, gdy rozszerzone są
+obie polityki. Gwarancja izolacji jest przez to nienaruszona, ale nie czytaj tego zestawu jako
+dowodu na poprawność polityki `UPDATE` w oderwaniu od `SELECT`.
+
 ## Jak to uruchomić
 
 ```bash
 npm test
 ```
 
-Stan na 2026-09-03: 3 pliki, 47 testów, wszystkie zielone. Tryb ciągły: `npm run test:watch`.
+Zestaw jednostkowy: 4 pliki, 68 testów, bez Dockera.
 
-Testy leżą obok swojego przedmiotu jako `src/**/*.test.ts`. Alias `@/*` rozwiązuje
-`vitest.config.ts` lustrzanie wobec `tsconfig.json` — rozjazd między nimi sprawia, że testy
-importują co innego niż build.
+```bash
+npm run test:integration
+```
+
+Zestaw integracyjny: 1 plik, 6 testów. **Wymaga `npx supabase start`**, czyli Dockera i ~7 GB RAM.
+
+Testy leżą obok swojego przedmiotu jako `src/**/*.test.ts`, integracyjne jako
+`src/**/*.integration.test.ts` — konfiguracja jednostkowa wyklucza te drugie, żeby `npm test`
+został szybki i niezależny od Dockera. Alias `@/*` rozwiązują obie konfiguracje lustrzanie
+wobec `tsconfig.json`; rozjazd między nimi sprawia, że testy importują co innego niż build.
 
 ## Czego świadomie nie testujemy
 
-- **Testów integracyjnych i end-to-end nie ma.** Ścieżkę przez przeglądarkę pokrywa weryfikacja
-  ręczna spisana w planach zmian. Wprowadzenie drugiego narzędzia to osobna decyzja.
+- **Testów end-to-end przez przeglądarkę nie ma.** Ścieżkę przez interfejs pokrywa weryfikacja
+  ręczna spisana w planach zmian. Wprowadzenie trzeciego narzędzia to osobna decyzja.
 - **Komponentów React** — obecne są cienkie i bez logiki poza walidacją formularza po stronie
   klienta, która i tak jest dublowana na serwerze.
 - **Konfiguracji Astro, Tailwinda i adaptera** — awaria jest głośna, build nie przechodzi.

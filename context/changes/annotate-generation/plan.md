@@ -462,19 +462,19 @@ Rollback samej migracji wymaga migracji odwrotnej, nie `git revert`.
 
 #### Automated
 
-- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
-- [x] 4.2 Typy przechodzą: `npx astro check`
-- [x] 4.3 Lint na zmienionych plikach przechodzi
-- [x] 4.4 Żądanie anonimowe do `/generations` zwraca przekierowanie
+- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration` — 1609f68
+- [x] 4.2 Typy przechodzą: `npx astro check` — 1609f68
+- [x] 4.3 Lint na zmienionych plikach przechodzi — 1609f68
+- [x] 4.4 Żądanie anonimowe do `/generations` zwraca przekierowanie — 1609f68
 
 #### Manual
 
-- [x] 4.5 Zalogowany widzi wyłącznie własne pozycje
-- [x] 4.6 Nadanie tytułu widoczne od razu i po odświeżeniu
-- [x] 4.7 Zmiana istniejącego tytułu działa
-- [x] 4.8 Wyczyszczenie tytułu przywraca początek tekstu
-- [x] 4.9 Pusta historia pokazuje zrozumiały stan
-- [x] 4.10 Zbyt długi tytuł pokazuje komunikat przy polu
+- [x] 4.5 Zalogowany widzi wyłącznie własne pozycje — 1609f68
+- [x] 4.6 Nadanie tytułu widoczne od razu i po odświeżeniu — 1609f68
+- [x] 4.7 Zmiana istniejącego tytułu działa — 1609f68
+- [x] 4.8 Wyczyszczenie tytułu przywraca początek tekstu — 1609f68
+- [x] 4.9 Pusta historia pokazuje zrozumiały stan — 1609f68
+- [x] 4.10 Zbyt długi tytuł pokazuje komunikat przy polu — 1609f68
 
 ### Phase 5: Aktualizacja test-planu i roadmapy
 
