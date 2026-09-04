@@ -73,17 +73,17 @@ sekwencjonowania `learn` decyduje o remisach.
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status   |
-| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | -------- |
-| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done     |
+| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
+| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
+| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done        |
 | S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
-| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed |
-| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed |
-| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed |
-| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed |
-| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed |
-| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done     |
+| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed    |
+| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed    |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
+| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
+| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
+| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done        |
 
 ## Streams
 
@@ -161,13 +161,19 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   - ~~Który dostawca i model?~~ Rozstrzygnięte 2026-09-03: Cloudflare Workers AI,
     `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, przez binding (bez klucza API). Szczegóły
     i pozostałe ryzyko jakościowe w `## Open Roadmap Questions` #1. — Block: no.
-  - Czy Llama 3.3 70B utrzyma kontrakt formatu po polsku — dowcip z puentą w 60 słowach?
-    Nie zweryfikowane. To nie blokuje planowania (interfejs do dostawcy jest ten sam
-    niezależnie od odpowiedzi), ale jest głównym ryzykiem dowiezienia tego plastra.
-    Zmierz promptem, zanim napiszesz walidator. — Owner: autor. Block: no.
-  - Jak zdefiniowany jest „temat niedozwolony"? `## Business Logic` zobowiązuje się do odmowy,
-    ale granicy kategorii nie definiuje. Kontrola długości 3–80 znaków da się zaplanować bez
-    tego; odmowa treściowa nie. — Owner: autor. Block: no.
+  - ~~Czy Llama 3.3 70B utrzyma kontrakt formatu po polsku?~~ **ZMIERZONE 2026-09-04.**
+    Długość: tak — 18–38 słów przy limicie 60, 5 z 5 próbek w limicie, czas 1,1–4,0 s,
+    czyli w połowie budżetu NFR. **Puenta: nie zawsze** — dwa z wygenerowanych tekstów
+    przeszły kontrakt, nie będąc dowcipami (poprawne obserwacje bez puenty). Kontrakt
+    egzekwuje długość i czystość; obietnicę puenty niesie wyłącznie prompt. Szczegóły
+    w zestawie R-06 w `test-plan.md`. — Block: no.
+    Warunek konieczny odkryty przy okazji: wywołanie musi używać `messages`, nie surowego
+    `prompt` — inaczej model wpada w pętle powtórzeń i pisze 103–121 słów.
+  - ~~Jak zdefiniowany jest „temat niedozwolony"?~~ **ROZSTRZYGNIĘTE 2026-09-04**: polegamy
+    na odmowie modelu, mapowanej na kod `TOPIC_REJECTED`. Własna lista wzorców byłaby
+    moderacją treści, którą PRD `## Non-Goals` wyklucza. Rozpoznanie odmowy jest heurystyczne
+    i celowo wąskie — fałszywe trafienie zamieniłoby poprawny dowcip w komunikat „zmień
+    temat". — Block: no.
   - Trzy presety długości czy suwak? FR-005 koduje presety, więc plan może ruszyć — ale jeśli
     zmieniasz, zmień przed planowaniem, nie po. — Owner: autor. Block: no.
 - **Risk:** To jest gwiazda przewodnia i jedyny plaster, który dotyka nowej integracji, więc
@@ -292,6 +298,13 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Parallel with:** S-04, S-05
 - **Blockers:** —
 - **Unknowns:** —
+- **Zakres zwężony 2026-09-04 przez `S-01`:** mechanizm jest gotowy i dziedziczony w całości —
+  moduł dostawcy (`src/lib/llm.ts`), walidator i presety (`format-contract.ts`, w tym limity
+  dla opowiadania 150/275/400), budowanie promptu z regułą ponownej próby (`prompt.ts`),
+  endpoint z dzielonym budżetem czasu, ekran. Ten plaster dokłada wyłącznie: dopuszczenie
+  `story` w schemacie żądania (`generate-request.ts` przyjmuje dziś tylko `joke`), wybór
+  formatu w interfejsie i **zmierzenie limitów opowiadania** — dokładnie tak, jak `S-01`
+  zmierzył dowcip. Liczby 150/275/400 są wyprowadzone z PRD, nie zmierzone.
 - **Risk:** PRD trzyma ten format na uzasadnieniu technicznym, nie personalnym, i mówi to
   wprost: dłuższa forma trudniej utrzymuje strukturę, więc mocniej sprawdza kontrakt formatu
   niż dowcip. Tu też najpierw uderzy NFR opóźnienia — to jedyny plaster celujący w budżet
@@ -355,10 +368,12 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
    realnym użytkowniku wystarczy ułamek tego; liczba do dobrania w planie `S-04`.
    Rozróżnienie limitu per format **nie jest potrzebne** — sufit neuronowy sam w sobie
    wycenia opowiadanie drożej niż dowcip.
-3. **Jak zdefiniowany jest „temat niedozwolony"?** PRD `## Open Questions` #3. Sekcja
-   `## Business Logic` zobowiązuje się do odmowy bez wyznaczenia granicy kategorii. Nie blokuje planowania
-   `S-01` (kontrola długości 3–80 znaków stoi osobno), ale blokuje ścieżkę odmowy treściowej
-   z FR-007. — Owner: autor. Block: częściowo `S-01`, `S-07`.
+3. ~~**Jak zdefiniowany jest „temat niedozwolony"?**~~ **ROZSTRZYGNIĘTE 2026-09-04**: polegamy na odmowie modelu, mapowanej na `TOPIC_REJECTED`; własna lista byłaby moderacją treści wykluczoną w PRD `## Non-Goals`. PRD `## Open Questions` #3.
+   Rozpoznanie odmowy jest heurystyczne — model odmawia tekstem, nie kodem — i celowo wąskie:
+   fałszywe trafienie zamieniłoby poprawny dowcip w komunikat „zmień temat". Heurystyka żyje
+   w jednym miejscu (`src/lib/prompt.ts`) i jest pokryta testem, w tym przypadkami dowcipów,
+   które zawierają frazy przypominające odmowę. Granicę kategorii definiuje więc **dostawca**,
+   nie my — i może ją zmienić bez zapowiedzi. — Block: nie blokuje.
 4. **Trzy presety długości czy suwak liczby słów?** PRD `## Open Questions` #2. FR-005 koduje
    presety, więc planowanie może ruszyć — ale zmiana po zaplanowaniu `S-01` to przeróbka.
    — Owner: autor. Block: nie blokuje.

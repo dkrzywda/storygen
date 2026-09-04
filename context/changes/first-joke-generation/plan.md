@@ -546,10 +546,10 @@ o tym wiedzieć.
 
 #### Automated
 
-- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
-- [x] 4.2 Typy przechodzą: `npx astro check`
-- [x] 4.3 Lint na zmienionych plikach przechodzi
-- [x] 4.4 Żądanie anonimowe do `/generate` zwraca przekierowanie
+- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration` — 0a6c571
+- [x] 4.2 Typy przechodzą: `npx astro check` — 0a6c571
+- [x] 4.3 Lint na zmienionych plikach przechodzi — 0a6c571
+- [x] 4.4 Żądanie anonimowe do `/generate` zwraca przekierowanie — 0a6c571
 
 #### Manual
 

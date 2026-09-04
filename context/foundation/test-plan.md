@@ -17,18 +17,21 @@ odpowiada 200, wygląda normalnie, a gwarancja jest już naruszona.
 
 ## Rejestr ryzyk
 
-| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                             | Stan                   |
-| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ----------------------------------------- | ---------------------- |
-| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**            |
-| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**            |
-| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts`              | **pokryte**            |
-| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts`              | **pokryte**            |
-| R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts` | **pokryte**            |
-| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | —                                         | luka, wchodzi z `S-01` |
-| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | —                                         | luka, wchodzi z `S-04` |
+| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                             | Stan                                 |
+| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ----------------------------------------- | ------------------------------------ |
+| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**                          |
+| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**                          |
+| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts`              | **pokryte**                          |
+| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts`              | **pokryte**                          |
+| R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts` | **pokryte**                          |
+| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | `src/lib/format-contract.test.ts`         | **częściowo pokryte** — patrz zestaw |
+| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | —                                         | luka, wchodzi z `S-04`               |
 
-Ryzyka R-06 i R-07 są zapisane celowo, mimo że nie mają jeszcze testów: kod, którego dotyczą,
-nie istnieje. Wchodzą razem ze swoimi plastrami z roadmapy.
+Ryzyko R-07 jest zapisane celowo, mimo że nie ma jeszcze testu: kod, którego dotyczy,
+nie istnieje. Wchodzi razem ze swoim plastrem z roadmapy.
+
+**R-06 jest pokryte tylko częściowo i to jest świadome.** Szczegóły w jego zestawie poniżej —
+przeczytaj je, zanim uznasz kontrakt formatu za zabezpieczony.
 
 ## Zestaw R-01 — pusty komunikat błędu
 
@@ -81,6 +84,33 @@ a `lessons.md` zakazuje przekazywania cudzych komunikatów na powierzchnię prod
 **Co jest testowane.** Porażka schematu zwraca mapę pól z komunikatem **zdefiniowanym
 w schemacie**, każde niepoprawne pole osobno, a błąd całego formularza ląduje pod kluczem
 formularza. Dodatkowo `jsonError` wyprowadza status z kodu, a nie z ręcznego wpisu.
+
+## Zestaw R-06 — kontrakt formatu (pokrycie częściowe)
+
+**Ryzyko.** Wyjście modelu łamie kontrakt formatu, a mimo to trafia do użytkownika. Tekst jest
+poprawny językowo i wygląda normalnie — jest tylko za długi, urwany albo poprzedzony wstępem.
+Bez sprawdzenia nikt tego nie zauważy, bo nic nie krzyczy.
+
+**Co jest testowane.** Liczba słów dokładnie na limicie i jeden ponad, dla każdego presetu.
+Próg minimalny. Prefiksy („Oto dowcip:"), markdown, tekst pusty i złożony z białych znaków.
+Osobno: **obcięcie na suficie `max_tokens`** — tekst bez znaku końca zdania jest odrzucany,
+bo obcięty tekst ma poprawną długość i przechodzi każdą inną kontrolę. To ryzyko wprowadził
+sam mechanizm generowania, więc test powstał razem z nim.
+
+W zestawie są też **dwa prawdziwe wyjścia modelu** zmierzone 2026-09-04. Gdyby ktoś zaostrzył
+walidator tak, że odrzuca to, co model realnie produkuje, test spadnie na czerwono — zamiast
+odkrycia tego przez użytkownika.
+
+**Czego test NIE dowodzi — i to jest istota pokrycia częściowego.** Walidator sprawdza
+**długość i czystość, nie obecność puenty**. Mechanicznie się jej nie da sprawdzić, a drugie
+wywołanie modelu jako sędziego podwoiłoby czas i neurony, wywracając NFR 15 s. Puentę wymusza
+wyłącznie prompt.
+
+Konsekwencja jest obserwowalna, nie teoretyczna: w weryfikacji `S-01` (2026-09-04) **dwa kolejne
+wygenerowane teksty przeszły kontrakt, nie będąc dowcipami** — były poprawnymi obserwacjami bez
+puenty, mieszczącymi się w limicie. PRD `## Business Logic` obiecuje, że wyjście „kończy się
+puentą"; kod tego nie egzekwuje. Jeśli ta obietnica ma być dotrzymana, potrzebny jest albo lepszy
+prompt, albo inny model, albo zmiana PRD — nie kolejny test.
 
 ## Zestaw R-05 — izolacja kont
 
