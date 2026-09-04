@@ -450,18 +450,18 @@ przed tą zmianą przestanie pokazywać tamten tekst i pokaże komunikat domyśl
 
 #### Manual
 
-- [ ] 3.5 Logowanie błędnym hasłem — polski komunikat, kod w URL-u
-- [ ] 3.6 Rejestracja na zajęty adres — polski komunikat
-- [ ] 3.7 Dowolny tekst w `?error=` nie renderuje się
-- [ ] 3.8 Brak konfiguracji Supabase — polski komunikat, nie angielski
+- [x] 3.5 Logowanie błędnym hasłem — polski komunikat, kod w URL-u — c59250c
+- [x] 3.6 Rejestracja na zajęty adres — polski komunikat — c59250c
+- [x] 3.7 Dowolny tekst w `?error=` nie renderuje się — c59250c
+- [x] 3.8 Brak konfiguracji Supabase — polski komunikat, nie angielski — c59250c
 
 ### Phase 4: Zapis kontraktu w CLAUDE.md
 
 #### Automated
 
-- [x] 4.1 Nieaktualne zapisy zniknęły z CLAUDE.md
-- [x] 4.2 `npx prettier --check CLAUDE.md` przechodzi
+- [x] 4.1 Nieaktualne zapisy zniknęły z CLAUDE.md — 55593b0
+- [x] 4.2 `npx prettier --check CLAUDE.md` przechodzi — 55593b0
 
 #### Manual
 
-- [ ] 4.3 Reguła da się zastosować bez otwierania tego planu
+- [x] 4.3 Reguła da się zastosować bez otwierania tego planu — 55593b0
