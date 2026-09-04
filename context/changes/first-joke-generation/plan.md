@@ -516,9 +516,9 @@ o tym wiedzieć.
 
 #### Automated
 
-- [x] 2.1 Testy przechodzą: `npm test`
-- [x] 2.2 Typy przechodzą: `npx astro check`
-- [x] 2.3 Lint na nowych plikach przechodzi
+- [x] 2.1 Testy przechodzą: `npm test` — 5a600d4
+- [x] 2.2 Typy przechodzą: `npx astro check` — 5a600d4
+- [x] 2.3 Lint na nowych plikach przechodzi — 5a600d4
 
 #### Manual
 
