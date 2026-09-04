@@ -48,6 +48,20 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 404,
     message: "Nie znaleziono takiej pozycji.",
   },
+  TOPIC_REJECTED: {
+    // Odmowa modelu jest **spodziewana sciezka**, nie awaria. Wlasny kod, bo
+    // uzytkownik ma tu co zrobic — zmienic temat — w odroznieniu od pozostalych dwoch.
+    status: 422,
+    message: "Nie mogę napisać tekstu na ten temat. Spróbuj sformułować go inaczej.",
+  },
+  FORMAT_CONTRACT_FAILED: {
+    status: 502,
+    message: "Nie udało się napisać tekstu w wymaganej formie. Spróbuj jeszcze raz.",
+  },
+  GENERATION_TIMEOUT: {
+    status: 504,
+    message: "Generowanie trwało zbyt długo. Spróbuj jeszcze raz.",
+  },
   INTERNAL: {
     status: 500,
     message: "Coś poszło nie tak. Spróbuj ponownie za chwilę.",

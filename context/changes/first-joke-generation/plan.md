@@ -501,24 +501,24 @@ o tym wiedzieć.
 
 #### Automated
 
-- [x] 1.1 Typy przechodzą: `npx astro check`
-- [x] 1.2 Lint na zmienionych plikach przechodzi
-- [x] 1.3 Ścieżka pomiarowa zwraca niepusty tekst i czas odpowiedzi
+- [x] 1.1 Typy przechodzą: `npx astro check` — 4000e29
+- [x] 1.2 Lint na zmienionych plikach przechodzi — 4000e29
+- [x] 1.3 Ścieżka pomiarowa zwraca niepusty tekst i czas odpowiedzi — 4000e29
 
 #### Manual
 
-- [x] 1.4 Kilkanaście wyjść ocenionych ręcznie — polszczyzna, dowcip, puenta
-- [x] 1.5 Zanotowana rozpiętość liczby słów
-- [x] 1.6 Zanotowany czas odpowiedzi wobec połowy budżetu 15 s
-- [x] 1.7 Decyzja: czy kontrakt formatu jest osiągalny na tym modelu
+- [x] 1.4 Kilkanaście wyjść ocenionych ręcznie — polszczyzna, dowcip, puenta — 4000e29
+- [x] 1.5 Zanotowana rozpiętość liczby słów — 4000e29
+- [x] 1.6 Zanotowany czas odpowiedzi wobec połowy budżetu 15 s — 4000e29
+- [x] 1.7 Decyzja: czy kontrakt formatu jest osiągalny na tym modelu — 4000e29
 
 ### Phase 2: Kontrakt formatu
 
 #### Automated
 
-- [ ] 2.1 Testy przechodzą: `npm test`
-- [ ] 2.2 Typy przechodzą: `npx astro check`
-- [ ] 2.3 Lint na nowych plikach przechodzi
+- [x] 2.1 Testy przechodzą: `npm test`
+- [x] 2.2 Typy przechodzą: `npx astro check`
+- [x] 2.3 Lint na nowych plikach przechodzi
 
 #### Manual
 
@@ -528,11 +528,11 @@ o tym wiedzieć.
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [ ] 3.3 Typy przechodzą: `npx astro check`
-- [ ] 3.4 Lint na zmienionych plikach przechodzi
-- [ ] 3.5 Ścieżka pomiarowa nie istnieje
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
+- [x] 3.3 Typy przechodzą: `npx astro check`
+- [x] 3.4 Lint na zmienionych plikach przechodzi
+- [x] 3.5 Ścieżka pomiarowa nie istnieje
 
 #### Manual
 

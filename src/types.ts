@@ -24,7 +24,16 @@ export type ApiErrorCode =
   | "NOT_CONFIGURED"
   | "UNAUTHORIZED"
   | "NOT_FOUND"
+  | "TOPIC_REJECTED"
+  | "FORMAT_CONTRACT_FAILED"
+  | "GENERATION_TIMEOUT"
   | "INTERNAL";
+
+/** Format generowanego tekstu. `story` wchodzi z `S-07`, ale kontrakt zna go od poczatku. */
+export type GenerationFormat = "joke" | "story";
+
+/** Preset dlugosci wybierany przez uzytkownika (FR-005). */
+export type LengthPreset = "short" | "medium" | "long";
 
 /** Mapa nazwa pola → komunikat po polsku. Puste pole klucza (`_`) oznacza blad calego formularza. */
 export type ApiFieldErrors = Record<string, string>;
