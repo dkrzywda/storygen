@@ -3,7 +3,7 @@ project: "Storygen"
 version: 1
 status: draft
 created: 2026-09-03
-updated: 2026-09-03
+updated: 2026-09-04
 prd_version: 1
 main_goal: learn
 top_blocker: decisions
@@ -73,17 +73,17 @@ sekwencjonowania `learn` decyduje o remisach.
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
-| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
-| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | in-progress |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | proposed    |
-| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed    |
-| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed    |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
-| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
-| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
-| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
-| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | in-progress |
+| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status   |
+| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | -------- |
+| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done     |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | proposed |
+| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed |
+| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed |
+| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed |
+| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed |
+| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done     |
 
 ## Streams
 
@@ -144,7 +144,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   puste i użytkownik dostaje pustą czerwoną ramkę (`lessons.md`, wpis o pustym komunikacie).
   Sekwencjonowane pierwsze, bo dokładanie tego po generowaniu znaczy retrofit czterech
   trybów awarii zamiast jednego.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -317,7 +317,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   następnym krokiem jest regeneracja w miejscu — ale ta wymaga przeredagowania Non-Goala,
   więc jest decyzją produktową, nie implementacyjną. Nie zależy od dostawcy LLM, więc da się
   ją zaplanować i dowieźć niezależnie od blokady na `S-01`.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -408,5 +408,5 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 
 ## Done
 
-(Pusta. `/10x-archive` dopisuje tu wpis i przestawia Status pozycji na `done`, gdy zmiana
-o pasującym `Change ID` zostaje zarchiwizowana. Nie wypełniać z góry.)
+- **F-01: (foundation) jeden, zapisany kształt odpowiedzi dla endpointów nie-auth, walidacja wejścia na granicy API, oraz jeden mechanizm mapowania błędów na komunikaty po polsku** — Archived 2026-09-04 → `context/archive/2026-09-03-api-error-contract/`. Lesson: —.
+- **S-08: użytkownik nadaje pozycji w historii własny tytuł i może go później zmienić** — Archived 2026-09-04 → `context/archive/2026-09-03-annotate-generation/`. Lesson: —.
