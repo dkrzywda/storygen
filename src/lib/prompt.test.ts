@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildRetryUserPrompt, buildSystemPrompt, buildUserPrompt, looksLikeRefusal, maxTokensFor } from "@/lib/prompt";
+import {
+  CREATIVE_TEMPERATURE,
+  buildRetryUserPrompt,
+  buildSystemPrompt,
+  buildUserPrompt,
+  looksLikeRefusal,
+  maxTokensFor,
+} from "@/lib/prompt";
 import { generateRequestSchema } from "@/lib/generate-request";
 import { validate } from "@/lib/validation";
 
@@ -21,6 +28,16 @@ describe("buildUserPrompt", () => {
     expect(prompt).toContain("początek");
   });
 
+  // Przyklady sa jedyna rzecza, ktora pokazuje modelowi BUDOWE, a nie tylko ja opisuje.
+  it("dla dowcipu niesie przyklady dobrej formy", () => {
+    expect(buildUserPrompt(input)).toContain("Przykłady dobrej formy");
+  });
+
+  it("dla opowiadania NIE niesie przykladow dowcipow", () => {
+    const prompt = buildUserPrompt({ ...input, format: "story", wordLimit: 400 });
+    expect(prompt).not.toContain("Przykłady dobrej formy");
+  });
+
   it("temat trafia do promptu bez modyfikacji", () => {
     const odd = "temat z: dwukropkiem i „cudzysłowem”";
     expect(buildUserPrompt({ ...input, topic: odd })).toContain(odd);
@@ -28,10 +45,22 @@ describe("buildUserPrompt", () => {
 });
 
 describe("buildSystemPrompt", () => {
-  it("zakazuje wstepu i formatowania", () => {
+  it("zakazuje komentarza i wymusza czysty tekst", () => {
     const system = buildSystemPrompt("joke");
-    expect(system).toContain("bez wstępu");
-    expect(system).toContain("bez formatowania");
+    expect(system).toContain("nie dopisujesz komentarza");
+    expect(system).toContain("czystym tekstem");
+  });
+
+  // Zmierzone 2026-09-04: bez jawnego zakazu model pisal DEFINICJE zamiast dowcipow
+  // ("Kawa to ulubiony napoj wielu ludzi..."). To byl dokladny ksztalt zlych wyjsc.
+  it("zakazuje definicji i obserwacji — to byl realny tryb awarii", () => {
+    expect(buildSystemPrompt("joke")).toContain("NIE piszesz definicji");
+  });
+
+  it("opisuje budowe dowcipu, nie tylko wymaga puenty", () => {
+    const system = buildSystemPrompt("joke");
+    expect(system).toContain("zawiązanie");
+    expect(system).toContain("skręca");
   });
 
   // Zmierzone w fazie 1: bez tego zakazu model wpada w petle powtorzen.
@@ -54,6 +83,12 @@ describe("buildRetryUserPrompt", () => {
 
   it("rozni sie od promptu pierwszej proby — inaczej powtorka bylaby loteria", () => {
     expect(buildRetryUserPrompt(input, "powod")).not.toBe(buildUserPrompt(input));
+  });
+});
+
+describe("CREATIVE_TEMPERATURE", () => {
+  it("jest wyzsza niz domyslna — humor mieszka w zaskoczeniu", () => {
+    expect(CREATIVE_TEMPERATURE).toBeGreaterThan(0.8);
   });
 });
 

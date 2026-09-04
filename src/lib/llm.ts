@@ -55,6 +55,8 @@ export interface GenerateRequest {
   user: string;
   /** Twardy sufit na dlugosc odpowiedzi. Bez niego model wpada w petle powtorzen. */
   maxTokens: number;
+  /** Wyzsza dla tekstu kreatywnego — patrz CREATIVE_TEMPERATURE w prompt.ts. */
+  temperature: number;
 }
 
 /**
@@ -84,6 +86,7 @@ export async function generateText(request: GenerateRequest, budgetMs: number): 
           { role: "user", content: request.user },
         ],
         max_tokens: request.maxTokens,
+        temperature: request.temperature,
       },
       { signal: controller.signal },
     );

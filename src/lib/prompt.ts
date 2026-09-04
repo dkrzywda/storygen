@@ -9,39 +9,76 @@ import type { GenerationFormat } from "@/types";
  */
 
 /**
+ * Temperatura dla tekstu kreatywnego.
+ *
+ * Zmierzone 2026-09-04: przy domyslnej (~0.6) i ubogim prompcie model produkowal
+ * DEFINICJE zamiast dowcipow — "Kawa to ulubiony napoj wielu ludzi, dajacy energie
+ * i radosc". Humor mieszka w zaskoczeniu, a niska temperatura produkuje zdania
+ * przewidywalne. Razem z promptem ponizej: 0 z 3 prawdziwych dowcipow → 2 z 3.
+ *
+ * Uwaga: wyzsza temperatura zwieksza tez ryzyko bledow jezykowych, wyrazne przy
+ * dluzszych tekstach. Przy `S-07` (opowiadanie, 400 slow) to trzeba zmierzyc osobno.
+ */
+export const CREATIVE_TEMPERATURE = 0.95;
+
+/**
  * Sufit tokenow wyprowadzony z limitu slow.
  *
  * Polski jest kosztowny tokenowo (~3 tokeny na slowo), a zapas jest konieczny, zeby
- * model zdazyl domknac zdanie zamiast zostac ucietym w polowie puenty. Obciecie lapie
- * potem walidator kontraktu, ale lepiej mu go nie podawac.
+ * model zdazyl domknac zdanie zamiast zostac ucietym w polowie puenty.
  */
 export function maxTokensFor(wordLimit: number): number {
   return wordLimit * 4;
 }
 
-const FORMAT_NAME: Record<GenerationFormat, string> = {
-  joke: "dowcipów",
-  story: "opowiadań",
-};
-
-const FORMAT_RULE: Record<GenerationFormat, string> = {
-  joke: "Zakończ puentą.",
-  story: "Tekst ma mieć początek, rozwinięcie i zakończenie.",
-};
-
 /**
  * Rola systemowa — trwale zasady, identyczne w obu probach.
  *
- * Zmierzone w fazie 1 (2026-09-04): bez roli systemowej i bez sufitu tokenow model
- * wpada w degeneracyjne petle powtorzen. Zakaz powtarzania linii jest tu wlasnie z tego powodu.
+ * Kluczowe sa DWA elementy, oba wynikaja z pomiaru:
+ * 1. Opis, czym jest dowcip (zawiazanie → skret) — bez tego model pisze obserwacje.
+ * 2. Jawny ZAKAZ definicji i obserwacji — bo to byl dokladny ksztalt zlych wyjsc.
+ *
+ * Zakaz powtarzania linii zostaje z fazy 1: bez niego model wpadal w petle.
  */
-export function buildSystemPrompt(format: GenerationFormat): string {
-  return [
-    `Jesteś autorem krótkich ${FORMAT_NAME[format]} po polsku.`,
-    "Odpowiadasz wyłącznie treścią — bez wstępu, bez komentarza, bez formatowania.",
+const SYSTEM: Record<GenerationFormat, string> = {
+  joke: [
+    "Jesteś polskim komikiem piszącym krótkie dowcipy.",
+    "Dowcip ma dwie części: zawiązanie, które prowadzi czytelnika w jedną stronę, i puentę, która skręca w inną.",
+    "Puenta to ostatnie zdanie i musi zaskakiwać.",
+    "NIE piszesz definicji, obserwacji ani opisów — „Kawa to napój, który pobudza” nie jest dowcipem.",
+    "NIE tłumaczysz dowcipu i nie dopisujesz komentarza.",
     "Nigdy nie powtarzasz tej samej linii.",
-    "Zawsze kończysz pełnym zdaniem.",
-  ].join(" ");
+    "Odpowiadasz wyłącznie treścią dowcipu, czystym tekstem, kończąc pełnym zdaniem.",
+  ].join(" "),
+  story: [
+    "Jesteś polskim autorem krótkich opowiadań.",
+    "Opowiadanie ma początek, rozwinięcie i zakończenie — konkretną sytuację, nie rozważania.",
+    "NIE piszesz definicji ani obserwacji ogólnych.",
+    "NIE tłumaczysz tekstu i nie dopisujesz komentarza.",
+    "Nigdy nie powtarzasz tej samej linii.",
+    "Odpowiadasz wyłącznie treścią, czystym tekstem, kończąc pełnym zdaniem.",
+  ].join(" "),
+};
+
+/**
+ * Przyklady formy (few-shot). Pokazuja SKRET, nie tresc — model ma nasladowac
+ * budowe, nie temat. Dwa wystarcza; wiecej zjada budzet tokenow wejscia.
+ */
+const EXAMPLES: Record<GenerationFormat, string[]> = {
+  joke: [
+    "Kupiłem książkę o cierpliwości. Nadal czekam na dostawę.",
+    "Lekarz mówi, że mam za wysokie ciśnienie. Odpowiadam, że to nie moje — to od rachunków.",
+  ],
+  story: [],
+};
+
+const CLOSING_RULE: Record<GenerationFormat, string> = {
+  joke: "Ostatnie zdanie musi być puentą.",
+  story: "Tekst ma mieć początek, rozwinięcie i zakończenie.",
+};
+
+export function buildSystemPrompt(format: GenerationFormat): string {
+  return SYSTEM[format];
 }
 
 export interface PromptInput {
@@ -51,10 +88,14 @@ export interface PromptInput {
 }
 
 export function buildUserPrompt({ topic, format, wordLimit }: PromptInput): string {
+  const examples = EXAMPLES[format];
+  const lead = examples.length > 0 ? ["Przykłady dobrej formy:", "", ...examples.flatMap((e) => [e, ""])] : [];
+
   return [
+    ...lead,
     `Napisz tekst na temat: ${topic.trim()}.`,
     `Maksymalnie ${String(wordLimit)} słów.`,
-    FORMAT_RULE[format],
+    CLOSING_RULE[format],
   ].join("\n");
 }
 
@@ -74,10 +115,6 @@ export function buildRetryUserPrompt(input: PromptInput, reason: string): string
  * Model nie zwraca kodu — odmawia **tekstem**, wiec rozpoznanie jest z natury
  * heurystyczne. Trzymane w jednym miejscu i pokryte testem, bo rozsypane po kodzie
  * rozjechaloby sie przy pierwszej zmianie modelu.
- *
- * Heurystyka jest **celowo waska**: falszywe rozpoznanie odmowy zamienia poprawny
- * dowcip w komunikat "zmien temat", co jest gorsze niz przepuszczenie odmowy do
- * walidatora kontraktu, ktory i tak ja odrzuci.
  */
 const REFUSAL_MARKERS = [
   "nie mogę",

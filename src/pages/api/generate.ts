@@ -4,7 +4,14 @@ import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
 import { generateRequestSchema } from "@/lib/generate-request";
 import { checkFormatContract, wordLimitFor } from "@/lib/format-contract";
-import { buildRetryUserPrompt, buildSystemPrompt, buildUserPrompt, looksLikeRefusal, maxTokensFor } from "@/lib/prompt";
+import {
+  CREATIVE_TEMPERATURE,
+  buildRetryUserPrompt,
+  buildSystemPrompt,
+  buildUserPrompt,
+  looksLikeRefusal,
+  maxTokensFor,
+} from "@/lib/prompt";
 import { LlmTimeoutError, generateText } from "@/lib/llm";
 import type { ApiErrorCode, GenerationFormat, LengthPreset } from "@/types";
 
@@ -62,7 +69,7 @@ export const POST: APIRoute = async (context) => {
   };
 
   const attempt = async (user: string, budgetMs: number): Promise<Attempt> =>
-    generateText({ system, user, maxTokens }, budgetMs);
+    generateText({ system, user, maxTokens, temperature: CREATIVE_TEMPERATURE }, budgetMs);
 
   try {
     const first = await attempt(buildUserPrompt(promptInput), firstAttemptMs);
