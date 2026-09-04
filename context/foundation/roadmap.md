@@ -76,7 +76,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status   |
 | ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | -------- |
 | F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done     |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | proposed |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed |
 | S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed |
@@ -178,7 +178,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   kosztowe i wynika z kolejności: między dowiezieniem `S-01` a `S-04` generowanie stoi pod
   publicznym adresem z otwartą rejestracją i bez żadnego sufitu. Jeśli to nie do przyjęcia,
   przestaw `S-04` przed `S-03` albo trzymaj rejestrację zamkniętą do czasu `S-04`.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-02: Użytkownik przechodzi rejestrację i logowanie w całości po polsku
 
@@ -321,17 +321,17 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                      |
-| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ---------------------------------------------------------- |
-| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                             |
-| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | no                    | Blokada: nierozstrzygnięty dostawca i model LLM            |
-| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | no                    | Czeka na F-01                                              |
-| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | no                    | Czeka na S-01                                              |
-| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                      |
-| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                              |
-| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                              |
-| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                              |
-| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1` |
+| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                        |
+| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ------------------------------------------------------------ |
+| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                               |
+| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1` |
+| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | no                    | Czeka na F-01                                                |
+| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | no                    | Czeka na S-01                                                |
+| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                        |
+| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                                |
+| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                |
+| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                                |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`   |
 
 ## Open Roadmap Questions
 

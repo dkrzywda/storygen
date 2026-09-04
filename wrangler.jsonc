@@ -1,18 +1,22 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "storygen",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"compatibility_date": "2026-05-08",
-	"compatibility_flags": [
-		"nodejs_compat",
-		"global_fetch_strictly_public"
-	],
-	"assets": {
-		"binding": "ASSETS",
-		"directory": "./dist",
-		"not_found_handling": "404-page",
-	},
-	"observability": {
-		"enabled": true,
-	},
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "storygen",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-05-08",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+  },
+  // Workers AI przez binding, nie przez klucz API. To jest mechanizm, dzieki
+  // ktoremu guardrail z PRD ("poswiadczenia nigdy nie sa obserwowalne z produktu")
+  // spelnia sie strukturalnie: nie ma sekretu, ktory moglby wyciec.
+  // NIGDY nie dodawaj tu sekcji "vars" z kluczem — ten plik jest commitowany.
+  "ai": {
+    "binding": "AI",
+  },
+  "observability": {
+    "enabled": true,
+  },
 }
