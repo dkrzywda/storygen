@@ -1,0 +1,24 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import GenerateForm from "@/components/generate/GenerateForm";
+
+// Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania,
+// zanim ten kod sie wykona.
+---
+
+<Layout title="Wygeneruj dowcip">
+  <div class="bg-cosmic min-h-screen p-4 py-10">
+    <div class="mx-auto w-full max-w-xl">
+      <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+        Wygeneruj dowcip
+      </h1>
+      <p class="mb-8 text-sm text-blue-100/60">
+        Podaj temat i wybierz długość. Dowcip zmieści się w limicie słów i zakończy puentą.
+      </p>
+
+      <div class="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
+        <GenerateForm client:load />
+      </div>
+    </div>
+  </div>
+</Layout>

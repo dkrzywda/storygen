@@ -528,11 +528,11 @@ o tym wiedzieć.
 
 #### Automated
 
-- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [x] 3.3 Typy przechodzą: `npx astro check`
-- [x] 3.4 Lint na zmienionych plikach przechodzi
-- [x] 3.5 Ścieżka pomiarowa nie istnieje
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` — 0a2558a
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration` — 0a2558a
+- [x] 3.3 Typy przechodzą: `npx astro check` — 0a2558a
+- [x] 3.4 Lint na zmienionych plikach przechodzi — 0a2558a
+- [x] 3.5 Ścieżka pomiarowa nie istnieje — 0a2558a
 
 #### Manual
 
@@ -546,10 +546,10 @@ o tym wiedzieć.
 
 #### Automated
 
-- [ ] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
-- [ ] 4.2 Typy przechodzą: `npx astro check`
-- [ ] 4.3 Lint na zmienionych plikach przechodzi
-- [ ] 4.4 Żądanie anonimowe do `/generate` zwraca przekierowanie
+- [x] 4.1 Testy przechodzą: `npm test` oraz `npm run test:integration`
+- [x] 4.2 Typy przechodzą: `npx astro check`
+- [x] 4.3 Lint na zmienionych plikach przechodzi
+- [x] 4.4 Żądanie anonimowe do `/generate` zwraca przekierowanie
 
 #### Manual
 
@@ -564,8 +564,8 @@ o tym wiedzieć.
 
 #### Automated
 
-- [ ] 5.1 R-06 ma w test-planie status pokryte
-- [ ] 5.2 Prettier przechodzi na zmienionych dokumentach
+- [x] 5.1 R-06 ma w test-planie status pokryte
+- [x] 5.2 Prettier przechodzi na zmienionych dokumentach
 
 #### Manual
 
