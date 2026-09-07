@@ -299,31 +299,31 @@ Migracja dodaje wyłącznie politykę, nie rusza schematu ani danych — jest wi
 
 #### Automated
 
-- [x] 2.1 Typy przechodzą: `npx astro check`
-- [x] 2.2 Lint na zmienionym pliku przechodzi
-- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.1 Typy przechodzą: `npx astro check` — 2be05c7
+- [x] 2.2 Lint na zmienionym pliku przechodzi — 2be05c7
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test` — 2be05c7
 
 #### Manual
 
-- [x] 2.4 Żądanie bez sesji zwraca 401 z komunikatem po polsku
-- [x] 2.5 Identyfikator w złym formacie zwraca 404, nie 500
-- [x] 2.6 Nieistniejący i cudzy identyfikator zwracają ten sam 404
-- [x] 2.7 Usunięcie własnej pozycji zwraca 200, a wiersz zniknął z bazy
-- [x] 2.8 Log przy awarii nie zawiera treści usuwanej generacji
+- [x] 2.4 Żądanie bez sesji zwraca 401 z komunikatem po polsku — 2be05c7
+- [x] 2.5 Identyfikator w złym formacie zwraca 404, nie 500 — 2be05c7
+- [x] 2.6 Nieistniejący i cudzy identyfikator zwracają ten sam 404 — 2be05c7
+- [x] 2.7 Usunięcie własnej pozycji zwraca 200, a wiersz zniknął z bazy — 2be05c7
+- [x] 2.8 Log przy awarii nie zawiera treści usuwanej generacji — 2be05c7
 
 ### Phase 3: Interfejs
 
 #### Automated
 
-- [ ] 3.1 Typy przechodzą: `npx astro check`
-- [ ] 3.2 Lint na zmienionych i nowych plikach przechodzi
-- [ ] 3.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.1 Typy przechodzą: `npx astro check`
+- [x] 3.2 Lint na zmienionych i nowych plikach przechodzi
+- [x] 3.3 Testy jednostkowe przechodzą: `npm test`
 
 #### Manual
 
-- [ ] 3.4 Pierwszy klik pokazuje pytanie, nie usuwa
-- [ ] 3.5 „Anuluj" wraca do stanu wyjściowego i nie woła serwera
-- [ ] 3.6 Potwierdzenie usuwa pozycję i po przeładowaniu jej nie ma
-- [ ] 3.7 Ranking nie ma akcji usuwania, a ulubione ją mają
-- [ ] 3.8 Awaria żądania pokazuje komunikat po polsku, pozycja zostaje
-- [ ] 3.9 Usunięcie ocenionej pozycji usuwa ją z rankingu i z ulubionych
+- [x] 3.4 Pierwszy klik pokazuje pytanie, nie usuwa
+- [x] 3.5 „Anuluj" wraca do stanu wyjściowego i nie woła serwera
+- [x] 3.6 Potwierdzenie usuwa pozycję i po przeładowaniu jej nie ma
+- [x] 3.7 Ranking nie ma akcji usuwania, a ulubione ją mają
+- [x] 3.8 Awaria żądania pokazuje komunikat po polsku, pozycja zostaje
+- [x] 3.9 Usunięcie ocenionej pozycji usuwa ją z rankingu i z ulubionych

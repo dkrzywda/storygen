@@ -78,6 +78,9 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
 
       {
         tab === "ranking" ? (
+          /* Ranking NIE dostaje `deletable` i to jest znaczacy brak, nie zapomnienie:
+             ranking jest tablica wynikow do czytania, a zarzadzanie kolekcja dzieje sie
+             w historii i w ulubionych. Nie "naprawiaj" tego, dokladajac tu flage. */
           <GenerationList
             items={items}
             ranked
@@ -89,6 +92,7 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
         ) : (
           <GenerationList
             items={items}
+            deletable
             emptyTitle="Nie masz jeszcze ulubionych."
             emptyHint="Kliknij serce przy tekście, żeby trafił tutaj."
           />

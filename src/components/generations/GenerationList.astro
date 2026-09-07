@@ -1,6 +1,7 @@
 ---
 import TitleEditor from "@/components/generations/TitleEditor";
 import RatingControls from "@/components/generations/RatingControls";
+import DeleteButton from "@/components/generations/DeleteButton";
 import type { GenerationFormat } from "@/types";
 
 /**
@@ -25,11 +26,16 @@ interface Props {
   items: Item[];
   /** Numeracja pozycji — ma sens w rankingu, nie w historii. */
   ranked?: boolean;
+  /**
+   * Akcja usuwania. Domyslnie WYLACZONA i to jest zamierzone: nowy widok nad ta lista
+   * nie powinien dostawac nieodwracalnej akcji przez przypadek, tylko przez decyzje.
+   */
+  deletable?: boolean;
   emptyTitle: string;
   emptyHint: string;
 }
 
-const { items, ranked = false, emptyTitle, emptyHint } = Astro.props;
+const { items, ranked = false, deletable = false, emptyTitle, emptyHint } = Astro.props;
 
 function preview(content: string): string {
   const trimmed = content.trim();
@@ -67,9 +73,12 @@ const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeSty
                   initialFavourite={item.is_favourite}
                 />
               </div>
-              <p class="text-ink-subtle mt-3 text-xs">
-                {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
-              </p>
+              <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="text-ink-subtle text-xs">
+                  {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
+                </p>
+                {deletable && <DeleteButton client:load id={item.id} />}
+              </div>
             </div>
           </div>
         </li>

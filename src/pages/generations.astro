@@ -25,6 +25,7 @@ const items = supabase ? await fetchHistory(supabase) : [];
 
       <GenerationList
         items={items}
+        deletable
         emptyTitle="Nie masz jeszcze żadnych generacji."
         emptyHint="Pojawią się tutaj automatycznie, gdy tylko wygenerujesz pierwszy tekst."
       />
