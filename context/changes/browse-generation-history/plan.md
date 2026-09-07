@@ -245,21 +245,21 @@ Brak migracji — żadnej zmiany schematu ani danych. Cofnięcie to `git revert`
 
 #### Automated
 
-- [x] 2.1 Typy przechodzą: `npx astro check`
-- [x] 2.2 Lint na zmienionych plikach przechodzi
-- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
-- [x] 2.4 Testy integracyjne przechodzą bez zmian: `npm run test:integration`
-- [x] 2.5 Brak nowego odczytu: `generations.ts` zmieniony w jednej linii
-- [x] 2.6 Anonim na `/generations?open=…` dostaje 302
+- [x] 2.1 Typy przechodzą: `npx astro check` — 6e3ab05
+- [x] 2.2 Lint na zmienionych plikach przechodzi — 6e3ab05
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test` — 6e3ab05
+- [x] 2.4 Testy integracyjne przechodzą bez zmian: `npm run test:integration` — 6e3ab05
+- [x] 2.5 Brak nowego odczytu: `generations.ts` zmieniony w jednej linii — 6e3ab05
+- [x] 2.6 Anonim na `/generations?open=…` dostaje 302 — 6e3ab05
 
 #### Manual
 
-- [x] 2.7 Okno pokazuje pełną treść, temat, format, datę i liczbę słów
-- [x] 2.8 Treść historii zachowuje akapity
-- [x] 2.9 Escape i link zamknięcia wracają na `/generations`
-- [x] 2.10 Focus po otwarciu jest w oknie, Tab nie ucieka do listy
-- [x] 2.11 Ocena i tytuł zmienione w oknie są widoczne na karcie po zamknięciu
-- [x] 2.12 Kopiowanie z okna działa
-- [x] 2.13 Usunięcie z okna ląduje na `/generations` bez pozycji i bez okna 404
-- [x] 2.14 Cudzy i niepoprawny identyfikator dają to samo okno i status 404
-- [x] 2.15 „Otwórz" jest na kartach w historii, rankingu i ulubionych
+- [x] 2.7 Okno pokazuje pełną treść, temat, format, datę i liczbę słów — 6e3ab05
+- [x] 2.8 Treść historii zachowuje akapity — 6e3ab05
+- [x] 2.9 Escape i link zamknięcia wracają na `/generations` — 6e3ab05
+- [x] 2.10 Focus po otwarciu jest w oknie, Tab nie ucieka do listy — 6e3ab05
+- [x] 2.11 Ocena i tytuł zmienione w oknie są widoczne na karcie po zamknięciu — 6e3ab05
+- [x] 2.12 Kopiowanie z okna działa — 6e3ab05
+- [x] 2.13 Usunięcie z okna ląduje na `/generations` bez pozycji i bez okna 404 — 6e3ab05
+- [x] 2.14 Cudzy i niepoprawny identyfikator dają to samo okno i status 404 — 6e3ab05
+- [x] 2.15 „Otwórz" jest na kartach w historii, rankingu i ulubionych — 6e3ab05
