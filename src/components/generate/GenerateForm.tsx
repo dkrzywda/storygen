@@ -3,12 +3,7 @@ import { Check, Copy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
-import type { ApiErrorBody, ApiSuccessBody, GenerationFormat, LengthPreset } from "@/types";
-
-interface GenerationResult {
-  text: string;
-  words: number;
-}
+import type { ApiErrorBody, ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
 
 /**
  * FR-004: dwa formaty i to, czym sie roznia dla uzytkownika.

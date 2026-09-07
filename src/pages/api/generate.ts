@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import { createClient } from "@/lib/supabase";
+import { saveGeneration } from "@/lib/generations";
 import { jsonError, jsonOk } from "@/lib/api-response";
 import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
@@ -62,6 +64,36 @@ export const POST: APIRoute = async (context) => {
   const deadline = Date.now() + TOTAL_BUDGET_MS[format] - OVERHEAD_MS;
   const firstAttemptMs = Math.floor((TOTAL_BUDGET_MS[format] - OVERHEAD_MS) / 2);
 
+  const supabase = createClient(context.request.headers, context.cookies);
+  const userId = context.locals.user.id;
+
+  /**
+   * Zwraca wynik i po drodze zapisuje go do historii (FR-009 — bez jawnego zapisu).
+   *
+   * Zapis jest **best-effort i to jest decyzja projektowa**, nie niedbalstwo:
+   * tekst juz powstal, uzytkownik czekal na niego do 15 s i zostaly na to zuzyte
+   * neurony. Oddanie bledu skasowaloby gotowy wynik z powodu awarii, ktora go nie
+   * dotyczy. Cena jest jawna: `id === null` znaczy "tej pozycji nie da sie ocenic
+   * ani dodac do ulubionych", i interfejs to pokazuje, zamiast milczec.
+   */
+  const succeed = async (text: string, words: number): Promise<Response> => {
+    let id: string | null = null;
+    if (supabase) {
+      try {
+        id = await saveGeneration(supabase, {
+          userId,
+          topic: parsed.data.topic,
+          format,
+          length: preset,
+          content: text,
+        });
+      } catch (error) {
+        logApiError("api/generate", "INTERNAL", error);
+      }
+    }
+    return jsonOk({ id, text, words, format, length: preset });
+  };
+
   const fail = (code: ApiErrorCode, error: unknown): Response => {
     // Cialo zadania NIE trafia do loga — zawiera temat wpisany przez uzytkownika.
     logApiError("api/generate", code, error);
@@ -81,7 +113,7 @@ export const POST: APIRoute = async (context) => {
 
     const firstCheck = checkFormatContract(first.text, format, preset);
     if (firstCheck.ok) {
-      return jsonOk({ text: firstCheck.text, words: firstCheck.words, format, length: preset });
+      return await succeed(firstCheck.text, firstCheck.words);
     }
 
     const remainingMs = deadline - Date.now();
@@ -98,7 +130,7 @@ export const POST: APIRoute = async (context) => {
 
     const secondCheck = checkFormatContract(second.text, format, preset);
     if (secondCheck.ok) {
-      return jsonOk({ text: secondCheck.text, words: secondCheck.words, format, length: preset });
+      return await succeed(secondCheck.text, secondCheck.words);
     }
 
     return fail("FORMAT_CONTRACT_FAILED", new Error(`Obie proby zlamaly kontrakt: ${secondCheck.reason}`));

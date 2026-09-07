@@ -53,3 +53,18 @@ export interface ApiSuccessBody<T> {
 }
 
 export type ApiResponseBody<T> = ApiSuccessBody<T> | ApiErrorBody;
+
+/**
+ * Odpowiedz `/api/generate`.
+ *
+ * `id` jest `null`, gdy tekst powstal, ale zapis do bazy zawiodl. Interfejs
+ * ukrywa wtedy ocene i ulubione, bo nie ma czego ocenic — zamiast udawac, ze
+ * zapisano, i gubic klikniecie uzytkownika w ciszy.
+ */
+export interface GenerationResult {
+  id: string | null;
+  text: string;
+  words: number;
+  format: GenerationFormat;
+  length: LengthPreset;
+}
