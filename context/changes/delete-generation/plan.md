@@ -69,6 +69,18 @@ Po usunięciu strona się przeładowuje. Lista jest renderowana serwerowo przez 
 
 **Pułapka Postgresa przy dowodzeniu polityki.** `DELETE ... WHERE` czyta istniejące wiersze, więc musi spełnić także politykę `SELECT`. Skutek praktyczny: rozszerzenie **samej** polityki `delete` do `using (true)` **nie zrobi** zestawu R-05 czerwonym, bo konto B nadal blokuje polityka odczytu. Czerwony wynik pojawia się dopiero przy rozszerzeniu obu. Nie czytaj zielonego zestawu jako dowodu na poprawność polityki `delete` w oderwaniu od `select` — i zapisz to w `test-plan.md`, tak jak zapisano to dla `UPDATE`.
 
+**Astro blokuje `DELETE` bez `Origin`, i to przed middleware.** Zmierzone 2026-09-07
+przy weryfikacji fazy 2: `curl -X DELETE` bez nagłówków zwraca 403 z tekstem
+„Cross-site DELETE form submissions are forbidden”, a nie 401 z kontraktu błędów.
+To wbudowana ochrona CSRF — żądanie bez `Content-Type` jest traktowane jak wysłanie
+formularza, więc odpada, zanim `src/middleware.ts` zdąży rozwiązać sesję. `PATCH`
+tego nie ma wyłącznie dlatego, że wysyła `Content-Type: application/json`.
+
+Dla interfejsu bez znaczenia — przeglądarka ustawia `Origin` sama. Ale przy
+weryfikacji ręcznej trzeba dodać nagłówek `Origin`, inaczej testuje się ochronę CSRF,
+a nie endpoint. Ta sama pułapka dotyczy każdego przyszłego handlera `DELETE` i `POST`
+w tym repo.
+
 **Uboczny skutek dodania polityki.** Docblock testu integracyjnego notuje dziś, że „brak polityki DELETE znaczy, że wierszy nie da się sprzątnąć po teście" i że kumulację czyści `npx supabase db reset`. Po tej zmianie testy mogą po sobie sprzątać — ta notatka staje się nieprawdziwa i trzeba ją poprawić razem z resztą.
 
 ---
@@ -272,32 +284,32 @@ Migracja dodaje wyłącznie politykę, nie rusza schematu ani danych — jest wi
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się czysto: `npx supabase migration up --local`
-- [x] 1.2 Polityka `generations_delete_own` istnieje w `pg_policies`
-- [x] 1.3 Testy integracyjne przechodzą: `npm run test:integration`
-- [x] 1.4 Testy jednostkowe przechodzą: `npm test`
-- [x] 1.5 Prettier przechodzi na zmienionych dokumentach
+- [x] 1.1 Migracja stosuje się czysto: `npx supabase migration up --local` — 21873df
+- [x] 1.2 Polityka `generations_delete_own` istnieje w `pg_policies` — 21873df
+- [x] 1.3 Testy integracyjne przechodzą: `npm run test:integration` — 21873df
+- [x] 1.4 Testy jednostkowe przechodzą: `npm test` — 21873df
+- [x] 1.5 Prettier przechodzi na zmienionych dokumentach — 21873df
 
 #### Manual
 
-- [x] 1.6 Zestaw R-05 robi się czerwony po celowym rozszerzeniu polityk `delete` i `select`
-- [x] 1.7 Zapis w `test-plan.md` zgadza się z tym, co robi kod testu
+- [x] 1.6 Zestaw R-05 robi się czerwony po celowym rozszerzeniu polityk `delete` i `select` — 21873df
+- [x] 1.7 Zapis w `test-plan.md` zgadza się z tym, co robi kod testu — 21873df
 
 ### Phase 2: Endpoint
 
 #### Automated
 
-- [ ] 2.1 Typy przechodzą: `npx astro check`
-- [ ] 2.2 Lint na zmienionym pliku przechodzi
-- [ ] 2.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.1 Typy przechodzą: `npx astro check`
+- [x] 2.2 Lint na zmienionym pliku przechodzi
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
 
 #### Manual
 
-- [ ] 2.4 Żądanie bez sesji zwraca 401 z komunikatem po polsku
-- [ ] 2.5 Identyfikator w złym formacie zwraca 404, nie 500
-- [ ] 2.6 Nieistniejący i cudzy identyfikator zwracają ten sam 404
-- [ ] 2.7 Usunięcie własnej pozycji zwraca 200, a wiersz zniknął z bazy
-- [ ] 2.8 Log przy awarii nie zawiera treści usuwanej generacji
+- [x] 2.4 Żądanie bez sesji zwraca 401 z komunikatem po polsku
+- [x] 2.5 Identyfikator w złym formacie zwraca 404, nie 500
+- [x] 2.6 Nieistniejący i cudzy identyfikator zwracają ten sam 404
+- [x] 2.7 Usunięcie własnej pozycji zwraca 200, a wiersz zniknął z bazy
+- [x] 2.8 Log przy awarii nie zawiera treści usuwanej generacji
 
 ### Phase 3: Interfejs
 

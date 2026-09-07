@@ -72,3 +72,46 @@ export const PATCH: APIRoute = async (context) => {
 
   return jsonOk(data[0]);
 };
+
+/**
+ * Usuniecie pozycji z wlasnej historii (FR-011, S-06).
+ *
+ * Te same trzy bramki co w `PATCH` i z tych samych powodow — nie powtarzam tu ich
+ * uzasadnien, zeby dwa komentarze o tym samym nie rozjechaly sie przy pierwszej zmianie.
+ *
+ * Rozni sie jednym: nie ma ciala zadania, wiec nie ma czego walidowac. Caly kontrakt
+ * wejsciowy to identyfikator w adresie, dlatego nie ma tu schematu Zoda.
+ */
+export const DELETE: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return jsonError("UNAUTHORIZED");
+  }
+
+  const id = context.params.id;
+  if (!id || !UUID_PATTERN.test(id)) {
+    return jsonError("NOT_FOUND");
+  }
+
+  const supabase = createClient(context.request.headers, context.cookies);
+  if (!supabase) {
+    return jsonError("NOT_CONFIGURED");
+  }
+
+  const { data, error } = await supabase.from("generations").delete().eq("id", id).select("id");
+
+  if (error) {
+    const code = toApiErrorCode(error);
+    logApiError("api/generations/[id]", code, error);
+    return jsonError(code);
+  }
+
+  // Zero wierszy znaczy "nie istnieje ALBO nie jest Twoj" — ta sama regula co w `PATCH`.
+  // Polityka `generations_delete_own` odfiltrowuje cudze wiersze BEZ rzucania bledem,
+  // wiec brak bledu nie znaczy, ze cokolwiek usunieto.
+  if (data.length === 0) {
+    return jsonError("NOT_FOUND");
+  }
+
+  // Endpoint mowi, CO usunal, niezaleznie od tego, co z tym zrobi interfejs.
+  return jsonOk({ id: data[0].id });
+};
