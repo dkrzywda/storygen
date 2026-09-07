@@ -6,15 +6,15 @@ const isAutoConfirmed = import.meta.env.DEV;
 const content = isAutoConfirmed
   ? {
       emoji: "✅",
-      heading: "Registration successful",
-      description: "Your account has been created. You can now sign in.",
-      linkText: "Go to sign in",
+      heading: "Rejestracja zakończona",
+      description: "Konto zostało utworzone. Możesz się teraz zalogować.",
+      linkText: "Przejdź do logowania",
     }
   : {
       emoji: "📧",
-      heading: "Check your email",
-      description: "We've sent a confirmation link to your email address. Click it to activate your account.",
-      linkText: "Back to sign in",
+      heading: "Sprawdź skrzynkę",
+      description: "Wysłaliśmy link potwierdzający na Twój adres e-mail. Kliknij go, aby aktywować konto.",
+      linkText: "Powrót do logowania",
     };
 ---
 
