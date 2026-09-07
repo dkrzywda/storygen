@@ -21,9 +21,13 @@ import { beforeAll, describe, expect, it } from "vitest";
  * ale nie czytaj tego zestawu jako dowodu na poprawnosc polityki UPDATE w oderwaniu
  * od SELECT. Dowodzi on, ze zadna kombinacja polityk nie odslania cudzych danych.
  *
- * Uwaga: brak polityki DELETE (powstanie z S-06) znaczy, ze wierszy nie da sie sprzatnac
- * po tescie. Kazdy przebieg zaklada swiezych uzytkownikow, wiec przebiegi sie nie mieszaja;
- * kumulacje czysci `npx supabase db reset`.
+ * TA SAMA PULAPKA DOTYCZY DELETE. `delete ... where` rowniez czyta wiersze, zanim je
+ * usunie, wiec rozszerzenie samej polityki `delete` nie zrobi tego zestawu czerwonym.
+ * Czerwony wynik pojawia sie dopiero przy rozszerzeniu `delete` i `select` razem.
+ *
+ * Od S-06 istnieje polityka DELETE, wiec przypadki usuwania sprzataja po sobie wlasne
+ * wiersze. Pozostale zostaja: kazdy przebieg zaklada swiezych uzytkownikow, wiec przebiegi
+ * sie nie mieszaja, a kumulacje czysci `npx supabase db reset`.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
@@ -149,10 +153,55 @@ describe("izolacja kont na tabeli generations (R-05)", () => {
     expect(error).not.toBeNull();
   });
 
-  it("nikt nie usuwa wierszy — polityki delete nie ma", async () => {
-    const { data, error } = await alice.from("generations").delete().eq("id", aliceRowId).select();
+  it("Bob nie usuwa cudzego wiersza", async () => {
+    const { data, error } = await bob.from("generations").delete().eq("id", aliceRowId).select();
 
     expect(error).toBeNull();
+    // Zero usunietych wierszy — RLS odfiltrowal cudzy, zanim doszlo do usuniecia.
+    // Baza nie rzuca bledem, dokladnie tak jak przy update.
     expect(data).toHaveLength(0);
+  });
+
+  it("wiersz Alice przetrwal probe Boba", async () => {
+    const { data, error } = await alice.from("generations").select("id").eq("id", aliceRowId).single();
+
+    expect(error).toBeNull();
+    expect(data?.id).toBe(aliceRowId);
+  });
+
+  // Kontrola pozytywna. Bez niej zielony wynik moglby oznaczac, ze usuwanie nie dziala
+  // dla NIKOGO — czyli ze polityka `delete` nie istnieje, tak jak przed S-06.
+  //
+  // Przypadek zaklada WLASNY wiersz, nie uzywa `aliceRowId`: usuniecie wspolnego wiersza
+  // zabraloby dane pozostalym przypadkom, a wtedy dopisanie czegokolwiek ponizej cicho
+  // psuloby zestaw, zaleznie od kolejnosci deklaracji w pliku.
+  it("Alice usuwa wlasny wiersz", async () => {
+    const { data: created, error: insertError } = await alice
+      .from("generations")
+      .insert({
+        user_id: aliceId,
+        topic: "wiersz do usuniecia",
+        format: "joke",
+        length_preset: "short",
+        content: "Ten wiersz istnieje wylacznie po to, zeby zostac usunietym.",
+      })
+      .select("id")
+      .single();
+
+    // Rzut, nie asercja non-null: bez wiersza ten przypadek nie ma czego dowodzic,
+    // a `strictTypeChecked` zabrania `!`. Wzorzec z `beforeAll` w tym pliku — po
+    // sprawdzeniu bledu `created` jest juz nie-null, bo klient typuje wynik jako unie.
+    if (insertError) {
+      throw new Error(`Alice nie zapisala wiersza do usuniecia: ${insertError.message || "brak tresci bledu"}`);
+    }
+    const rowId = created.id;
+
+    const { data, error } = await alice.from("generations").delete().eq("id", rowId).select();
+
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+
+    const { data: after } = await alice.from("generations").select("id").eq("id", rowId);
+    expect(after).toHaveLength(0);
   });
 });

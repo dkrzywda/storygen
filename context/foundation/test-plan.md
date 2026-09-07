@@ -123,8 +123,14 @@ już nie obowiązuje. Drugi, udowodniony sposób złamania tego samego: użycie 
 **Co jest testowane.** Dwa świeże konta na lokalnym stacku. Konto B nie zmienia tytułu wiersza
 konta A (zero zmienionych wierszy), nie widzi go przy odczycie, i nie zapisze wiersza na konto
 A. Kontrola pozytywna w tym samym pliku: konto A zmienia własny wiersz — bez niej zielony wynik
-mógłby oznaczać, że aktualizacja nie działa dla nikogo. Dodatkowo: brak polityki `delete`
-sprawia, że nikt nie usuwa wierszy.
+mógłby oznaczać, że aktualizacja nie działa dla nikogo.
+
+Od `S-06` doszło usuwanie i **gwarancja zmieniła charakter**. Wcześniej nikt nie usuwał
+wierszy, bo polityki `delete` po prostu nie było; teraz polityka istnieje, a zestaw dowodzi,
+że nikt nie usuwa **cudzego**: konto B nie usuwa wiersza konta A (zero usuniętych wierszy,
+bez błędu), wiersz konta A przetrwał tę próbę, a kontrola pozytywna potwierdza, że konto A
+usuwa własny wiersz. Kontrola pozytywna zakłada **własny** wiersz zamiast wspólnego — inaczej
+zabrałaby dane pozostałym przypadkom i dopisanie czegokolwiek poniżej cicho psułoby zestaw.
 
 Sam test ma dwie bariery przeciw fałszywemu zielonemu: odmawia uruchomienia przeciwko
 nielokalnej bazie i odrzuca klucz `service_role`.
@@ -136,13 +142,19 @@ konto B nadal blokuje polityka odczytu. Czerwony wynik pojawia się dopiero, gdy
 obie polityki. Gwarancja izolacji jest przez to nienaruszona, ale nie czytaj tego zestawu jako
 dowodu na poprawność polityki `UPDATE` w oderwaniu od `SELECT`.
 
+**Ta sama pułapka dotyczy `DELETE`.** `DELETE ... WHERE` również czyta istniejące wiersze,
+zanim je usunie, więc rozszerzenie **samej** polityki `delete` do `using (true)` nie zrobi
+zestawu czerwonym — konto B nadal blokuje polityka odczytu. Czerwony wynik pojawia się dopiero
+przy rozszerzeniu `delete` i `select` razem, i dokładnie ten eksperyment jest weryfikacją
+ręczną fazy 1 planu `delete-generation`.
+
 ## Jak to uruchomić
 
 ```bash
 npm test
 ```
 
-Zestaw jednostkowy: 4 pliki, 68 testów, bez Dockera.
+Zestaw jednostkowy: 7 plików, 164 testy, bez Dockera.
 
 ```bash
 npm run test:integration
