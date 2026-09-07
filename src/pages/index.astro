@@ -1,8 +1,12 @@
 ---
-import Welcome from "@/components/Welcome.astro";
 import Layout from "@/layouts/Layout.astro";
+import GenerateScreen from "@/components/generate/GenerateScreen.astro";
+
+// Strona glowna JEST generatorem — landing startera zostal usuniety. Trasa "/"
+// jest chroniona dokladnym dopasowaniem w middleware, wiec anonim trafia na
+// logowanie, zgodnie z PRD ("kazdy ekran poza rejestracja i logowaniem").
 ---
 
-<Layout>
-  <Welcome />
+<Layout title="Storygen">
+  <GenerateScreen />
 </Layout>
