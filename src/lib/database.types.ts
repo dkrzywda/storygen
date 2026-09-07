@@ -28,6 +28,27 @@ export type Database = {
   };
   public: {
     Tables: {
+      generation_attempts: {
+        Row: {
+          created_at: string;
+          format: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          format: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          format?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       generations: {
         Row: {
           content: string;
@@ -72,7 +93,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      usage_today: {
+        Args: never;
+        Returns: {
+          app_count: number;
+          own_count: number;
+          resets_at: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

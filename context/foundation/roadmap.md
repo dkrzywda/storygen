@@ -79,7 +79,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | in-progress |
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | done        |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | done        |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done        |
@@ -255,7 +255,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   zamiast wspólnej. Uwaga na środowisko: adapter Cloudflare v13 usunął
   `Astro.locals.runtime`, więc odczyt liczników przez niego zwróci `undefined` w runtime,
   a nie błąd typu (`infrastructure.md`, § rejestr ryzyk).
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-05: Użytkownik przegląda własną historię i otwiera pozycje
 
@@ -395,7 +395,7 @@ Co z tego wynika dla czytelnika:
 | S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1`                                                       |
 | S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
 | S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
-| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                                                                              |
+| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | yes                   | Liczby ustalone 2026-09-07: 30/dobę aplikacja, 10/dobę konto. Plan gotowy — `/10x-implement daily-generation-limits phase 1`  |
 | S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Odblokowane przez S-03. Lista działa, ale FR-010 „otwiera w całości" nie — widok pokazuje podgląd, nie pełny tekst |
 | S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                      |
 | S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                 |
