@@ -22,8 +22,13 @@ interface Props {
    * to wlasciwe na liscie. W oknie pozycji (`/generations?open=<id>`) przeladowanie
    * odpytaloby o wiersz, ktorego juz nie ma, i pokazalo 404 zamiast listy; tam
    * wywolujacy podaje `/generations`.
+   *
+   * Typ jest UNIA ZNANYCH TRAS, nie `string` — ustalenie F5 przegladu. Wartosc idzie
+   * wprost do `location.replace`, wiec `string` pozwolilby przyszlemu wywolaniu
+   * przepuscic tu parametr adresu i zrobic z przycisku otwarte przekierowanie.
+   * Poszerzenie unii ma byc decyzja, nie przypadkiem.
    */
-  afterDelete?: string;
+  afterDelete?: "/generations";
 }
 
 /**
@@ -72,7 +77,9 @@ export default function DeleteButton({ id, afterDelete }: Props) {
 
       setStatus("deleted");
       if (afterDelete) {
-        window.location.assign(afterDelete);
+        // `replace`, nie `assign` — inaczej Wstecz wracalby na ?open=<usuniety id>
+        // i pokazywal 404 dla pozycji, ktora uzytkownik wlasnie skasowal (F4).
+        window.location.replace(afterDelete);
       } else {
         window.location.reload();
       }

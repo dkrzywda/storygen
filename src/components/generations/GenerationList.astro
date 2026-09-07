@@ -2,7 +2,7 @@
 import TitleEditor from "@/components/generations/TitleEditor";
 import RatingControls from "@/components/generations/RatingControls";
 import DeleteButton from "@/components/generations/DeleteButton";
-import type { GenerationFormat } from "@/types";
+import { dateFormat, formatLabel } from "@/lib/generation-labels";
 
 /**
  * Lista zapisanych generacji — jeden komponent dla historii, rankingu i ulubionych.
@@ -41,14 +41,6 @@ function preview(content: string): string {
   const trimmed = content.trim();
   return trimmed.length > 70 ? `${trimmed.slice(0, 70)}…` : trimmed;
 }
-
-const FORMAT_LABEL: Record<GenerationFormat, string> = { joke: "Dowcip", story: "Historia" };
-
-function formatLabel(format: string): string {
-  return format === "story" || format === "joke" ? FORMAT_LABEL[format] : format;
-}
-
-const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short" });
 ---
 
 {

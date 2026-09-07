@@ -24,11 +24,14 @@ const RESET_AFTER_MS = 2000;
 export default function CopyButton({ text }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const timer = useRef<number | null>(null);
+  const mounted = useRef(true);
 
-  // Sprzatanie timera przy odmontowaniu — bez tego szybkie zamkniecie okna po
-  // skopiowaniu zostawiloby `setState` na komponencie, ktorego juz nie ma.
   useEffect(
     () => () => {
+      // `mounted` jest sprawdzany PO `await` w `copy()` — samo czyszczenie timera nie
+      // wystarcza, bo timer powstaje dopiero po rozwiazaniu obietnicy schowka, czyli
+      // mogl by zostac zaplanowany po odmontowaniu okna. Ustalenie F9 przegladu.
+      mounted.current = false;
       if (timer.current !== null) {
         window.clearTimeout(timer.current);
       }
@@ -37,15 +40,31 @@ export default function CopyButton({ text }: Props) {
   );
 
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setStatus("copied");
-    } catch {
-      setStatus("failed");
-    }
     if (timer.current !== null) {
       window.clearTimeout(timer.current);
+      timer.current = null;
     }
+    // Nowe klikniecie czysci poprzedni komunikat — tak stan "failed" znika, mimo ze
+    // nie ma timera, ktory by go zgasil.
+    setStatus("idle");
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      if (mounted.current) {
+        setStatus("failed");
+      }
+      // BEZ timera. "Nie udalo sie skopiowac. Zaznacz tekst i skopiuj recznie." to
+      // INSTRUKCJA DO WYKONANIA, nie potwierdzenie — zgaszenie jej po dwoch sekundach
+      // odbieraloby uzytkownikowi czas na jej wykonanie. Rodzenstwo (`DeleteButton`,
+      // `RatingControls`) trzyma bledy do nastepnej akcji. Ustalenie F1 przegladu.
+      return;
+    }
+
+    if (!mounted.current) {
+      return;
+    }
+    setStatus("copied");
     timer.current = window.setTimeout(() => {
       setStatus("idle");
     }, RESET_AFTER_MS);

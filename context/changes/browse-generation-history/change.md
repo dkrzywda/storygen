@@ -1,7 +1,7 @@
 ---
 change_id: browse-generation-history
 title: "Otwieranie pozycji historii w calosci"
-status: implemented
+status: impl_reviewed
 created: 2026-09-07
 updated: 2026-09-07
 archived_at: null

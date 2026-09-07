@@ -9,8 +9,8 @@ import CopyButton from "@/components/generations/CopyButton";
 import { createClient } from "@/lib/supabase";
 import { fetchHistory } from "@/lib/generations";
 import { countWords } from "@/lib/format-contract";
+import { dateFormat, formatLabel, wordsLabel } from "@/lib/generation-labels";
 import { API_ERRORS } from "@/lib/api-errors";
-import type { GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania,
 // zanim ten kod sie wykona. Prefiks obejmuje tez adres z parametrem `?open=`.
@@ -39,50 +39,18 @@ if (notFound) {
   Astro.response.status = 404;
 }
 
-const FORMAT_LABEL: Record<GenerationFormat, string> = { joke: "Dowcip", story: "Historia" };
-
-function formatLabel(format: string): string {
-  return format === "story" || format === "joke" ? FORMAT_LABEL[format] : format;
-}
-
-/** Polska liczba mnoga: 1 slowo, 2-4 slowa, 5+ slow — z wyjatkiem 12-14. */
-function wordsLabel(n: number): string {
-  if (n === 1) {
-    return "1 słowo";
-  }
-  const last = n % 10;
-  const lastTwo = n % 100;
-  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) {
-    return `${String(n)} słowa`;
-  }
-  return `${String(n)} słów`;
-}
-
-const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short" });
 const closeClass =
   "border-hairline bg-panel text-ink-muted hover:bg-app shrink-0 rounded-lg border px-3 py-1.5 text-xs transition-colors";
 ---
 
 <Layout title={opened ? (opened.title ?? opened.topic) : "Moje generacje"}>
-  <div class="bg-app min-h-screen p-4 py-10">
-    <div class="mx-auto w-full max-w-2xl">
-      <Topbar />
-
-      <h1 class="text-ink mb-2 text-3xl font-bold">Moje generacje</h1>
-      <p class="text-ink-muted mb-8 text-sm">
-        Widzisz wyłącznie własne teksty. Nadaj im tytuły, oceń gwiazdkami, oznacz ulubione, a niepotrzebne trwale usuń.
-      </p>
-
-      <GenerationList
-        items={items}
-        deletable
-        emptyTitle="Nie masz jeszcze żadnych generacji."
-        emptyHint="Pojawią się tutaj automatycznie, gdy tylko wygenerujesz pierwszy tekst."
-      />
-    </div>
-  </div>
-
   {
+    /*
+     * Okno stoi PRZED lista w drzewie dokumentu — ustalenie F6 przegladu. Przy dzialajacym
+     * JS jest to bez znaczenia, bo `showModal()` przenosi element do warstwy gornej. Bez JS
+     * `<dialog open>` jest niemodalny i pozycjonowany w swoim miejscu w dokumencie: gdyby
+     * stal po liscie, "dziala bez JS" znaczyloby "jest, ale ponizej ekranu".
+     */
     openParam !== null && (
       <dialog
         id="generation-dialog"
@@ -129,8 +97,10 @@ const closeClass =
               </div>
             </>
           ) : (
-            <div class="flex items-start justify-between gap-4">
-              <h2 id="generation-dialog-title" role="alert" class="text-ink text-lg font-semibold">
+            /* `role="alert"` na tym `div`, NIE na `<h2>` — na naglowku nadpisywalby jego
+               role i wyrzucal go z konspektu dokumentu (ustalenie F8 przegladu). */
+            <div role="alert" class="flex items-start justify-between gap-4">
+              <h2 id="generation-dialog-title" class="text-ink text-lg font-semibold">
                 {API_ERRORS.NOT_FOUND.message}
               </h2>
               <a href="/generations" class:list={closeClass}>
@@ -142,6 +112,24 @@ const closeClass =
       </dialog>
     )
   }
+
+  <div class="bg-app min-h-screen p-4 py-10">
+    <div class="mx-auto w-full max-w-2xl">
+      <Topbar />
+
+      <h1 class="text-ink mb-2 text-3xl font-bold">Moje generacje</h1>
+      <p class="text-ink-muted mb-8 text-sm">
+        Widzisz wyłącznie własne teksty. Nadaj im tytuły, oceń gwiazdkami, oznacz ulubione, a niepotrzebne trwale usuń.
+      </p>
+
+      <GenerationList
+        items={items}
+        deletable
+        emptyTitle="Nie masz jeszcze żadnych generacji."
+        emptyHint="Pojawią się tutaj automatycznie, gdy tylko wygenerujesz pierwszy tekst."
+      />
+    </div>
+  </div>
 </Layout>
 
 <script>
@@ -158,13 +146,28 @@ const closeClass =
    * Zmierzone 2026-09-07: okno zamykalo sie i strona wracala na /generations w chwili
    * zaladowania. Zdjecie atrybutu `open` wprost NIE emituje `close` — stad
    * `removeAttribute`, ktore w kazdym innym kontekscie byloby zlym pomyslem.
+   *
+   * Bramka na `typeof` i `try`/`catch` to ustalenie F3 przegladu. Goly `instanceof
+   * HTMLDialogElement` rzuca `ReferenceError` w silniku bez `<dialog>`, a wyjatek
+   * z `showModal()` po zdjetym `open` zgasilby okno CALKOWICIE — czyli degradacja
+   * odwrotna do obiecanej w planie. Tutaj `open` wraca i zostaje wersja bez focus-trapu.
    */
   const dialog = document.getElementById("generation-dialog");
-  if (dialog instanceof HTMLDialogElement) {
+  if (typeof HTMLDialogElement !== "undefined" && dialog instanceof HTMLDialogElement) {
     dialog.removeAttribute("open");
-    dialog.showModal();
-    dialog.addEventListener("close", () => {
-      window.location.assign("/generations");
-    });
+    let modal = false;
+    try {
+      dialog.showModal();
+      modal = true;
+    } catch {
+      dialog.setAttribute("open", "");
+    }
+    if (modal) {
+      // `replace`, nie `assign` — zamkniecie okna nie ma zostawiac go w historii,
+      // bo Wstecz otwieralby je ponownie (ustalenie F4 przegladu).
+      dialog.addEventListener("close", () => {
+        window.location.replace("/generations");
+      });
+    }
   }
 </script>

@@ -5,6 +5,7 @@ import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
 import RatingControls from "@/components/generations/RatingControls";
 import CopyButton from "@/components/generations/CopyButton";
+import { wordsLabel } from "@/lib/generation-labels";
 import { readApiError } from "@/lib/api-errors";
 import type { ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
 
@@ -233,7 +234,7 @@ export default function GenerateForm() {
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-ink-subtle text-xs">{result.words} słów</span>
+            <span className="text-ink-subtle text-xs">{wordsLabel(result.words)}</span>
             {/* Wspolna wyspa — jedna implementacja kopiowania w produkcie (S-05). */}
             <CopyButton text={result.text} />
           </div>
