@@ -17,6 +17,13 @@ import { readApiError } from "@/lib/api-errors";
 
 interface Props {
   id: string;
+  /**
+   * Adres, na ktory isc po udanym usunieciu. Bez niego strona sie przeladowuje —
+   * to wlasciwe na liscie. W oknie pozycji (`/generations?open=<id>`) przeladowanie
+   * odpytaloby o wiersz, ktorego juz nie ma, i pokazalo 404 zamiast listy; tam
+   * wywolujacy podaje `/generations`.
+   */
+  afterDelete?: string;
 }
 
 /**
@@ -28,7 +35,7 @@ interface Props {
  */
 type Status = "idle" | "confirming" | "deleting" | "deleted";
 
-export default function DeleteButton({ id }: Props) {
+export default function DeleteButton({ id, afterDelete }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -64,7 +71,11 @@ export default function DeleteButton({ id }: Props) {
       }
 
       setStatus("deleted");
-      window.location.reload();
+      if (afterDelete) {
+        window.location.assign(afterDelete);
+      } else {
+        window.location.reload();
+      }
     } catch {
       // Tu naprawde nie doszlo do serwera — dopiero teraz diagnoza sieciowa jest uczciwa.
       setError("Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.");

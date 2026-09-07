@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
 import RatingControls from "@/components/generations/RatingControls";
+import CopyButton from "@/components/generations/CopyButton";
 import { readApiError } from "@/lib/api-errors";
 import type { ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
 
@@ -42,7 +43,6 @@ export default function GenerateForm() {
   const [error, setError] = useState<string | null>(null);
   const [topicError, setTopicError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [copied, setCopied] = useState(false);
   const startedAt = useRef(0);
 
   // NFR wymaga CIAGLEGO widocznego postepu przez cale oczekiwanie. Sam spinner
@@ -87,7 +87,6 @@ export default function GenerateForm() {
     setError(null);
     setTopicError(null);
     setResult(null);
-    setCopied(false);
     setElapsed(0);
     startedAt.current = Date.now();
 
@@ -117,17 +116,6 @@ export default function GenerateForm() {
       setError("Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.");
       setStatus("idle");
     }
-  }
-
-  async function copyResult() {
-    if (!result) {
-      return;
-    }
-    await navigator.clipboard.writeText(result.text);
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
   }
 
   return (
@@ -246,14 +234,8 @@ export default function GenerateForm() {
 
           <div className="flex items-center justify-between">
             <span className="text-ink-subtle text-xs">{result.words} słów</span>
-            <button
-              type="button"
-              onClick={() => void copyResult()}
-              className="border-hairline bg-panel text-ink-muted hover:bg-app flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors"
-            >
-              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-              {copied ? "Skopiowano" : "Kopiuj"}
-            </button>
+            {/* Wspolna wyspa — jedna implementacja kopiowania w produkcie (S-05). */}
+            <CopyButton text={result.text} />
           </div>
         </div>
       )}
