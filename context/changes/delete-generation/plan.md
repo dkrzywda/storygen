@@ -315,15 +315,15 @@ Migracja dodaje wyłącznie politykę, nie rusza schematu ani danych — jest wi
 
 #### Automated
 
-- [x] 3.1 Typy przechodzą: `npx astro check`
-- [x] 3.2 Lint na zmienionych i nowych plikach przechodzi
-- [x] 3.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.1 Typy przechodzą: `npx astro check` — 4639868
+- [x] 3.2 Lint na zmienionych i nowych plikach przechodzi — 4639868
+- [x] 3.3 Testy jednostkowe przechodzą: `npm test` — 4639868
 
 #### Manual
 
-- [x] 3.4 Pierwszy klik pokazuje pytanie, nie usuwa
-- [x] 3.5 „Anuluj" wraca do stanu wyjściowego i nie woła serwera
-- [x] 3.6 Potwierdzenie usuwa pozycję i po przeładowaniu jej nie ma
-- [x] 3.7 Ranking nie ma akcji usuwania, a ulubione ją mają
-- [x] 3.8 Awaria żądania pokazuje komunikat po polsku, pozycja zostaje
-- [x] 3.9 Usunięcie ocenionej pozycji usuwa ją z rankingu i z ulubionych
+- [x] 3.4 Pierwszy klik pokazuje pytanie, nie usuwa — 4639868
+- [x] 3.5 „Anuluj" wraca do stanu wyjściowego i nie woła serwera — 4639868
+- [x] 3.6 Potwierdzenie usuwa pozycję i po przeładowaniu jej nie ma — 4639868
+- [x] 3.7 Ranking nie ma akcji usuwania, a ulubione ją mają — 4639868
+- [x] 3.8 Awaria żądania pokazuje komunikat po polsku, pozycja zostaje — 4639868
+- [x] 3.9 Usunięcie ocenionej pozycji usuwa ją z rankingu i z ulubionych — 4639868
