@@ -77,7 +77,17 @@ const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeSty
                 <p class="text-ink-subtle text-xs">
                   {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
                 </p>
-                {deletable && <DeleteButton client:load id={item.id} />}
+                <div class="flex items-end gap-3">
+                  {/* Bez flagi — link jest nieszkodliwy wszedzie i daje panelowi (ranking, ulubione)
+                      droge do pelnej tresci, ktorej dotad nie mial. Okno zyje pod /generations. */}
+                  <a
+                    href={`/generations?open=${item.id}`}
+                    class="text-brand hover:text-brand-strong text-xs transition-colors hover:underline"
+                  >
+                    Otwórz
+                  </a>
+                  {deletable && <DeleteButton client:load id={item.id} />}
+                </div>
               </div>
             </div>
           </div>

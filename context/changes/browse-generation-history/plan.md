@@ -62,7 +62,9 @@ Odmowa jest **jedną ścieżką** dla trzech przypadków — cudzy, nieistnieją
 
 ## Critical Implementation Details
 
-**Kolejność w skrypcie podnoszącym `<dialog>`.** Element jest renderowany z atrybutem `open`, żeby działał bez JS. Podniesienie do trybu modalnego wymaga `dialog.close()` i zaraz potem `dialog.showModal()` — a `close()` **emituje zdarzenie `close`**. Jeśli nasłuch na `close` (który ma nawigować na `/generations`) zostanie podpięty **przed** podniesieniem, okno zamknie się i strona odpłynie w chwili załadowania. Nasłuch podpina się po `showModal()`. To jedyny fragment, który zasługuje na komentarz w kodzie proporcjonalny do jego długości.
+**Podniesienie `<dialog open>` do trybu modalnego — nie przez `close()`.** Element jest renderowany z atrybutem `open`, żeby działał bez JS; `showModal()` rzuca na już otwartym oknie, więc `open` trzeba najpierw zdjąć. Pierwotna wersja tego akapitu mówiła: `close()`, potem `showModal()`, a nasłuch `close` podpiąć dopiero po. **To nie wystarcza i zostało zmierzone 2026-09-07 w fazie 2:** `close()` emituje `close` asynchronicznie — spec kolejkuje zdarzenie jako osobne zadanie — więc odpala się już po podpięciu nasłuchu i strona wraca na `/generations` w chwili załadowania. Poprawne podniesienie to `dialog.removeAttribute("open")` (które `close` **nie** emituje), potem `showModal()`, potem nasłuch. Zdjęcie atrybutu wprost jest w każdym innym kontekście złym pomysłem i zasługuje na komentarz w kodzie proporcjonalny do swojej długości.
+
+**Bez `autofocus` na linku zamknięcia.** Plan zakładał `autofocus`; reguła `jsx-a11y/no-autofocus` w tym repo go zabrania, a `showModal()` i tak przenosi focus na pierwszy fokusowalny element okna — którym jest ten link. Bez JS focus nie przechodzi; przyjęta degradacja.
 
 **Skrypt jest inline i pod bramką.** Jeśli `showModal` nie istnieje (stara przeglądarka), okno zostaje w trybie `open` — widoczne, bez focus-trapu, z działającym linkiem zamknięcia. Degradacja, nie awaria.
 
@@ -229,35 +231,35 @@ Brak migracji — żadnej zmiany schematu ani danych. Cofnięcie to `git revert`
 
 #### Automated
 
-- [x] 1.1 Typy przechodzą: `npx astro check`
-- [x] 1.2 Lint na zmienionych i nowych plikach przechodzi
-- [x] 1.3 Testy jednostkowe przechodzą: `npm test`
-- [x] 1.4 Jedna implementacja kopiowania: `grep "navigator.clipboard"` zwraca wyłącznie `CopyButton.tsx`
+- [x] 1.1 Typy przechodzą: `npx astro check` — fdb164f
+- [x] 1.2 Lint na zmienionych i nowych plikach przechodzi — fdb164f
+- [x] 1.3 Testy jednostkowe przechodzą: `npm test` — fdb164f
+- [x] 1.4 Jedna implementacja kopiowania: `grep "navigator.clipboard"` zwraca wyłącznie `CopyButton.tsx` — fdb164f
 
 #### Manual
 
-- [x] 1.5 Kopiowanie w generatorze działa jak dotąd
-- [x] 1.6 Usuwanie z historii działa jak dotąd
+- [x] 1.5 Kopiowanie w generatorze działa jak dotąd — fdb164f
+- [x] 1.6 Usuwanie z historii działa jak dotąd — fdb164f
 
 ### Phase 2: Okno i wejście
 
 #### Automated
 
-- [ ] 2.1 Typy przechodzą: `npx astro check`
-- [ ] 2.2 Lint na zmienionych plikach przechodzi
-- [ ] 2.3 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.4 Testy integracyjne przechodzą bez zmian: `npm run test:integration`
-- [ ] 2.5 Brak nowego odczytu: `generations.ts` zmieniony w jednej linii
-- [ ] 2.6 Anonim na `/generations?open=…` dostaje 302
+- [x] 2.1 Typy przechodzą: `npx astro check`
+- [x] 2.2 Lint na zmienionych plikach przechodzi
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.4 Testy integracyjne przechodzą bez zmian: `npm run test:integration`
+- [x] 2.5 Brak nowego odczytu: `generations.ts` zmieniony w jednej linii
+- [x] 2.6 Anonim na `/generations?open=…` dostaje 302
 
 #### Manual
 
-- [ ] 2.7 Okno pokazuje pełną treść, temat, format, datę i liczbę słów
-- [ ] 2.8 Treść historii zachowuje akapity
-- [ ] 2.9 Escape i link zamknięcia wracają na `/generations`
-- [ ] 2.10 Focus po otwarciu jest w oknie, Tab nie ucieka do listy
-- [ ] 2.11 Ocena i tytuł zmienione w oknie są widoczne na karcie po zamknięciu
-- [ ] 2.12 Kopiowanie z okna działa
-- [ ] 2.13 Usunięcie z okna ląduje na `/generations` bez pozycji i bez okna 404
-- [ ] 2.14 Cudzy i niepoprawny identyfikator dają to samo okno i status 404
-- [ ] 2.15 „Otwórz" jest na kartach w historii, rankingu i ulubionych
+- [x] 2.7 Okno pokazuje pełną treść, temat, format, datę i liczbę słów
+- [x] 2.8 Treść historii zachowuje akapity
+- [x] 2.9 Escape i link zamknięcia wracają na `/generations`
+- [x] 2.10 Focus po otwarciu jest w oknie, Tab nie ucieka do listy
+- [x] 2.11 Ocena i tytuł zmienione w oknie są widoczne na karcie po zamknięciu
+- [x] 2.12 Kopiowanie z okna działa
+- [x] 2.13 Usunięcie z okna ląduje na `/generations` bez pozycji i bez okna 404
+- [x] 2.14 Cudzy i niepoprawny identyfikator dają to samo okno i status 404
+- [x] 2.15 „Otwórz" jest na kartach w historii, rankingu i ulubionych

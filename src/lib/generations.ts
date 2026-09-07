@@ -17,7 +17,7 @@ type Client = NonNullable<ReturnType<typeof createClient>>;
  * Kolumny czytane przez wszystkie trzy widoki. Jedna lista, bo trzy niezalezne
  * `select` rozjechalyby sie przy dodaniu kolumny i jeden widok pokazywalby mniej.
  */
-const LIST_COLUMNS = "id, title, content, format, length_preset, rating, is_favourite, created_at";
+const LIST_COLUMNS = "id, title, topic, content, format, length_preset, rating, is_favourite, created_at";
 
 export interface SaveGenerationInput {
   userId: string;

@@ -2,18 +2,68 @@
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import GenerationList from "@/components/generations/GenerationList.astro";
+import TitleEditor from "@/components/generations/TitleEditor";
+import RatingControls from "@/components/generations/RatingControls";
+import DeleteButton from "@/components/generations/DeleteButton";
+import CopyButton from "@/components/generations/CopyButton";
 import { createClient } from "@/lib/supabase";
 import { fetchHistory } from "@/lib/generations";
+import { countWords } from "@/lib/format-contract";
+import { API_ERRORS } from "@/lib/api-errors";
+import type { GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania,
-// zanim ten kod sie wykona.
+// zanim ten kod sie wykona. Prefiks obejmuje tez adres z parametrem `?open=`.
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 
 // Odczyt nie filtruje po `user_id` — izolacja stoi na RLS. Uzasadnienie w `@/lib/generations`.
 const items = supabase ? await fetchHistory(supabase) : [];
+
+/**
+ * Okno pozycji (FR-010, S-05).
+ *
+ * Pozycja jest szukana w JUZ POBRANEJ liscie — bez drugiego zapytania i bez
+ * porownania wlasciciela w kodzie. Lista pobiera pelna tresc do podgladu, wiec
+ * okno nie potrzebuje niczego wiecej, a ryzyko z roadmapy ("kazdy nowy odczyt to
+ * nowa okazja do obejscia RLS filtrem w kodzie") nie zachodzi.
+ *
+ * Brak trafienia obejmuje cudzy, nieistniejacy i niepoprawny identyfikator
+ * JEDNAKOWO — ta sama nierozroznialnosc co w `/api/generations/[id]`. Nic nie idzie
+ * do bazy, wiec nie ma czego walidowac regexem. Status 404 na stronie z widoczna
+ * lista jest nietypowy, ale zamierzony: odmowa z NFR ma byc widoczna i uczciwa w logach.
+ */
+const openParam = Astro.url.searchParams.get("open");
+const opened = openParam === null ? null : (items.find((item) => item.id === openParam) ?? null);
+const notFound = openParam !== null && opened === null;
+if (notFound) {
+  Astro.response.status = 404;
+}
+
+const FORMAT_LABEL: Record<GenerationFormat, string> = { joke: "Dowcip", story: "Historia" };
+
+function formatLabel(format: string): string {
+  return format === "story" || format === "joke" ? FORMAT_LABEL[format] : format;
+}
+
+/** Polska liczba mnoga: 1 slowo, 2-4 slowa, 5+ slow — z wyjatkiem 12-14. */
+function wordsLabel(n: number): string {
+  if (n === 1) {
+    return "1 słowo";
+  }
+  const last = n % 10;
+  const lastTwo = n % 100;
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) {
+    return `${String(n)} słowa`;
+  }
+  return `${String(n)} słów`;
+}
+
+const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short" });
+const closeClass =
+  "border-hairline bg-panel text-ink-muted hover:bg-app shrink-0 rounded-lg border px-3 py-1.5 text-xs transition-colors";
 ---
 
-<Layout title="Moje generacje">
+<Layout title={opened ? (opened.title ?? opened.topic) : "Moje generacje"}>
   <div class="bg-app min-h-screen p-4 py-10">
     <div class="mx-auto w-full max-w-2xl">
       <Topbar />
@@ -31,4 +81,90 @@ const items = supabase ? await fetchHistory(supabase) : [];
       />
     </div>
   </div>
+
+  {
+    openParam !== null && (
+      <dialog
+        id="generation-dialog"
+        open
+        aria-labelledby="generation-dialog-title"
+        class="bg-panel border-hairline text-ink backdrop:bg-ink/40 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border p-0 shadow-lg"
+      >
+        <div class="p-6">
+          {opened ? (
+            <>
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <h2 id="generation-dialog-title" class="text-ink text-xl font-bold break-words">
+                    {opened.title ?? opened.topic}
+                  </h2>
+                  <p class="text-ink-subtle mt-1 text-xs">
+                    Temat: {opened.topic} · {formatLabel(opened.format)} ·{" "}
+                    {dateFormat.format(new Date(opened.created_at))} · {wordsLabel(countWords(opened.content))}
+                  </p>
+                </div>
+                <a href="/generations" class:list={closeClass}>
+                  Zamknij
+                </a>
+              </div>
+
+              {/* `whitespace-pre-wrap` — historie maja akapity w tekscie, lista je splaszcza. */}
+              <p class="text-ink mt-5 leading-relaxed whitespace-pre-wrap">{opened.content}</p>
+
+              <div class="border-hairline mt-5 space-y-3 border-t pt-4">
+                <TitleEditor client:load id={opened.id} initialTitle={opened.title} fallback={opened.topic} />
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                  <RatingControls
+                    client:load
+                    id={opened.id}
+                    initialRating={opened.rating}
+                    initialFavourite={opened.is_favourite}
+                  />
+                  <div class="flex items-end gap-2">
+                    <CopyButton client:load text={opened.content} />
+                    {/* Po usunieciu nawigacja na liste, nie reload — reload odpytalby o wiersz, ktorego juz nie ma. */}
+                    <DeleteButton client:load id={opened.id} afterDelete="/generations" />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div class="flex items-start justify-between gap-4">
+              <h2 id="generation-dialog-title" role="alert" class="text-ink text-lg font-semibold">
+                {API_ERRORS.NOT_FOUND.message}
+              </h2>
+              <a href="/generations" class:list={closeClass}>
+                Wróć do historii
+              </a>
+            </div>
+          )}
+        </div>
+      </dialog>
+    )
+  }
 </Layout>
+
+<script>
+  /*
+   * Podniesienie <dialog open> do trybu modalnego.
+   *
+   * Element jest renderowany serwerowo z atrybutem `open`, zeby dzialal bez JS
+   * (widoczny, z dzialajacym linkiem zamkniecia). `showModal()` daje focus-trap,
+   * Escape i tlo — ale rzuca na juz otwartym oknie, wiec `open` trzeba najpierw zdjac.
+   *
+   * NIE przez `dialog.close()`. `close()` emituje zdarzenie `close`, i to
+   * ASYNCHRONICZNIE — spec kolejkuje je jako osobne zadanie, wiec odpala sie juz po
+   * podpieciu nasluchu ponizej, nawet gdy nasluch jest podpiety po `showModal()`.
+   * Zmierzone 2026-09-07: okno zamykalo sie i strona wracala na /generations w chwili
+   * zaladowania. Zdjecie atrybutu `open` wprost NIE emituje `close` — stad
+   * `removeAttribute`, ktore w kazdym innym kontekscie byloby zlym pomyslem.
+   */
+  const dialog = document.getElementById("generation-dialog");
+  if (dialog instanceof HTMLDialogElement) {
+    dialog.removeAttribute("open");
+    dialog.showModal();
+    dialog.addEventListener("close", () => {
+      window.location.assign("/generations");
+    });
+  }
+</script>
