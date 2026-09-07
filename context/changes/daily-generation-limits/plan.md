@@ -538,13 +538,13 @@ usunięcie wymagałoby migracji odwrotnej.
 
 #### Automated
 
-- [x] 4.1 Zestaw integracyjny przechodzi: `npm run test:integration`
-- [x] 4.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
-- [x] 4.3 Kontrola typów przechodzi: `npx astro check`
-- [x] 4.4 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 4.1 Zestaw integracyjny przechodzi: `npm run test:integration` — b264692
+- [x] 4.2 Szybki zestaw pozostaje wolny od Dockera: `npm test` — b264692
+- [x] 4.3 Kontrola typów przechodzi: `npx astro check` — b264692
+- [x] 4.4 Lint plików dotkniętych w tej fazie przechodzi — b264692
 
 #### Manual
 
-- [x] 4.5 Rozszerzenie polityki SELECT do `using (true)` robi zestaw czerwonym
-- [x] 4.6 R-07 w test-planie nie ma już statusu „luka"
-- [x] 4.7 `tech-stack.md` nie zawiera już liczby 50 jako sufitu
+- [x] 4.5 Rozszerzenie polityki SELECT do `using (true)` robi zestaw czerwonym — b264692
+- [x] 4.6 R-07 w test-planie nie ma już statusu „luka" — b264692
+- [x] 4.7 `tech-stack.md` nie zawiera już liczby 50 jako sufitu — b264692
