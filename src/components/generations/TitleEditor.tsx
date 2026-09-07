@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Check, Eraser, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ApiErrorBody, ApiSuccessBody } from "@/types";
+import { readApiError } from "@/lib/api-errors";
+import type { ApiSuccessBody } from "@/types";
 
 interface Generation {
   id: string;
@@ -35,9 +36,9 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
     });
 
     if (!response.ok) {
-      const body: ApiErrorBody = await response.json();
+      const { message, fields } = await readApiError(response);
       // Komunikat pola wygrywa nad ogolnym — uzytkownik ma wiedziec, co poprawic.
-      setError(body.error.fields?.title ?? body.error.message);
+      setError(fields?.title ?? message);
       setStatus("idle");
       return;
     }

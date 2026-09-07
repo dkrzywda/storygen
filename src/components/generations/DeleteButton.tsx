@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
-import type { ApiErrorBody } from "@/types";
+import { readApiError } from "@/lib/api-errors";
 
 /**
  * Trwale usuniecie jednej zapisanej generacji (FR-011).
@@ -19,11 +19,33 @@ interface Props {
   id: string;
 }
 
-type Status = "idle" | "confirming" | "deleting";
+/**
+ * Stan `deleted` istnieje dla przypadku, w ktorym przeladowanie NIE dojdzie
+ * (brak sieci, blad SSR, uspiona karta). Bez niego wiersz zostawalby na ekranie
+ * z przyciskiem zablokowanym na "Usuwam...", choc w bazie go juz nie ma — czyli
+ * interfejs klamalby w strone zachecajaca do drugiej proby, a ta zwrocilaby
+ * celowe 404 dla pozycji, na ktora uzytkownik patrzy. Ustalenie F5 przegladu.
+ */
+type Status = "idle" | "confirming" | "deleting" | "deleted";
 
 export default function DeleteButton({ id }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Focus przenoszony jawnie na "Anuluj" — ustalenie F2 przegladu.
+   *
+   * Galezie spoczynku i potwierdzenia renderuja ROZLACZNE drzewa przyciskow, wiec
+   * po klikniecu "Usun" element z focusem jest odmontowany i focus spada na `body`.
+   * Bez tego kolejny Tab startuje od gory dokumentu, a nie od pytania. Celem jest
+   * "Anuluj", nie "Tak, usun": domyslny cel focusu ma byc bezpieczny.
+   */
+  useEffect(() => {
+    if (status === "confirming") {
+      cancelRef.current?.focus();
+    }
+  }, [status]);
 
   async function remove() {
     setStatus("deleting");
@@ -33,18 +55,25 @@ export default function DeleteButton({ id }: Props) {
       const response = await fetch(`/api/generations/${id}`, { method: "DELETE" });
 
       if (!response.ok) {
-        const body: ApiErrorBody = await response.json();
-        // Komunikat pochodzi z kontraktu bledow, nigdy z tresci technicznej.
-        setError(body.error.message);
+        // `readApiError` zawsze zwraca komunikat — takze gdy cialo nie jest JSON-em
+        // albo `message` jest puste. Patrz uzasadnienie w `@/lib/api-errors`.
+        const { message } = await readApiError(response);
+        setError(message);
         setStatus("idle");
         return;
       }
 
+      setStatus("deleted");
       window.location.reload();
     } catch {
+      // Tu naprawde nie doszlo do serwera — dopiero teraz diagnoza sieciowa jest uczciwa.
       setError("Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.");
       setStatus("idle");
     }
+  }
+
+  if (status === "deleted") {
+    return <p className="text-ink-subtle shrink-0 text-xs">Usunięto</p>;
   }
 
   if (status === "idle") {
@@ -60,37 +89,39 @@ export default function DeleteButton({ id }: Props) {
           <Trash2 className="size-3" />
           Usuń
         </button>
-        {error && <p className="text-danger text-xs">{error}</p>}
+        {error && (
+          <p role="alert" className="text-danger text-xs">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="text-ink-muted text-xs">Na pewno?</span>
-        <button
-          type="button"
-          disabled={status === "deleting"}
-          onClick={() => void remove()}
-          className="bg-danger flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white transition-opacity disabled:opacity-50"
-        >
-          <Trash2 className="size-3" />
-          {status === "deleting" ? "Usuwam…" : "Tak, usuń"}
-        </button>
-        <button
-          type="button"
-          disabled={status === "deleting"}
-          onClick={() => {
-            setStatus("idle");
-            setError(null);
-          }}
-          className="text-ink-muted hover:text-ink text-xs transition-colors disabled:opacity-40"
-        >
-          Anuluj
-        </button>
-      </div>
-      {error && <p className="text-danger text-xs">{error}</p>}
+    <div role="alert" className="flex shrink-0 items-center gap-2">
+      <span className="text-ink-muted text-xs">Na pewno? Tego nie da się odwrócić.</span>
+      <button
+        type="button"
+        disabled={status === "deleting"}
+        onClick={() => void remove()}
+        className="bg-danger hover:bg-danger-strong flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white transition-colors disabled:opacity-50"
+      >
+        <Trash2 className="size-3" />
+        {status === "deleting" ? "Usuwam…" : "Tak, usuń"}
+      </button>
+      <button
+        ref={cancelRef}
+        type="button"
+        disabled={status === "deleting"}
+        onClick={() => {
+          setStatus("idle");
+          setError(null);
+        }}
+        className="text-ink-muted hover:text-ink text-xs transition-colors disabled:opacity-40"
+      >
+        Anuluj
+      </button>
     </div>
   );
 }

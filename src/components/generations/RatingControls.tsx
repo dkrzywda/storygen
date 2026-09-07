@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RATING_MAX } from "@/lib/generation-patch";
-import type { ApiErrorBody } from "@/types";
+import { readApiError } from "@/lib/api-errors";
 
 /**
  * Ocena gwiazdkowa i oznaczenie ulubionego jednej zapisanej generacji.
@@ -36,9 +36,9 @@ export default function RatingControls({ id, initialRating, initialFavourite }: 
         body: JSON.stringify(patch),
       });
       if (!response.ok) {
-        const body: ApiErrorBody = await response.json();
+        const { message } = await readApiError(response);
         rollback();
-        setError(body.error.message);
+        setError(message);
       }
     } catch {
       rollback();

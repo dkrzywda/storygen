@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
 import RatingControls from "@/components/generations/RatingControls";
-import type { ApiErrorBody, ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
+import { readApiError } from "@/lib/api-errors";
+import type { ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
 
 /**
  * FR-004: dwa formaty i to, czym sie roznia dla uzytkownika.
@@ -98,12 +99,12 @@ export default function GenerateForm() {
       });
 
       if (!response.ok) {
-        const body: ApiErrorBody = await response.json();
+        const { message, fields } = await readApiError(response);
         // Komunikat pola wygrywa nad ogolnym — uzytkownik ma wiedziec, co poprawic.
-        if (body.error.fields?.topic) {
-          setTopicError(body.error.fields.topic);
+        if (fields?.topic) {
+          setTopicError(fields.topic);
         } else {
-          setError(body.error.message);
+          setError(message);
         }
         setStatus("idle");
         return;

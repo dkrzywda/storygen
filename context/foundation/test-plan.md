@@ -160,7 +160,7 @@ Zestaw jednostkowy: 7 plików, 164 testy, bez Dockera.
 npm run test:integration
 ```
 
-Zestaw integracyjny: 1 plik, 8 testów. **Wymaga `npx supabase start`**, czyli Dockera i ~7 GB RAM.
+Zestaw integracyjny: 1 plik, 9 testów. **Wymaga `npx supabase start`**, czyli Dockera i ~7 GB RAM.
 
 Testy leżą obok swojego przedmiotu jako `src/**/*.test.ts`, integracyjne jako
 `src/**/*.integration.test.ts` — konfiguracja jednostkowa wyklucza te drugie, żeby `npm test`

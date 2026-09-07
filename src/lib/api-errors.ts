@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from "@/types";
+import type { ApiErrorCode, ApiErrorPayload, ApiFieldErrors } from "@/types";
 
 /**
  * Jedno miejsce, ktore trzyma status HTTP i polski komunikat dla kazdego kodu.
@@ -87,6 +87,54 @@ export function statusForCode(code: ApiErrorCode): number {
  */
 export function messageForCode(value: unknown): string {
   return isApiErrorCode(value) ? API_ERRORS[value].message : API_ERRORS[DEFAULT_ERROR_CODE].message;
+}
+
+/**
+ * Czyta blad z odpowiedzi API i ZAWSZE zwraca komunikat do pokazania.
+ *
+ * Powstalo z ustalenia F1 przegladu `delete-generation`: wyspy robily
+ * `const body: ApiErrorBody = await response.json()` i braly `body.error.message`
+ * na wiare. Dwa realne przypadki to lamia. Ochrona CSRF Astro odrzuca `DELETE`
+ * bez `Origin` odpowiedzia 403 z CZYSTYM TEKSTEM — `json()` rzuca, a uzytkownik
+ * dostaje komunikat o problemie z siecia dla zadania, ktore dotarlo do serwera.
+ * Strona bledu 5xx od hostingu zachowuje sie identycznie. Drugi: gdy cialo sie
+ * sparsuje, ale `message` jest puste, interfejs gasi akapit i nie pokazuje NIC.
+ *
+ * To ta sama awaria, ktora `lessons.md` zapisuje jako "Komunikat bledu od
+ * zewnetrznej uslugi moze byc pusty", osiagnieta z innej strony: nie przez brak
+ * tresci z SDK, a przez brak koperty kontraktu. Brak tresci jest tu NORMALNYM
+ * stanem do obsluzenia, nie sytuacja niemozliwa.
+ */
+export async function readApiError(response: Response): Promise<ApiErrorPayload> {
+  const fallback: ApiErrorPayload = {
+    code: DEFAULT_ERROR_CODE,
+    message: API_ERRORS[DEFAULT_ERROR_CODE].message,
+  };
+
+  let parsed: unknown;
+  try {
+    parsed = await response.json();
+  } catch {
+    // Cialo nie jest JSON-em — czysty tekst, HTML strony bledu, pusta odpowiedz.
+    return fallback;
+  }
+
+  const body = asRecord(parsed);
+  const error = body ? asRecord(body.error) : undefined;
+  if (!error) {
+    return fallback;
+  }
+
+  const message = readString(error, "message")?.trim();
+  const code = readString(error, "code");
+  const fields = asRecord(error.fields);
+
+  return {
+    code: isApiErrorCode(code) ? code : fallback.code,
+    // Puste `message` traktowane jak brakujace — to sedno tego helpera.
+    message: message && message.length > 0 ? message : fallback.message,
+    ...(fields ? { fields: fields as ApiFieldErrors } : {}),
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

@@ -30,8 +30,17 @@ import { beforeAll, describe, expect, it } from "vitest";
  * sie nie mieszaja, a kumulacje czysci `npx supabase db reset`.
  */
 
+/*
+ * Typy Cloudflare (`worker-configuration.d.ts`, generowane przez `npx wrangler types`)
+ * deklaruja `process.env.X` jako nie-opcjonalne, wiec ESLint uwaza `??` za zbedne.
+ * Typy klamia: bez ustawionych zmiennych srodowiskowych te wartosci sa `undefined`
+ * i test musi miec wartosc domyslna. Usuniecie `??` dla lintera zepsuloby test,
+ * dlatego regula jest wyciszona tutaj, a nie kod naprawiony pod nia. Ustalenie F9.
+ */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
 const SUPABASE_KEY = process.env.SUPABASE_KEY ?? "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+/* eslint-enable @typescript-eslint/no-unnecessary-condition */
 
 /**
  * Dwie bariery przeciw falszywemu zielonemu wynikowi.
@@ -151,6 +160,47 @@ describe("izolacja kont na tabeli generations (R-05)", () => {
 
     // Polityka insert ma `with check` na wlasnym user_id, wiec baza odrzuca zapis.
     expect(error).not.toBeNull();
+  });
+
+  /**
+   * Anonim (klient bez sesji) nie usuwa niczego. Ustalenie F6 przegladu.
+   *
+   * Pozostale przypadki uzywaja dwoch ZAREJESTROWANYCH kont, wiec ten jest jedynym,
+   * ktory w ogole dotyka roli `anon`. ZMIERZONE 2026-09-07, co dokladnie dowodzi:
+   * rozszerzenie SAMEJ polityki `delete` do `to public using (true)` NIE robi go
+   * czerwonym — anonima nadal blokuje polityka SELECT, bo `delete ... where` czyta
+   * wiersze. Czerwony pojawia sie dopiero przy rozszerzeniu obu. Czyli ma ten sam
+   * zasieg dowodowy co reszta pliku: zadna kombinacja polityk nie wystawia usuwania
+   * anonimowi — a nie: klauzula roli w polityce `delete` wziela osobno.
+   *
+   * WLASNY wiersz, nie `aliceRowId`: przy zepsutych politykach ten przypadek jako
+   * pierwszy usunalby wspolny wiersz i "Bob nie usuwa cudzego" przeszedlby falszywie
+   * (zero wierszy, bo juz ich nie ma). Zmierzone w tym samym eksperymencie.
+   */
+  it("anonim nie usuwa niczego", async () => {
+    const { data: created, error: insertError } = await alice
+      .from("generations")
+      .insert({
+        user_id: aliceId,
+        topic: "cel dla anonima",
+        format: "joke",
+        length_preset: "short",
+        content: "Wiersz, ktorego anonim nie ma prawa usunac.",
+      })
+      .select("id")
+      .single();
+    if (insertError) {
+      throw new Error(`Alice nie zapisala wiersza dla anonima: ${insertError.message || "brak tresci bledu"}`);
+    }
+
+    const anon = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
+    const { data, error } = await anon.from("generations").delete().eq("id", created.id).select();
+
+    expect(error).toBeNull();
+    expect(data).toHaveLength(0);
+
+    const { data: still } = await alice.from("generations").select("id").eq("id", created.id);
+    expect(still).toHaveLength(1);
   });
 
   it("Bob nie usuwa cudzego wiersza", async () => {
