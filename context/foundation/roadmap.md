@@ -80,7 +80,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
 | S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
-| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
+| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | done        |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | done        |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done        |
 | S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done        |
@@ -275,7 +275,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   izolację widać już na liście z `S-08` i pokrywa ją test integracyjny (R-05 w test-planie).
   Zostaje ryzyko właściwe temu plastrowi: otwarcie pozycji w całości wprowadza drugi punkt
   odczytu, a każdy nowy odczyt to nowa okazja do obejścia RLS filtrem w kodzie.
-- **Status:** proposed
+- **Status:** done
 
 ### S-06: Użytkownik usuwa pozycję z własnej historii
 
@@ -481,3 +481,4 @@ Co z tego wynika dla czytelnika:
 - **F-01: (foundation) jeden, zapisany kształt odpowiedzi dla endpointów nie-auth, walidacja wejścia na granicy API, oraz jeden mechanizm mapowania błędów na komunikaty po polsku** — Archived 2026-09-04 → `context/archive/2026-09-03-api-error-contract/`. Lesson: —.
 - **S-08: użytkownik nadaje pozycji w historii własny tytuł i może go później zmienić** — Archived 2026-09-04 → `context/archive/2026-09-03-annotate-generation/`. Lesson: —.
 - **S-06: użytkownik usuwa wybraną generację ze swojej historii i nie widzi jej ponownie.** — Archived 2026-09-07 → `context/archive/2026-09-07-delete-generation/`. Lesson: —.
+- **S-05: użytkownik widzi własne generacje od najnowszej i otwiera dowolną z nich w całości; próba sięgnięcia po cudzą jest odrzucana.** — Archived 2026-09-07 → `context/archive/2026-09-07-browse-generation-history/`. Lesson: —.
