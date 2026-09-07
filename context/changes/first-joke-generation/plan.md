@@ -564,8 +564,8 @@ o tym wiedzieć.
 
 #### Automated
 
-- [x] 5.1 R-06 ma w test-planie status pokryte
-- [x] 5.2 Prettier przechodzi na zmienionych dokumentach
+- [x] 5.1 R-06 ma w test-planie status pokryte — 976c83c
+- [x] 5.2 Prettier przechodzi na zmienionych dokumentach — 976c83c
 
 #### Manual
 
