@@ -5,10 +5,12 @@ import { beforeAll, describe, expect, it } from "vitest";
 /**
  * R-07 z `context/foundation/test-plan.md` — czesc zyjaca w bazie.
  *
- * Ryzyko ma dwie twarze. Decyzje bramki bierze `src/lib/limits.test.ts` (bez bazy).
- * Ten zestaw bierze to, czego test jednostkowy dotknac nie moze: polityki RLS nowej
- * tabeli, WYJATEK `security definer` i arytmetyke doby — wszystkie trzy zyja
- * w Postgresie, nie w TypeScripcie.
+ * Od ustalenia F2 przegladu ten plik niesie **cala decyzje o limicie**, nie tylko jej
+ * otoczenie. Liczenie, decyzja i zapis wchodza do jednej serializowanej instrukcji
+ * `public.record_attempt_if_allowed()`, a progi 10 i 30 mieszkaja w SQL, bo parametrem
+ * dalyby sie obejsc. Testowi jednostkowemu zostalo tlumaczenie odpowiedzi bramki
+ * (`src/lib/limits.test.ts`) — wszystko inne jest tutaj: polityki RLS, wyjatki
+ * `security definer`, progi, arytmetyka doby i sama egzekucja limitu.
  *
  * Wymaga `npx supabase start`. Uruchamiany przez `npm run test:integration`.
  *
@@ -22,9 +24,10 @@ import { beforeAll, describe, expect, it } from "vitest";
  * `alter default privileges`. Bez wymienienia rol z nazwy niezalogowany odczytywal
  * `app_count` przez PostgREST. Przypadek "anonim nie wywola licznika" jest tego straznikiem.
  *
- * CZEGO TEN ZESTAW NIE DOWODZI: nie dotyka wyscigu dwoch rownoleglych zadan tego
- * samego konta. Odczyt licznika i zapis proby to dwie operacje, wiec oba zadania moga
- * zobaczyc ten sam stan i oba przejsc. Swiadomie niedomkniete — patrz plan, Open Risks.
+ * CZEGO TEN ZESTAW NIE DOWODZI: nie uruchamia prawdziwej wspolbieznosci. Wyscig
+ * zamknela blokada doradcza w `record_attempt_if_allowed()`, ale dowodem na to jest
+ * ksztalt funkcji, nie test — rzetelne sprawdzenie wymagaloby rownoleglych polaczen
+ * i mierzenia, ile z nich przeszlo, czego ten runner nie robi.
  */
 
 /*
@@ -109,6 +112,8 @@ async function settleAuth(client: SupabaseClient<Database>): Promise<void> {
 interface Usage {
   own_count: number;
   app_count: number;
+  own_limit: number;
+  app_limit: number;
   resets_at: string;
 }
 
@@ -143,17 +148,43 @@ describe("licznik prob i wyjatek od RLS (R-07)", () => {
 
     // Baza jest wspoldzielona miedzy przebiegami, wiec `app_count` NIE moze byc
     // sprawdzany wartoscia bezwzgledna — tylko przyrostem wzgledem tego punktu.
-    appCountBefore = (await readUsage(bob)).app_count;
+    const baseline = await readUsage(bob);
+    appCountBefore = baseline.app_count;
 
-    const rows = Array.from({ length: ALICE_ATTEMPTS_TODAY }, () => ({
-      user_id: aliceId,
-      format: "joke",
-    }));
-    const { data, error } = await alice.from("generation_attempts").insert(rows).select("id");
-    if (error) {
-      throw new Error(`Alice nie zapisala prob: ${error.message || "brak tresci bledu"}`);
+    /*
+     * WARUNEK WSTEPNY, nie ostroznosc. Ten zestaw ZUZYWA dzienny sufit aplikacji —
+     * okolo 15 miejsc z 30 na przebieg — a wyzerowac go z klienta NIE DA SIE, bo tabela
+     * prob nie ma polityki DELETE (to jest jej mechanizm, nie brak). Drugi przebieg tego
+     * samego dnia jeszcze przejdzie, trzeci juz nie.
+     *
+     * Bez tego sprawdzenia trzeci przebieg wywracalby sie w `beforeAll` na zapisie proby
+     * z komunikatem o niczym. Tutaj mowi wprost, co zrobic.
+     */
+    const budgetNeeded = ALICE_ATTEMPTS_TODAY + baseline.own_limit + 3;
+    const budgetFree = baseline.app_limit - baseline.app_count;
+    if (budgetFree < budgetNeeded) {
+      throw new Error(
+        `Zestaw potrzebuje ${String(budgetNeeded)} wolnych miejsc w dziennym sufcie aplikacji, ` +
+          `a wolnych jest ${String(budgetFree)} z ${String(baseline.app_limit)}. ` +
+          "Licznika nie da sie wyzerowac z klienta (brak polityki DELETE) — " +
+          "uruchom `npx supabase db reset` przed testami.",
+      );
     }
-    aliceRowId = data[0].id;
+
+    // Zapis idzie przez RPC, bo od ustalenia F1 przegladu klient NIE MA prawa pisac
+    // do tabeli wprost — patrz `20260907221126_harden_generation_attempts.sql`.
+    for (let i = 0; i < ALICE_ATTEMPTS_TODAY; i += 1) {
+      const { error } = await alice.rpc("record_attempt_if_allowed", { p_format: "joke" });
+      if (error) {
+        throw new Error(`Alice nie zapisala proby: ${error.message || "brak tresci bledu"}`);
+      }
+    }
+
+    const { data, error } = await alice.from("generation_attempts").select("id").limit(1).single();
+    if (error) {
+      throw new Error(`Alice nie odczytala wlasnej proby: ${error.message || "brak tresci bledu"}`);
+    }
+    aliceRowId = data.id;
   });
 
   describe("polityki tabeli", () => {
@@ -172,19 +203,34 @@ describe("licznik prob i wyjatek od RLS (R-07)", () => {
     });
 
     /*
-     * Zapis na cudze konto jest tu grozniejszy niz w tabeli `generations`. Tam
-     * podrzucony wiersz zasmieca komus historie. Tutaj PODNOSI CUDZY LICZNIK, czyli
-     * pozwala zablokowac obcemu kontu generowanie na cala dobe — odmowa uslugi na
-     * wybranej ofierze. Dlatego kierunek jest sprawdzany w obie strony, a nie raz.
+     * STRAZNIK USTALENIA F1 PRZEGLADU — najwazniejszy przypadek w tej sekcji.
+     *
+     * Dopoki `authenticated` mial `grant insert` na tej tabeli, mogl podac WLASNY
+     * `created_at`. Wiersz z data w przyszlosci liczyl sie do biezacej doby bez konca
+     * (funkcja nie miala gornej granicy okna), a usunac go nie mogl nikt, bo polityki
+     * DELETE nie ma i nie ma klienta `service_role`. Trzydziesci wstawien z dowolnego
+     * konta blokowalo generowanie WSZYSTKIM bezterminowo. Zmierzone 2026-09-07:
+     * app_count 24 → wiersz z data 2030 → 25, `DELETE 0`.
+     *
+     * Prawo zapisu zostalo odebrane, wiec caly ten atak jest teraz niekonstruowalny.
      */
-    it("Bob nie zapisze proby na konto Alice", async () => {
-      const { error } = await bob.from("generation_attempts").insert({ user_id: aliceId, format: "joke" });
-      // `with check (auth.uid() = user_id)` — baza odrzuca zapis, nie filtruje go po cichu.
+    it("zalogowany nie zapisze wprost do tabeli, nawet na wlasne konto", async () => {
+      const { error } = await alice.from("generation_attempts").insert({ user_id: aliceId, format: "joke" });
       expect(error).not.toBeNull();
     });
 
-    it("Alice nie zapisze proby na konto Boba", async () => {
-      const { error } = await alice.from("generation_attempts").insert({ user_id: bobId, format: "story" });
+    it("zalogowany nie zapisze wprost wiersza z data w przyszlosci", async () => {
+      const { error } = await alice.from("generation_attempts").insert({
+        user_id: aliceId,
+        format: "joke",
+        created_at: "2030-01-01T00:00:00Z",
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("anonim nie zapisze proby", async () => {
+      const anon = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
+      const { error } = await anon.rpc("record_attempt_if_allowed", { p_format: "joke" });
       expect(error).not.toBeNull();
     });
 
@@ -237,11 +283,25 @@ describe("licznik prob i wyjatek od RLS (R-07)", () => {
       expect(usage.own_count).toBe(ALICE_ATTEMPTS_TODAY);
     });
 
-    it("funkcja zwraca wylacznie trzy skalary — zadnego identyfikatora ani tresci", async () => {
+    it("funkcja zwraca wylacznie skalary — zadnego identyfikatora ani tresci", async () => {
       const usage = await readUsage(bob);
       // Wyjatek od RLS oddaje LICZBY. Nowe pole w tej funkcji to nowa powierzchnia
       // wycieku, wiec ksztalt jest tu pilnowany wprost, a nie przez typy.
-      expect(Object.keys(usage).sort()).toEqual(["app_count", "own_count", "resets_at"]);
+      expect(Object.keys(usage).sort()).toEqual(["app_count", "app_limit", "own_count", "own_limit", "resets_at"]);
+    });
+
+    /*
+     * Progi przyszly z baza, nie z TypeScriptu — ustalenie F2. Gdyby interfejs czytal
+     * wlasne stale, a baza egzekwowala swoje, rozjazd ujawnilby sie dopiero jako odmowa
+     * przy liczniku pokazujacym wolne miejsce.
+     */
+    it("funkcja zwraca obowiazujace progi, a nie tylko liczniki", async () => {
+      const usage = await readUsage(alice);
+      expect(usage.own_limit).toBeGreaterThan(0);
+      expect(usage.app_limit).toBeGreaterThan(0);
+      // Zalozenie projektowe FR-012: prog na konto jest ulamkiem sufitu, inaczej jedno
+      // konto zjada cala aplikacje i prog przestaje byc granica sprawiedliwosci.
+      expect(usage.own_limit).toBeLessThan(usage.app_limit);
     });
 
     /*
@@ -257,19 +317,25 @@ describe("licznik prob i wyjatek od RLS (R-07)", () => {
   });
 
   describe("granica doby (Europe/Warsaw)", () => {
-    it("proba sprzed lokalnej polnocy nie liczy sie do dzisiejszej doby", async () => {
+    /*
+     * DO F1 STAL TU PRZYPADEK "proba sprzed lokalnej polnocy nie liczy sie do dzisiejszej
+     * doby". Wstawial wiersz z wlasnym `created_at` — czyli robil dokladnie to, co
+     * okazalo sie luka, tyle ze w niegrozna strone. Po odebraniu klientom prawa zapisu
+     * nie da sie go napisac, i to jest MOCNIEJSZA gwarancja niz test: jedynym pisarzem
+     * jest `record_attempt()`, ktora uzywa `now()`, wiec wiersz poza biezaca doba nie
+     * powstanie. Gorna granica okna (`created_at < ends_at`) zostaje w funkcji jako
+     * druga warstwa i jest sprawdzalna tylko na poziomie bazy, nie przez tego klienta.
+     *
+     * Zostaje to, co z klienta widac: swiezo zapisana proba WCHODZI do biezacej doby.
+     */
+    it("swiezo zapisana proba liczy sie do biezacej doby", async () => {
       const before = await readUsage(alice);
-
-      const yesterday = new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString();
-      const { error } = await alice
-        .from("generation_attempts")
-        .insert({ user_id: aliceId, format: "story", created_at: yesterday });
-      if (error) {
-        throw new Error(`Alice nie zapisala wczorajszej proby: ${error.message || "brak tresci bledu"}`);
-      }
+      const { error } = await alice.rpc("record_attempt_if_allowed", { p_format: "joke" });
+      expect(error).toBeNull();
 
       const after = await readUsage(alice);
-      expect(after.own_count).toBe(before.own_count);
+      expect(after.own_count).toBe(before.own_count + 1);
+      expect(after.app_count).toBe(before.app_count + 1);
     });
 
     it("moment odnowienia wypada o polnocy czasu warszawskiego", async () => {
@@ -298,6 +364,66 @@ describe("licznik prob i wyjatek od RLS (R-07)", () => {
     it("Bob ma zerowe wlasne zuzycie", async () => {
       const usage = await readUsage(bob);
       expect(usage.own_count).toBe(0);
+    });
+  });
+
+  /*
+   * EGZEKUCJA LIMITU — od F2 to jest serce R-07 i zyje w calosci w bazie.
+   *
+   * Uzywa WLASNEGO, trzeciego konta: wyczerpanie limitu Alice albo Boba rozjechaloby
+   * wszystkie wczesniejsze asercje o ich licznikach. Kosztuje `own_limit` miejsc
+   * w dziennym sufcie aplikacji — stad warunek wstepny w `beforeAll`.
+   */
+  describe("egzekucja limitu na konto", () => {
+    it("bramka przepuszcza do limitu, potem odmawia, a odmowa nie zapisuje proby", async () => {
+      const carol = await signUpFreshUser();
+      await settleAuth(carol);
+
+      const { own_limit: ownLimit } = await readUsage(carol);
+
+      for (let i = 0; i < ownLimit; i += 1) {
+        const { data, error } = await carol.rpc("record_attempt_if_allowed", { p_format: "joke" });
+        expect(error).toBeNull();
+        expect(data).toBe("ok");
+      }
+
+      const { data: refused, error } = await carol.rpc("record_attempt_if_allowed", { p_format: "joke" });
+      expect(error).toBeNull();
+      expect(refused).toBe("DAILY_LIMIT_REACHED");
+
+      // Odmowa NIE moze zajmowac miejsca. Gdyby zajmowala, kazda odbita proba
+      // pogarszalaby sytuacje konta, ktore juz nic nie moze zrobic.
+      const after = await readUsage(carol);
+      expect(after.own_count).toBe(ownLimit);
+    });
+  });
+
+  /*
+   * Ten blok stoi OSTATNI celowo: jako jedyny dopisuje probe Bobowi, wiec uruchomiony
+   * wczesniej rozjechalby wszystkie asercje o jego zerowym zuzyciu. Kolejnosc jest tu
+   * warunkiem poprawnosci i dlatego jest napisana wprost, a nie zostawiona domyslnie.
+   *
+   * Zastepuje dwa przypadki sprzed F1 ("Bob nie zapisze na konto Alice" i odwrotnie).
+   * Po odebraniu klientom prawa zapisu ta mozliwosc nie istnieje nawet do
+   * przetestowania — `record_attempt` nie przyjmuje `user_id`. Sprawdzamy rzecz
+   * rownowazna: ze funkcja przypisuje probe WOLAJACEMU.
+   */
+  describe("atrybucja zapisu przez record_attempt", () => {
+    // Jeden przypadek, nie dwa: obie asercje musza patrzec na TEN SAM zapis Boba,
+    // a rozbicie ich wiazaloby drugi przypadek z liczba prob Alice sprzed niego.
+    it("proba trafia na konto wolajacego i nie rusza zuzycia innego konta", async () => {
+      const aliceBefore = await readUsage(alice);
+
+      const { error } = await bob.rpc("record_attempt_if_allowed", { p_format: "story" });
+      expect(error).toBeNull();
+
+      const { data } = await bob.from("generation_attempts").select("user_id, format");
+      expect(data).toHaveLength(1);
+      expect(data?.[0].user_id).toBe(bobId);
+      expect(data?.[0].format).toBe("story");
+
+      const aliceAfter = await readUsage(alice);
+      expect(aliceAfter.own_count).toBe(aliceBefore.own_count);
     });
   });
 });

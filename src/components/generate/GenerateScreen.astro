@@ -2,7 +2,7 @@
 import Topbar from "@/components/Topbar.astro";
 import GenerateForm from "@/components/generate/GenerateForm";
 import { createClient } from "@/lib/supabase";
-import { DAILY_PER_ACCOUNT, fetchUsageToday } from "@/lib/limits";
+import { fetchUsageToday } from "@/lib/limits";
 import { resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 
@@ -30,7 +30,7 @@ if (supabase) {
     const today = await fetchUsageToday(supabase);
     usage = {
       own: today.own,
-      limit: DAILY_PER_ACCOUNT,
+      limit: today.ownLimit,
       resetsAt: resetTimeFormat.format(today.resetsAt),
     };
   } catch (error) {

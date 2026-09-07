@@ -93,11 +93,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      daily_app_ceiling: { Args: never; Returns: number };
+      daily_per_account: { Args: never; Returns: number };
+      record_attempt_if_allowed: { Args: { p_format: string }; Returns: string };
       usage_today: {
         Args: never;
         Returns: {
           app_count: number;
+          app_limit: number;
           own_count: number;
+          own_limit: number;
           resets_at: string;
         }[];
       };

@@ -4,7 +4,7 @@ import Topbar from "@/components/Topbar.astro";
 import GenerationList from "@/components/generations/GenerationList.astro";
 import { createClient } from "@/lib/supabase";
 import { fetchFavourites, fetchRanking } from "@/lib/generations";
-import { DAILY_APP_CEILING, DAILY_PER_ACCOUNT, fetchUsageToday, type UsageToday } from "@/lib/limits";
+import { fetchUsageToday, type UsageToday } from "@/lib/limits";
 import { resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 import type { GenerationFormat } from "@/types";
@@ -88,13 +88,13 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
               <div class="flex flex-wrap items-baseline justify-between gap-x-4">
                 <span class="text-ink text-sm font-medium">Twój dzienny limit</span>
                 <span class="text-ink-muted text-sm">
-                  {usage.own} z {DAILY_PER_ACCOUNT}
+                  {usage.own} z {usage.ownLimit}
                 </span>
               </div>
               <div class="mt-1 flex flex-wrap items-baseline justify-between gap-x-4">
                 <span class="text-ink-muted text-sm">Cała aplikacja</span>
                 <span class="text-ink-muted text-sm">
-                  {usage.app} z {DAILY_APP_CEILING}
+                  {usage.app} z {usage.appLimit}
                 </span>
               </div>
               <p class="text-ink-subtle mt-2 text-xs">

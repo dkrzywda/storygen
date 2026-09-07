@@ -1,7 +1,7 @@
 ---
 change_id: daily-generation-limits
 title: Dzienny limit na konto i sufit dzienny całej aplikacji
-status: implemented
+status: impl_reviewed
 created: 2026-09-07
 updated: 2026-09-07
 archived_at: null

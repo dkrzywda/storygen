@@ -6,7 +6,7 @@ import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
 import { generateRequestSchema } from "@/lib/generate-request";
 import { checkFormatContract, wordLimitFor } from "@/lib/format-contract";
-import { checkLimits, fetchUsageToday, recordAttempt } from "@/lib/limits";
+import { reserveAttempt, type GateOutcome } from "@/lib/limits";
 import {
   CREATIVE_TEMPERATURE,
   buildRetryUserPrompt,
@@ -73,10 +73,10 @@ export const POST: APIRoute = async (context) => {
    * BRAMKA LIMITOW (FR-012, FR-013) — wszystko ponizej tego bloku kosztuje neurony,
    * wszystko powyzej jest darmowe.
    *
-   * Fail-closed w trzech miejscach: bez klienta, bez odczytu licznika i bez zapisu
-   * proby generowanie NIE startuje. Bez licznika nie ma sufitu, a sufit, ktory przy
-   * awarii przestaje obowiazywac, nie jest sufitem — to jest dokladnie R-07
-   * z `test-plan.md`: awaria, ktorej objawem jest rachunek, nie blad na ekranie.
+   * Fail-closed w dwoch miejscach: bez klienta Supabase i bez udanej rezerwacji
+   * generowanie NIE startuje. Sufit, ktory przy awarii przestaje obowiazywac, nie
+   * jest sufitem — to jest dokladnie R-07 z `test-plan.md`: awaria, ktorej objawem
+   * jest rachunek, nie blad na ekranie.
    *
    * Zmiana zachowania wzgledem stanu sprzed S-04: przy nieskonfigurowanym Supabase
    * endpoint generowal i tylko nie zapisywal. Teraz odmawia. Swiadoma strata funkcji
@@ -86,14 +86,20 @@ export const POST: APIRoute = async (context) => {
     return jsonError("NOT_CONFIGURED");
   }
 
-  let usage;
+  let decision: GateOutcome;
   try {
-    usage = await fetchUsageToday(supabase);
+    // JEDNO wywolanie zamiast trzech krokow — ustalenie F2 przegladu. Liczenie,
+    // decyzja i zapis dzieja sie w bazie, w jednej serializowanej instrukcji, wiec
+    // rownolegle zadania nie moga juz zobaczyc tego samego stanu i wszystkie przejsc.
+    //
+    // Rezerwacja jest JEDNA na zadanie, nie na wywolanie modelu. Regula jednej
+    // ponownej proby moze wolac model dwa razy, a sufit 30 byl policzony wlasnie
+    // jako 30 pozycji z ponowna proba w cenie.
+    decision = await reserveAttempt(supabase, format);
   } catch (error) {
     return fail("INTERNAL", error);
   }
 
-  const decision = checkLimits(usage);
   if (!decision.ok) {
     // BEZ `fail()`. Wyczerpany limit to sciezka spodziewana, nie awaria — tak samo jak
     // `TOPIC_REJECTED`. Logowanie jej jako bledu zasmiecaloby observability zdarzeniem,
@@ -101,18 +107,10 @@ export const POST: APIRoute = async (context) => {
     return jsonError(decision.code);
   }
 
-  try {
-    // JEDEN wiersz na zadanie, nie na wywolanie modelu. Regula jednej ponownej proby
-    // moze wolac model dwa razy, a sufit 30 byl policzony wlasnie jako 30 pozycji
-    // z ponowna proba w cenie — patrz komentarz przy DAILY_APP_CEILING.
-    await recordAttempt(supabase, { userId, format });
-  } catch (error) {
-    return fail("INTERNAL", error);
-  }
-
-  // Budzet czasu startuje PO bramce. Gdyby `deadline` powstal wczesniej, dwa obroty
-  // do bazy zjadalyby czas obiecany uzytkownikowi w NFR (15 s / 30 s) i model
-  // dostawalby go mniej, im wolniejsza baza.
+  // Budzet czasu startuje PO bramce. Gdyby `deadline` powstal wczesniej, obrot do bazy
+  // zjadalby czas obiecany uzytkownikowi w NFR (15 s / 30 s) i model dostawalby go tym
+  // mniej, im wolniejsza baza. Cena tej decyzji: czas rezerwacji lezy POZA zegarem NFR,
+  // wiec laczny czas odczuwany moze przekroczyc 15 s / 30 s o czas bazy (ustalenie F6).
   const system = buildSystemPrompt(format);
   const maxTokens = maxTokensFor(wordLimit);
   const deadline = Date.now() + TOTAL_BUDGET_MS[format] - OVERHEAD_MS;
