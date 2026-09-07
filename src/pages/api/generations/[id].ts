@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase";
 import { jsonError, jsonOk } from "@/lib/api-response";
 import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
-import { generationTitleSchema, normalizeTitle } from "@/lib/generation-title";
+import { normalizeTitle } from "@/lib/generation-title";
+import { generationPatchSchema } from "@/lib/generation-patch";
+import type { Database } from "@/lib/database.types";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,7 +31,7 @@ export const PATCH: APIRoute = async (context) => {
     return jsonError("VALIDATION_FAILED", { _: "Treść żądania musi być poprawnym JSON-em." });
   }
 
-  const parsed = validate(generationTitleSchema, body);
+  const parsed = validate(generationPatchSchema, body);
   if (!parsed.ok) {
     return jsonError("VALIDATION_FAILED", parsed.fields);
   }
@@ -39,11 +41,21 @@ export const PATCH: APIRoute = async (context) => {
     return jsonError("NOT_CONFIGURED");
   }
 
-  const { data, error } = await supabase
-    .from("generations")
-    .update({ title: normalizeTitle(parsed.data.title) })
-    .eq("id", id)
-    .select();
+  // Do zapytania trafiaja WYLACZNIE pola obecne w zadaniu. Porownanie z `undefined`,
+  // a nie `in`, bo `rating: null` jest wartoscia znaczaca (kasuje ocene) i musi
+  // przejsc, podczas gdy brak pola musi zostac pominiety.
+  const update: Database["public"]["Tables"]["generations"]["Update"] = {};
+  if (parsed.data.title !== undefined) {
+    update.title = normalizeTitle(parsed.data.title);
+  }
+  if (parsed.data.rating !== undefined) {
+    update.rating = parsed.data.rating;
+  }
+  if (parsed.data.isFavourite !== undefined) {
+    update.is_favourite = parsed.data.isFavourite;
+  }
+
+  const { data, error } = await supabase.from("generations").update(update).eq("id", id).select();
 
   if (error) {
     const code = toApiErrorCode(error);

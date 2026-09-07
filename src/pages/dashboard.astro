@@ -1,27 +1,105 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import GenerationList from "@/components/generations/GenerationList.astro";
+import { createClient } from "@/lib/supabase";
+import { fetchFavourites, fetchRanking } from "@/lib/generations";
+import type { GenerationFormat } from "@/types";
 
-const { user } = Astro.locals;
+// Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+/**
+ * Zakladki jada przez parametry adresu, nie przez wyspe Reacta.
+ *
+ * Powod jest konkretny: kazda zakladka to inne ZAPYTANIE do bazy, wiec wyspa
+ * musialaby i tak wolac serwer. Przy parametrach zakladka ma wlasny adres — da sie
+ * ja odswiezyc, wrocic do niej przyciskiem wstecz i wkleic komus link.
+ *
+ * Wartosci spoza zbioru NIE sa bledem — schodza do domyslnych. Adres wpisuje
+ * czlowiek i literowka w `?tab=` nie powinna dawac komunikatu o bledzie.
+ */
+const tab = Astro.url.searchParams.get("tab") === "favourites" ? "favourites" : "ranking";
+const format: GenerationFormat = Astro.url.searchParams.get("format") === "story" ? "story" : "joke";
+
+const items = supabase
+  ? tab === "favourites"
+    ? await fetchFavourites(supabase)
+    : await fetchRanking(supabase, format)
+  : [];
+
+const TABS = [
+  { key: "ranking", label: "Ranking", href: "/dashboard?tab=ranking&format=joke" },
+  { key: "favourites", label: "Ulubione", href: "/dashboard?tab=favourites" },
+];
+
+const FORMAT_TABS: { key: GenerationFormat; label: string }[] = [
+  { key: "joke", label: "Dowcipy" },
+  { key: "story", label: "Historie" },
+];
+
+const tabClass = "rounded-lg border px-4 py-2 text-sm transition-colors";
+const activeClass = "border-purple-400 bg-purple-600/30 text-white";
+const idleClass = "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10";
 ---
 
-<Layout title="Dashboard">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Dashboard
+<Layout title="Panel">
+  <div class="bg-cosmic min-h-screen p-4 py-10">
+    <div class="mx-auto w-full max-w-2xl">
+      <Topbar />
+
+      <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+        Panel
       </h1>
-      <p class="text-blue-100/80">
-        Welcome, <span class="font-semibold text-white">{user?.email}</span>
+      <p class="mb-6 text-sm text-blue-100/60">Twoje oceny i ulubione. Widzisz wyłącznie własne teksty.</p>
+
+      <nav class="mb-4 flex gap-2" aria-label="Zakładki panelu">
+        {
+          TABS.map((entry) => (
+            <a href={entry.href} class:list={`${tabClass} ${tab === entry.key ? activeClass : idleClass}`}>
+              {entry.label}
+            </a>
+          ))
+        }
+      </nav>
+
+      {
+        tab === "ranking" && (
+          <nav class="mb-6 flex gap-2" aria-label="Format w rankingu">
+            {FORMAT_TABS.map((entry) => (
+              <a
+                href={`/dashboard?tab=ranking&format=${entry.key}`}
+                class:list={`${tabClass} ${format === entry.key ? activeClass : idleClass}`}
+              >
+                {entry.label}
+              </a>
+            ))}
+          </nav>
+        )
+      }
+
+      {
+        tab === "ranking" ? (
+          <GenerationList
+            items={items}
+            ranked
+            emptyTitle={
+              format === "joke" ? "Żaden dowcip nie ma jeszcze oceny." : "Żadna historia nie ma jeszcze oceny."
+            }
+            emptyHint="Oceń tekst gwiazdkami w historii albo zaraz po wygenerowaniu — ranking pokazuje tylko ocenione pozycje."
+          />
+        ) : (
+          <GenerationList
+            items={items}
+            emptyTitle="Nie masz jeszcze ulubionych."
+            emptyHint="Kliknij serce przy tekście, żeby trafił tutaj."
+          />
+        )
+      }
+
+      <p class="mt-8 text-center text-xs text-blue-100/30">
+        <a href="/generations" class="hover:text-blue-100/60 hover:underline">Zobacz całą historię</a>
       </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-        >
-          Sign out
-        </button>
-      </form>
     </div>
   </div>
 </Layout>

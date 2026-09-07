@@ -2,9 +2,10 @@ import type { createClient } from "@/lib/supabase";
 import type { GenerationFormat, LengthPreset } from "@/types";
 
 /**
- * Dostep do tabeli `generations` — zapis po generowaniu oraz odczyt historii.
+ * Dostep do tabeli `generations` — zapis po generowaniu oraz odczyty dla historii,
+ * rankingu i ulubionych.
  *
- * Odczyt nie filtruje po `user_id`. Izolacja kont stoi na RLS
+ * ZADEN z tych odczytow nie filtruje po `user_id`. Izolacja kont stoi na RLS
  * (`generations_select_own`), a filtr w kodzie dawalby ten sam wynik dla poprawnej
  * polityki i MASKOWAL bledna — czyli odbieralby testom RLS sile dowodowa.
  */
@@ -13,10 +14,10 @@ import type { GenerationFormat, LengthPreset } from "@/types";
 type Client = NonNullable<ReturnType<typeof createClient>>;
 
 /**
- * Kolumny czytane przez widok historii. Trzymane w stalej, bo kolejne widoki nad
- * ta tabela maja czytac dokladnie to samo.
+ * Kolumny czytane przez wszystkie trzy widoki. Jedna lista, bo trzy niezalezne
+ * `select` rozjechalyby sie przy dodaniu kolumny i jeden widok pokazywalby mniej.
  */
-const LIST_COLUMNS = "id, title, content, format, length_preset, created_at";
+const LIST_COLUMNS = "id, title, content, format, length_preset, rating, is_favourite, created_at";
 
 export interface SaveGenerationInput {
   userId: string;
@@ -56,5 +57,33 @@ export async function saveGeneration(supabase: Client, input: SaveGenerationInpu
 /** Historia: wszystko, od najnowszego. */
 export async function fetchHistory(supabase: Client) {
   const { data } = await supabase.from("generations").select(LIST_COLUMNS).order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/**
+ * Ranking jednego formatu: od najwyzej ocenionych.
+ *
+ * Nieocenione pozycje sa POMIJANE, nie wyswietlane na koncu — ranking pozycji bez
+ * ocen nie jest rankingiem. Data rozstrzyga remisy, zeby kolejnosc byla stabilna
+ * miedzy odswiezeniami; bez tego dwie oceny 5/5 zmienialyby miejsca losowo.
+ */
+export async function fetchRanking(supabase: Client, format: GenerationFormat) {
+  const { data } = await supabase
+    .from("generations")
+    .select(LIST_COLUMNS)
+    .eq("format", format)
+    .not("rating", "is", null)
+    .order("rating", { ascending: false })
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Ulubione: oznaczone, od najnowszego. */
+export async function fetchFavourites(supabase: Client) {
+  const { data } = await supabase
+    .from("generations")
+    .select(LIST_COLUMNS)
+    .eq("is_favourite", true)
+    .order("created_at", { ascending: false });
   return data ?? [];
 }

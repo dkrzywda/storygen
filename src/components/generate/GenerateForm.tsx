@@ -3,6 +3,7 @@ import { Check, Copy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
+import RatingControls from "@/components/generations/RatingControls";
 import type { ApiErrorBody, ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
 
 /**
@@ -234,6 +235,14 @@ export default function GenerateForm() {
       {result && (
         <div className="space-y-3 rounded-lg border border-white/10 bg-white/10 p-4">
           <p className="whitespace-pre-wrap text-white">{result.text}</p>
+          {/* Zapis moze zawiesc mimo udanego generowania — wtedy `id` jest `null`
+              i nie ma czego ocenic. Pokazanie martwych gwiazdek byloby klamstwem. */}
+          {result.id !== null && (
+            <div className="border-t border-white/10 pt-3">
+              <RatingControls id={result.id} initialRating={null} initialFavourite={false} />
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <span className="text-xs text-blue-100/40">{result.words} słów</span>
             <button

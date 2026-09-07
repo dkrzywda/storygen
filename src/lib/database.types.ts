@@ -34,7 +34,9 @@ export type Database = {
           created_at: string;
           format: string;
           id: string;
+          is_favourite: boolean;
           length_preset: string;
+          rating: number | null;
           title: string | null;
           topic: string;
           user_id: string;
@@ -44,7 +46,9 @@ export type Database = {
           created_at?: string;
           format: string;
           id?: string;
+          is_favourite?: boolean;
           length_preset: string;
+          rating?: number | null;
           title?: string | null;
           topic: string;
           user_id: string;
@@ -54,7 +58,9 @@ export type Database = {
           created_at?: string;
           format?: string;
           id?: string;
+          is_favourite?: boolean;
           length_preset?: string;
+          rating?: number | null;
           title?: string | null;
           topic?: string;
           user_id?: string;
