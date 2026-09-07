@@ -1,10 +1,10 @@
 ---
 change_id: delete-generation
 title: "Usuwanie pozycji z wlasnej historii"
-status: impl_reviewed
+status: archived
 created: 2026-09-07
 updated: 2026-09-07
-archived_at: null
+archived_at: 2026-09-07T15:31:21Z
 ---
 
 ## Notes
