@@ -79,7 +79,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | in-progress |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | done        |
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | done        |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | done        |
 | S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done        |
@@ -261,7 +261,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   zamiast wspólnej. Uwaga na środowisko: adapter Cloudflare v13 usunął
   `Astro.locals.runtime`, więc odczyt liczników przez niego zwróci `undefined` w runtime,
   a nie błąd typu (`infrastructure.md`, § rejestr ryzyk).
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Użytkownik przegląda własną historię i otwiera pozycje
 
@@ -493,3 +493,4 @@ Co z tego wynika dla czytelnika:
 - **S-08: użytkownik nadaje pozycji w historii własny tytuł i może go później zmienić** — Archived 2026-09-04 → `context/archive/2026-09-03-annotate-generation/`. Lesson: —.
 - **S-06: użytkownik usuwa wybraną generację ze swojej historii i nie widzi jej ponownie.** — Archived 2026-09-07 → `context/archive/2026-09-07-delete-generation/`. Lesson: —.
 - **S-05: użytkownik widzi własne generacje od najnowszej i otwiera dowolną z nich w całości; próba sięgnięcia po cudzą jest odrzucana.** — Archived 2026-09-07 → `context/archive/2026-09-07-browse-generation-history/`. Lesson: —.
+- **S-04: użytkownik, który wyczerpał własny dzienny limit — albo trafił na wyczerpany sufit dzienny całej aplikacji — widzi wyjaśniający komunikat po polsku, a generowanie nie jest w ogóle podejmowane.** — Archived 2026-09-07 → `context/archive/2026-09-07-daily-generation-limits/`. Lesson: —.
