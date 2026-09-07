@@ -17,18 +17,15 @@ odpowiada 200, wygląda normalnie, a gwarancja jest już naruszona.
 
 ## Rejestr ryzyk
 
-| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                             | Stan                                 |
-| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ----------------------------------------- | ------------------------------------ |
-| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**                          |
-| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts`              | **pokryte**                          |
-| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts`              | **pokryte**                          |
-| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts`              | **pokryte**                          |
-| R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts` | **pokryte**                          |
-| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | `src/lib/format-contract.test.ts`         | **częściowo pokryte** — patrz zestaw |
-| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | —                                         | luka, wchodzi z `S-04`               |
-
-Ryzyko R-07 jest zapisane celowo, mimo że nie ma jeszcze testu: kod, którego dotyczy,
-nie istnieje. Wchodzi razem ze swoim plastrem z roadmapy.
+| ID   | Ryzyko                                                                                        | Dlaczego cicho                                                                          | Waga          | Zestaw testów                              | Stan                                 |
+| ---- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ------------------------------------------ | ------------------------------------ |
+| R-01 | Komunikat błędu od zewnętrznej usługi jest pusty i użytkownik nie dowiaduje się, co się stało | SDK zwraca obiekt błędu, redirect wykonuje się poprawnie, nic nie rzuca wyjątku         | wysoka        | `src/lib/api-errors.test.ts`               | **pokryte**                          |
+| R-02 | `?error=` odbija dowolny tekst z URL-a na ekran w firmowo wyglądającej ramce błędu            | Strona renderuje się poprawnie, status 200, żadnego śladu w logach                      | wysoka        | `src/lib/api-errors.test.ts`               | **pokryte**                          |
+| R-03 | Nowy kod błędu dostaje status HTTP, ale nie dostaje komunikatu (albo odwrotnie)               | Użytkownik widzi `undefined` albo pustą ramkę zamiast zdania                            | średnia       | `src/lib/api-errors.test.ts`               | **pokryte**                          |
+| R-04 | Walidacja wejścia przepuszcza angielski komunikat Zoda na powierzchnię produktu               | Komunikat jest niepusty i wygląda sensownie — tylko nie po polsku                       | średnia       | `src/lib/validation.test.ts`               | **pokryte**                          |
+| R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts`  | **pokryte**                          |
+| R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | `src/lib/format-contract.test.ts`          | **częściowo pokryte** — patrz zestaw |
+| R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | `src/lib/limits.test.ts` + `.integration.` | **pokryte**                          |
 
 **R-06 jest pokryte tylko częściowo i to jest świadome.** Szczegóły w jego zestawie poniżej —
 przeczytaj je, zanim uznasz kontrakt formatu za zabezpieczony.
@@ -148,19 +145,72 @@ zestawu czerwonym — konto B nadal blokuje polityka odczytu. Czerwony wynik poj
 przy rozszerzeniu `delete` i `select` razem, i dokładnie ten eksperyment jest weryfikacją
 ręczną fazy 1 planu `delete-generation`.
 
+## Zestaw R-07 — licznik limitu i sufit kosztu
+
+**Ryzyko.** Limity dzienne (FR-012, FR-013) to jedyna bariera kosztowa w produkcie, przy
+otwartej rejestracji i publicznym adresie. Gdy licznik przestaje się domykać, **nic się nie
+psuje na ekranie** — generowanie działa dalej, statusy są poprawne, a awaria objawia się
+dopiero rachunkiem u dostawcy. To jest ta klasa cichej awarii, dla której powstał ten dokument.
+
+Ryzyko ma dwie twarze i każda ma swój zestaw, bo żyją w innych warstwach.
+
+**Decyzja bramki — `src/lib/limits.test.ts`, bez Dockera.** `checkLimits` jest funkcją czystą,
+więc da się ją zamknąć testem jednostkowym: granica dokładna (zużycie **równe** limitowi już
+odmawia — przy `>` zamiast `>=` dziesiąty licznik przepuściłby jedenastą generację),
+pierwszeństwo kodu własnego limitu, gdy oba progi stoją, oraz stan po przekroczeniu wyścigiem.
+Progi są czytane ze stałych, nie wpisane liczbami — test z zahardkodowanym 10 i 30 przestałby
+cokolwiek sprawdzać w dniu zmiany limitu.
+
+**Polityki, wyjątek od RLS i doba — `src/lib/limits.integration.test.ts`, wymaga Dockera.**
+Trzy rzeczy, których test jednostkowy dotknąć nie może:
+
+- **Brak polityk `UPDATE` i `DELETE`** na `generation_attempts` — konto nie może obniżyć
+  własnego zużycia ani skasować dowodu próby. Sprawdzane na **własnym** wierszu właściciela,
+  bo to nie jest izolacja od cudzych danych, tylko brak uprawnienia dla kogokolwiek.
+- **Zasięg wyjątku `security definer`** — `usage_today()` musi widzieć cudze próby
+  w `app_count` (inaczej FR-013 jest martwy) i **jednocześnie** nie wystawiać ich w `own_count`
+  ani nie zwracać żadnego identyfikatora. Kształt zwracanego wiersza jest sprawdzany wprost.
+- **Granica doby w `Europe/Warsaw`** — próba sprzed lokalnej północy nie liczy się do bieżącej
+  doby, a moment odnowienia wypada o 00:00 czasu warszawskiego. Przy naiwnym `date_trunc`
+  na UTC wyszłaby tu 01:00 albo 02:00.
+
+**Zapis na cudze konto jest tu groźniejszy niż w `generations`.** Tam podrzucony wiersz zaśmieca
+komuś historię; tutaj **podnosi cudzy licznik**, czyli pozwala zablokować wybranemu kontu
+generowanie na całą dobę. Dlatego kierunek jest sprawdzany w obie strony, a nie raz.
+
+**Regres pilnowany osobno — zmierzone 2026-09-07.** `revoke execute … from public` **nie**
+odbiera uprawnienia roli `anon`, bo Supabase dokłada jawne granty przez `alter default
+privileges`. Zanim role wymieniono z nazwy, niezalogowany odczytywał `app_count` przez
+PostgREST. Przypadek „anonim nie wywoła licznika" jest strażnikiem tej poprawki.
+
+**Zestaw ma zęby — sprawdzone eksperymentalnie 2026-09-07.** Rozszerzenie polityki `SELECT`
+tabeli `generation_attempts` do `using (true)` robi **trzy** testy czerwonymi, w tym „Bob nie
+widzi prób Alice". Bez tego eksperymentu zielony wynik nie byłby dowodem.
+
+**Czego ten zestaw NIE dowodzi.** Nie dotyka **wyścigu dwóch równoległych żądań tego samego
+konta**: odczyt licznika i zapis próby to dwie operacje, więc oba żądania mogą zobaczyć ten sam
+stan i oba przejść. Przy jednym realnym użytkowniku i limicie 10 to przekroczenie o jedną
+pozycję, nie wyciek kosztu — domknięcie wymagałoby transakcji albo warunku liczącego wewnątrz
+jednej instrukcji `insert`. Świadomie odłożone, nie przeoczone.
+
+**Uwaga środowiskowa — zmierzone 2026-09-07.** Kontener `auth` potrafi chodzić o sekundę do
+przodu względem bazy, przez co świeżo wystawiony token ma `iat` w przyszłości i pierwsze
+zapytanie wraca błędem `JWT issued at future`. Zestaw ma wąską pętlę ponawiającą **wyłącznie**
+ten komunikat; każdy inny błąd wywraca test natychmiast.
+
 ## Jak to uruchomić
 
 ```bash
 npm test
 ```
 
-Zestaw jednostkowy: 7 plików, 164 testy, bez Dockera.
+Zestaw jednostkowy: 8 plików, 177 testów, bez Dockera.
 
 ```bash
 npm run test:integration
 ```
 
-Zestaw integracyjny: 1 plik, 9 testów. **Wymaga `npx supabase start`**, czyli Dockera i ~7 GB RAM.
+Zestaw integracyjny: 2 pliki, 25 testów. **Wymaga `npx supabase start`**, czyli Dockera i ~7 GB RAM.
 
 Testy leżą obok swojego przedmiotu jako `src/**/*.test.ts`, integracyjne jako
 `src/**/*.integration.test.ts` — konfiguracja jednostkowa wyklucza te drugie, żeby `npm test`

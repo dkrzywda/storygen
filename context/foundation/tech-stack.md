@@ -52,7 +52,21 @@ the repo. Second, it runs on the platform the app is already deployed to, so it
 adds no account, no card, and no second vendor. Third, the free allowance —
 10,000 Neurons per day — covers roughly 300 jokes or 66 stories, which is far
 beyond what a single-user product consumes, and it converts directly into the
-FR-013 ceiling (50 generations/day fits with room for the one-retry rule).
+FR-013 ceiling.
+
+**Corrected 2026-09-07 (S-04).** This paragraph previously read "50
+generations/day fits with room for the one-retry rule". That does not hold in
+the worst case and the number is now **30**. The arithmetic: ~33 Neurons per
+joke, ~151 per story, and the format contract's one-retry rule can double either.
+An all-stories day with a retry on every item costs ~302 Neurons per generation,
+so 50 × 302 ≈ 15,100 — over half again the daily allowance. At 30 the same worst
+case costs 30 × 302 ≈ 9,060 and fits. The old figure was only safe for a
+joke-dominated mix, which nothing enforces. The ceiling now lives in
+`DAILY_APP_CEILING` in @src/lib/limits.ts alongside the per-account limit of 10.
+
+Both figures rest on the 33/151 estimates above, which come from Cloudflare's
+published conversion and **not** from measurement against this model and these
+prompts. That is why 30 was chosen with headroom instead of sitting on the line.
 
 The weights are open, so the choice is portable: the same model runs on Groq,
 Together, or local hardware. That only stays true if `S-01` keeps the provider

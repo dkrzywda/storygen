@@ -248,6 +248,12 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
     sufit neuronowy sam wycenia opowiadanie ~4,5× drożej niż dowcip. Liczba dla FR-012
     (na konto) do dobrania w planie; przy jednym realnym użytkowniku wystarczy ułamek. —
     Block: no.
+  - **Skorygowane 2026-09-07 przy planowaniu `S-04`: sufit to 30, nie 50.** Propozycja 50
+    nie broni się w najgorszym przypadku — same opowiadania z ponowną próbą kosztują
+    ~302 neurony na pozycję, czyli 50 × 302 ≈ 15 100 z 10 000 dostępnych. Przy 30 ten sam
+    przypadek to ≈ 9 060 i mieści się. FR-012 ustalone na **10 na konto** (trzy konta
+    wyczerpują sufit). Obie liczby żyją w `DAILY_APP_CEILING` i `DAILY_PER_ACCOUNT`
+    w `src/lib/limits.ts`.
 - **Risk:** To jedyna bariera kosztowa w całym projekcie — rejestracja jest otwarta z wyboru,
   a aplikacja stoi pod publicznym adresem. Sekwencjonowane zaraz po `S-03`, bo liczniki
   potrzebują tej samej warstwy danych; może zostać przestawione **przed** `S-03`, jeśli
@@ -389,17 +395,17 @@ Co z tego wynika dla czytelnika:
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                                                                              |
-| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                                                                                     |
-| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1`                                                       |
-| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
-| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
-| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | yes                   | Liczby ustalone 2026-09-07: 30/dobę aplikacja, 10/dobę konto. Plan gotowy — `/10x-implement daily-generation-limits phase 1`  |
-| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Odblokowane przez S-03. Lista działa, ale FR-010 „otwiera w całości" nie — widok pokazuje podgląd, nie pełny tekst |
-| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                      |
-| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                 |
-| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                         |
+| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                                                                                        |
+| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                                                                                               |
+| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1`                                                                 |
+| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                               |
+| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                               |
+| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | yes                   | Liczby ustalone 2026-09-07: 30/dobę aplikacja, 10/dobę konto. Plan gotowy — `/10x-implement daily-generation-limits phase 1` |
+| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Odblokowane przez S-03. Lista działa, ale FR-010 „otwiera w całości" nie — widok pokazuje podgląd, nie pełny tekst           |
+| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                                |
+| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                           |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                                   |
 
 ## Open Roadmap Questions
 
@@ -421,6 +427,11 @@ Co z tego wynika dla czytelnika:
    Proponowany sufit FR-013: **50 generacji dziennie** — mieści się w darmowym tierze nawet
    przy samych opowiadaniach, z zapasem na ponowne próby. FR-012 (na konto): przy jednym
    realnym użytkowniku wystarczy ułamek tego; liczba do dobrania w planie `S-04`.
+   **SKORYGOWANE 2026-09-07: sufit to 30, a zdanie o „zapasie na ponowne próby" było
+   błędne.** Ponowna próba podwaja koszt pozycji, więc opowiadanie z retry to ~302 neurony:
+   50 × 302 ≈ 15 100, czyli ponad półtora dziennego przydziału. 30 × 302 ≈ 9 060 i mieści się.
+   FR-012 ustalone na **10 na konto**. Poprawka weszła też do `tech-stack.md`, który niósł
+   to samo twierdzenie i jest ładowany w każdej sesji.
    Rozróżnienie limitu per format **nie jest potrzebne** — sufit neuronowy sam w sobie
    wycenia opowiadanie drożej niż dowcip.
 3. ~~**Jak zdefiniowany jest „temat niedozwolony"?**~~ **ROZSTRZYGNIĘTE 2026-09-04**: polegamy na odmowie modelu, mapowanej na `TOPIC_REJECTED`; własna lista byłaby moderacją treści wykluczoną w PRD `## Non-Goals`. PRD `## Open Questions` #3.

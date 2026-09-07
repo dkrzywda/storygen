@@ -523,28 +523,28 @@ usunięcie wymagałoby migracji odwrotnej.
 
 #### Automated
 
-- [x] 3.1 Kontrola typów przechodzi: `npx astro check`
-- [x] 3.2 Testy jednostkowe przechodzą: `npm test`
-- [x] 3.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 3.1 Kontrola typów przechodzi: `npx astro check` — 7d32e71
+- [x] 3.2 Testy jednostkowe przechodzą: `npm test` — 7d32e71
+- [x] 3.3 Lint plików dotkniętych w tej fazie przechodzi — 7d32e71
 
 #### Manual
 
-- [x] 3.4 Panel pokazuje oba liczniki i godzinę odnowienia, na obu zakładkach
-- [x] 3.5 Licznik na generatorze zgadza się z panelem
-- [x] 3.6 Po wyczerpaniu limitu licznik pokazuje zero, a komunikat wyjaśnia którą granicę
-- [x] 3.7 Przy zatrzymanej bazie panel mówi o nieudanym odczycie, a nie pokazuje „0 z 10"
+- [x] 3.4 Panel pokazuje oba liczniki i godzinę odnowienia, na obu zakładkach — 7d32e71
+- [x] 3.5 Licznik na generatorze zgadza się z panelem — 7d32e71
+- [x] 3.6 Po wyczerpaniu limitu licznik pokazuje zero, a komunikat wyjaśnia którą granicę — 7d32e71
+- [x] 3.7 Przy zatrzymanej bazie panel mówi o nieudanym odczycie, a nie pokazuje „0 z 10" — 7d32e71
 
 ### Phase 4: Testy integracyjne, R-07 i tech-stack
 
 #### Automated
 
-- [ ] 4.1 Zestaw integracyjny przechodzi: `npm run test:integration`
-- [ ] 4.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
-- [ ] 4.3 Kontrola typów przechodzi: `npx astro check`
-- [ ] 4.4 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 4.1 Zestaw integracyjny przechodzi: `npm run test:integration`
+- [x] 4.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
+- [x] 4.3 Kontrola typów przechodzi: `npx astro check`
+- [x] 4.4 Lint plików dotkniętych w tej fazie przechodzi
 
 #### Manual
 
-- [ ] 4.5 Rozszerzenie polityki SELECT do `using (true)` robi zestaw czerwonym
-- [ ] 4.6 R-07 w test-planie nie ma już statusu „luka"
-- [ ] 4.7 `tech-stack.md` nie zawiera już liczby 50 jako sufitu
+- [x] 4.5 Rozszerzenie polityki SELECT do `using (true)` robi zestaw czerwonym
+- [x] 4.6 R-07 w test-planie nie ma już statusu „luka"
+- [x] 4.7 `tech-stack.md` nie zawiera już liczby 50 jako sufitu
