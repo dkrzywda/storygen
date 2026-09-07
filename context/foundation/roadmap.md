@@ -86,6 +86,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done        |
 | —    | `home-screen-generator`      | wejść na `/` i zobaczyć generator zamiast landingu startera        | S-01          | — (poza planem)                               | done        |
 | —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done        |
+| —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done        |
 
 ## Streams
 
@@ -336,7 +337,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 
 ## Dług procesowy — 2026-09-07
 
-Pięć zmian weszło do repo **poza łańcuchem** `/10x-new` → `/10x-plan` →
+Sześć zmian weszło do repo **poza łańcuchem** `/10x-new` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement` → `/10x-impl-review`. Zapisane tutaj, bo
 inaczej tabela statusów sugerowałaby proces, którego nie było.
 
@@ -347,17 +348,39 @@ inaczej tabela statusów sugerowałaby proces, którego nie było.
 | `story-format-generation` (S-07)    | `2763aa2` | brak                          | brak     |
 | `generation-history-storage` (S-03) | `c4d9e7e` | brak                          | brak     |
 | `generation-rating`                 | `7f66fed` | brak, plastra i FR też nie ma | brak     |
+| `lighter-theme`                     | `ed696ee` | brak, plastra i FR też nie ma | brak     |
 
-Wszystkie pięć powstało na **niedomkniętym S-01**: `first-joke-generation` ma
+Wszystkie sześć powstało na **niedomkniętym S-01**: `first-joke-generation` ma
 status `implementing`, a w jego planie zostały niezaznaczone pozycje weryfikacji
 ręcznej (2.4, 3.6–3.10, 4.5–4.10, 5.3–5.4).
 
+### Domknięte 2026-09-07
+
+- **Każda z tych zmian ma teraz folder w `context/changes/`** z zapisem decyzji,
+  weryfikacji i długów. Założone wstecznie i ręcznie: `/10x-new` otwiera zmianę
+  _przed_ pracą, więc nie dało się go użyć zgodnie z przeznaczeniem.
+- **Historia gita jest rozbita per plaster** — jeden commit na zmianę, każdy
+  z uzasadnieniem decyzji. Commity `2763aa2` i `c4d9e7e` sprawdzone osobno
+  przez `npx astro check`, bo ich zawartość składano ręcznie.
+- **Statusy w tabeli powyżej odpowiadają stanowi drzewa.**
+
+### Nadal otwarte
+
+| Co                                                                                                               | Właściciel |
+| ---------------------------------------------------------------------------------------------------------------- | ---------- |
+| Brak kontraktu implementacji (`plan.md`) dla czterech zmian — `/10x-impl-review` ma z czym porównać tylko `S-01` | autor      |
+| Decyzja, czy `generation-rating` należy do M-1, czy do następnego kamienia                                       | autor      |
+| Pomiar jakości promptu dla `S-07` — temperatura, limity 150/275/400, budżet ~14,5 s na próbę                     | autor      |
+| Test integracyjny RLS dla kolumn `rating` i `is_favourite` (wymaga Dockera)                                      | autor      |
+| Migracje `20260903125113` i `20260907125000` niewypchnięte na produkcyjne Supabase                               | autor      |
+| Niezaznaczone pozycje weryfikacji ręcznej w planie `S-01` (2.4, 3.6–3.10, 4.5–4.10, 5.3–5.4)                     | autor      |
+
 Co z tego wynika dla czytelnika:
 
-- **`/10x-impl-review` ma z czym porównać tylko S-01.** Pozostałe cztery zmiany nie
+- **`/10x-impl-review` ma z czym porównać tylko S-01.** Pozostałe pięć zmian nie
   mają kontraktu implementacji, więc przegląd wobec planu jest dla nich niewykonalny.
-- **`home-screen-generator` i `generation-rating` nie mają folderów zmian.** Ich
-  identyfikatory żyją tylko w komunikatach commitów. `/10x-new` by to naprawił.
+- **Foldery zmian już istnieją** (uzupełnione 2026-09-07), ale żaden nie ma
+  `plan.md` — bo plan pisze się przed implementacją, nie po.
 - **Ranking jest poza PRD.** Ocenianie, ranking i ulubione nie realizują żadnego
   z 13 wymagań funkcjonalnych. Decyzja, czy należą do M-1, nie została podjęta.
 - **Jakość promptu dla S-07 jest niezmierzona**, w przeciwieństwie do dowcipu
