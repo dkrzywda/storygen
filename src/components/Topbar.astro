@@ -10,6 +10,12 @@ const { user } = Astro.locals;
       <>
         <span class="text-ink-muted">{user.email}</span>
         <div class="flex items-center gap-3">
+          {/* Generator jest pierwszy, bo to strona glowna i cel powrotu z kazdego
+              innego ekranu. Link siedzi w Topbarze, nie w samym panelu — Topbar
+              stoi na wszystkich ekranach, wiec jedno miejsce zamiast trzech. */}
+          <a href="/" class="text-brand hover:text-brand-strong transition-colors hover:underline">
+            Generator
+          </a>
           <a href="/dashboard" class="text-brand hover:text-brand-strong transition-colors hover:underline">
             Panel
           </a>
