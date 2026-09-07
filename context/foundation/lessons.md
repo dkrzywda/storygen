@@ -42,3 +42,24 @@
   nieznanych i pustych trzymaj jeden komunikat domyślny. Traktuj brak treści
   błędu jako normalny stan do obsłużenia, nie jako sytuację niemożliwą.
 - **Applies to**: plan, implement, impl-review
+
+## Nie pisz kodu, dopóki plaster nie ma planu
+
+- **Context**: Każda zmiana, która realizuje pozycję z `context/foundation/roadmap.md`
+  albo wymaganie z `prd.md` — niezależnie od tego, czy została zamówiona jako plaster,
+  czy jako zwykła prośba o funkcję. Drobne poprawki i literówki poza regułą.
+- **Problem**: 2026-09-07 sześć zmian weszło prosto w drzewo robocze bez folderu
+  zmiany, bez planu i bez przeglądu: `polish-auth-surface`, `home-screen-generator`,
+  `story-format-generation`, `generation-history-storage`, `generation-rating`,
+  `lighter-theme`. Cztery z nich to plastry z roadmapy, których nikt nie otworzył
+  (S-02, S-03, S-07), dwie były poza PRD, a wszystkie stanęły na niedomkniętym S-01.
+  Skutki były trzy i każdy kosztował: drzewa nie dało się recenzować per plaster,
+  roadmapa kłamała o własnym stanie (`proposed` przy kodzie leżącym na dysku),
+  a `/10x-impl-review` nie miał punktu odniesienia, bo kontrakt implementacji
+  istniał tylko dla S-01. Rozbicie tego na commity po fakcie — z ręcznym dzieleniem
+  trzech plików i osobną weryfikacją commitów pośrednich — zajęło więcej, niż
+  zajęłoby zaplanowanie z góry.
+- **Rule**: Zanim dotkniesz kodu, sprawdź, czy istnieje `context/changes/<id>/plan.md`
+  dla tej pracy. Jeśli nie — otwórz zmianę przez `/10x-new` i napisz plan przez
+  `/10x-plan`. Bezpośredniość prośby użytkownika nie jest zgodą na pominięcie łańcucha.
+- **Applies to**: all
