@@ -495,29 +495,29 @@ usunięcie wymagałoby migracji odwrotnej.
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czysto: `npx supabase db reset`
-- [x] 1.2 Typy bazy przechodzą kontrolę: `npx astro check`
-- [x] 1.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 1.1 Migracja stosuje się na czysto: `npx supabase db reset` — 411b245
+- [x] 1.2 Typy bazy przechodzą kontrolę: `npx astro check` — 411b245
+- [x] 1.3 Lint plików dotkniętych w tej fazie przechodzi — 411b245
 
 #### Manual
 
-- [x] 1.4 W Studio tabela `generation_attempts` ma dokładnie dwie polityki
-- [x] 1.5 Wywołanie `select * from public.usage_today()` jako zalogowany zwraca trzy liczby
-- [x] 1.6 `update` i `delete` na własnym wierszu prób są odrzucane
+- [x] 1.4 W Studio tabela `generation_attempts` ma dokładnie dwie polityki — 411b245
+- [x] 1.5 Wywołanie `select * from public.usage_today()` jako zalogowany zwraca trzy liczby — 411b245
+- [x] 1.6 `update` i `delete` na własnym wierszu prób są odrzucane — 411b245
 
 ### Phase 2: Bramka w endpoincie i warstwa dostępu
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [ ] 2.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
+- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi
 
 #### Manual
 
-- [ ] 2.4 Generowanie działa normalnie poniżej limitu
-- [ ] 2.5 Po wyczerpaniu limitu konta pojawia się polski komunikat, bez wpisu błędu w logach
-- [ ] 2.6 Zatrzymanie lokalnej bazy skutkuje odmową generowania, nie generowaniem
+- [x] 2.4 Generowanie działa normalnie poniżej limitu
+- [x] 2.5 Po wyczerpaniu limitu konta pojawia się polski komunikat, bez wpisu błędu w logach
+- [x] 2.6 Zatrzymanie lokalnej bazy skutkuje odmową generowania, nie generowaniem
 
 ### Phase 3: Powierzchnia — panel i generator
 

@@ -6,6 +6,7 @@ import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
 import { generateRequestSchema } from "@/lib/generate-request";
 import { checkFormatContract, wordLimitFor } from "@/lib/format-contract";
+import { checkLimits, fetchUsageToday, recordAttempt } from "@/lib/limits";
 import {
   CREATIVE_TEMPERATURE,
   buildRetryUserPrompt,
@@ -59,13 +60,63 @@ export const POST: APIRoute = async (context) => {
   const wordLimit = wordLimitFor(format, preset);
   const promptInput = { topic: parsed.data.topic, format, wordLimit };
 
+  const supabase = createClient(context.request.headers, context.cookies);
+  const userId = context.locals.user.id;
+
+  const fail = (code: ApiErrorCode, error: unknown): Response => {
+    // Cialo zadania NIE trafia do loga — zawiera temat wpisany przez uzytkownika.
+    logApiError("api/generate", code, error);
+    return jsonError(code);
+  };
+
+  /*
+   * BRAMKA LIMITOW (FR-012, FR-013) — wszystko ponizej tego bloku kosztuje neurony,
+   * wszystko powyzej jest darmowe.
+   *
+   * Fail-closed w trzech miejscach: bez klienta, bez odczytu licznika i bez zapisu
+   * proby generowanie NIE startuje. Bez licznika nie ma sufitu, a sufit, ktory przy
+   * awarii przestaje obowiazywac, nie jest sufitem — to jest dokladnie R-07
+   * z `test-plan.md`: awaria, ktorej objawem jest rachunek, nie blad na ekranie.
+   *
+   * Zmiana zachowania wzgledem stanu sprzed S-04: przy nieskonfigurowanym Supabase
+   * endpoint generowal i tylko nie zapisywal. Teraz odmawia. Swiadoma strata funkcji
+   * w trybie nieskonfigurowanym — zapisana w planie, nie efekt uboczny.
+   */
+  if (!supabase) {
+    return jsonError("NOT_CONFIGURED");
+  }
+
+  let usage;
+  try {
+    usage = await fetchUsageToday(supabase);
+  } catch (error) {
+    return fail("INTERNAL", error);
+  }
+
+  const decision = checkLimits(usage);
+  if (!decision.ok) {
+    // BEZ `fail()`. Wyczerpany limit to sciezka spodziewana, nie awaria — tak samo jak
+    // `TOPIC_REJECTED`. Logowanie jej jako bledu zasmiecaloby observability zdarzeniem,
+    // ktore znaczy "system zadzialal zgodnie z projektem".
+    return jsonError(decision.code);
+  }
+
+  try {
+    // JEDEN wiersz na zadanie, nie na wywolanie modelu. Regula jednej ponownej proby
+    // moze wolac model dwa razy, a sufit 30 byl policzony wlasnie jako 30 pozycji
+    // z ponowna proba w cenie — patrz komentarz przy DAILY_APP_CEILING.
+    await recordAttempt(supabase, { userId, format });
+  } catch (error) {
+    return fail("INTERNAL", error);
+  }
+
+  // Budzet czasu startuje PO bramce. Gdyby `deadline` powstal wczesniej, dwa obroty
+  // do bazy zjadalyby czas obiecany uzytkownikowi w NFR (15 s / 30 s) i model
+  // dostawalby go mniej, im wolniejsza baza.
   const system = buildSystemPrompt(format);
   const maxTokens = maxTokensFor(wordLimit);
   const deadline = Date.now() + TOTAL_BUDGET_MS[format] - OVERHEAD_MS;
   const firstAttemptMs = Math.floor((TOTAL_BUDGET_MS[format] - OVERHEAD_MS) / 2);
-
-  const supabase = createClient(context.request.headers, context.cookies);
-  const userId = context.locals.user.id;
 
   /**
    * Zwraca wynik i po drodze zapisuje go do historii (FR-009 — bez jawnego zapisu).
@@ -75,29 +126,25 @@ export const POST: APIRoute = async (context) => {
    * neurony. Oddanie bledu skasowaloby gotowy wynik z powodu awarii, ktora go nie
    * dotyczy. Cena jest jawna: `id === null` znaczy "tej pozycji nie da sie ocenic
    * ani dodac do ulubionych", i interfejs to pokazuje, zamiast milczec.
+   *
+   * Warunku `if (supabase)` juz tu nie ma: bramka limitow odrzuca brak klienta
+   * wczesniej, wiec w tym miejscu jest on niepusty. Zapis nadal moze zawiesc z innych
+   * powodow i nadal jest best-effort — zmienil sie tylko jeden z tych powodow.
    */
   const succeed = async (text: string, words: number): Promise<Response> => {
     let id: string | null = null;
-    if (supabase) {
-      try {
-        id = await saveGeneration(supabase, {
-          userId,
-          topic: parsed.data.topic,
-          format,
-          length: preset,
-          content: text,
-        });
-      } catch (error) {
-        logApiError("api/generate", "INTERNAL", error);
-      }
+    try {
+      id = await saveGeneration(supabase, {
+        userId,
+        topic: parsed.data.topic,
+        format,
+        length: preset,
+        content: text,
+      });
+    } catch (error) {
+      logApiError("api/generate", "INTERNAL", error);
     }
     return jsonOk({ id, text, words, format, length: preset });
-  };
-
-  const fail = (code: ApiErrorCode, error: unknown): Response => {
-    // Cialo zadania NIE trafia do loga — zawiera temat wpisany przez uzytkownika.
-    logApiError("api/generate", code, error);
-    return jsonError(code);
   };
 
   const attempt = async (user: string, budgetMs: number): Promise<Attempt> =>

@@ -62,6 +62,18 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 504,
     message: "Generowanie trwało zbyt długo. Spróbuj jeszcze raz.",
   },
+  DAILY_LIMIT_REACHED: {
+    // 429, nie 403: to nie jest brak uprawnienia, tylko wyczerpany budzet w czasie —
+    // ta sama prosba zadziala po odnowieniu, bez zadnej zmiany po stronie konta.
+    status: 429,
+    // Forma BEZOSOBOWA jest celowa. Polski czasownik w drugiej osobie niesie rodzaj
+    // ("wykorzystałeś"/"wykorzystałaś"), a produkt nie wie, ktory jest wlasciwy.
+    message: "Dzienny limit generacji został wyczerpany. Odnowi się o północy.",
+  },
+  APP_LIMIT_REACHED: {
+    status: 429,
+    message: "Aplikacja osiągnęła dzienny limit generacji dla wszystkich kont. Spróbuj ponownie po północy.",
+  },
   INTERNAL: {
     status: 500,
     message: "Coś poszło nie tak. Spróbuj ponownie za chwilę.",

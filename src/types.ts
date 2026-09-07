@@ -11,7 +11,7 @@
  * wymienny, kod jest stabilny.
  *
  * Zestaw jest celowo niekompletny wobec calego produktu: kolejne plastry dokladaja
- * wlasne kody (np. odrzucony temat, przekroczony limit generowania). Kazdy nowy kod
+ * wlasne kody. Kazdy nowy kod
  * musi dostac wpis w `API_ERRORS` w `@/lib/api-errors` — `Record<ApiErrorCode, …>`
  * wymusza to bledem typu, nie dobra wola.
  */
@@ -27,6 +27,11 @@ export type ApiErrorCode =
   | "TOPIC_REJECTED"
   | "FORMAT_CONTRACT_FAILED"
   | "GENERATION_TIMEOUT"
+  // Dwa kody, nie jeden: FR-012 i FR-013 wymagaja WYJASNIENIA, a "limit wyczerpany"
+  // bez powiedzenia CZYJ nie wyjasnia niczego. Rozdzielone tez dlatego, ze uzytkownik
+  // ma wobec nich rozna moc sprawcza — wlasny limit odnowi sie jemu, sufit aplikacji nie.
+  | "DAILY_LIMIT_REACHED"
+  | "APP_LIMIT_REACHED"
   | "INTERNAL";
 
 /** Format generowanego tekstu. `story` wchodzi z `S-07`, ale kontrakt zna go od poczatku. */
