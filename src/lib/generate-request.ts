@@ -26,9 +26,10 @@ export const generateRequestSchema = z.object({
       error: `Temat może mieć najwyżej ${String(TOPIC_MAX)} znaków.`,
     }),
 
-  // Tylko `joke`. Format `story` wchodzi z `S-07` — kontrakt formatu i presety juz
-  // go znaja, ale jego limity nie sa zmierzone, wiec endpoint go jeszcze nie przyjmuje.
-  format: z.literal("joke", { error: "Wybierz format." }),
+  // FR-004: oba formaty. Kontrakt formatu ma dla `story` wlasne limity slow
+  // (150/275/400) i wlasny prog minimalny, a endpoint wlasny budzet czasu (30 s).
+  // Jakosc promptu dla `story` NIE jest zmierzona tak, jak zmierzono dowcip.
+  format: z.enum(["joke", "story"], { error: "Wybierz format." }),
 
   length: z.enum(["short", "medium", "long"], { error: "Wybierz długość." }),
 });

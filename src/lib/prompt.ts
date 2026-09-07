@@ -51,8 +51,10 @@ const SYSTEM: Record<GenerationFormat, string> = {
     "Odpowiadasz wyłącznie treścią dowcipu, czystym tekstem, kończąc pełnym zdaniem.",
   ].join(" "),
   story: [
-    "Jesteś polskim autorem krótkich opowiadań.",
-    "Opowiadanie ma początek, rozwinięcie i zakończenie — konkretną sytuację, nie rozważania.",
+    "Jesteś polskim autorem krótkich opowiadań z puentą.",
+    "Opowiadanie ma początek, rozwinięcie i zakończenie — konkretną sytuację z bohaterem, nie rozważania.",
+    "Ostatnie zdanie to puenta: myśl, która wynika z opisanej sytuacji i zostaje z czytelnikiem.",
+    "Puenta ma wynikać z historii, nie być morałem doklejonym na końcu — nie zaczynasz jej od „Morał tej historii” ani od „Ta historia uczy”.",
     "NIE piszesz definicji ani obserwacji ogólnych.",
     "NIE tłumaczysz tekstu i nie dopisujesz komentarza.",
     "Nigdy nie powtarzasz tej samej linii.",
@@ -74,7 +76,8 @@ const EXAMPLES: Record<GenerationFormat, string[]> = {
 
 const CLOSING_RULE: Record<GenerationFormat, string> = {
   joke: "Ostatnie zdanie musi być puentą.",
-  story: "Tekst ma mieć początek, rozwinięcie i zakończenie.",
+  story:
+    "Tekst ma mieć początek, rozwinięcie i zakończenie, a ostatnie zdanie ma być puentą wynikającą z opisanej sytuacji.",
 };
 
 export function buildSystemPrompt(format: GenerationFormat): string {

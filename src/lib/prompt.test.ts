@@ -151,8 +151,12 @@ describe("schemat zadania generowania", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("odrzuca format `story` — wchodzi z S-07", () => {
-    expect(validate(generateRequestSchema, { ...base, format: "story" }).ok).toBe(false);
+  it("przyjmuje format `story` (FR-004)", () => {
+    expect(validate(generateRequestSchema, { ...base, format: "story" }).ok).toBe(true);
+  });
+
+  it("odrzuca nieznany format", () => {
+    expect(validate(generateRequestSchema, { ...base, format: "wiersz" }).ok).toBe(false);
   });
 
   it("odrzuca nieznany preset dlugosci", () => {

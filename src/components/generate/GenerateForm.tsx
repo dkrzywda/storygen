@@ -3,12 +3,30 @@ import { Check, Copy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TOPIC_MAX, TOPIC_MIN } from "@/lib/generate-request";
 import { wordLimitFor } from "@/lib/format-contract";
-import type { ApiErrorBody, ApiSuccessBody, LengthPreset } from "@/types";
+import type { ApiErrorBody, ApiSuccessBody, GenerationFormat, LengthPreset } from "@/types";
 
 interface GenerationResult {
   text: string;
   words: number;
 }
+
+/**
+ * FR-004: dwa formaty i to, czym sie roznia dla uzytkownika.
+ *
+ * `hint` nie jest ozdoba — bez niego "Dowcip" i "Historia" nie mowia, czego sie
+ * spodziewac, a to jest cala roznica miedzy nimi: dowcip ma zaskoczyc, historia
+ * ma zostawic mysl.
+ */
+const FORMATS: { value: GenerationFormat; label: string; hint: string }[] = [
+  { value: "joke", label: "Dowcip", hint: "ma być zabawny" },
+  { value: "story", label: "Historia", hint: "z mądrą puentą" },
+];
+
+/** Teksty zalezne od formatu. Jedno miejsce, zeby etykiety nie rozjechaly sie z wyborem. */
+const COPY: Record<GenerationFormat, { topicLabel: string; submit: string; pending: string }> = {
+  joke: { topicLabel: "O czym ma być dowcip?", submit: "Wygeneruj dowcip", pending: "Piszę dowcip…" },
+  story: { topicLabel: "O czym ma być historia?", submit: "Wygeneruj historię", pending: "Piszę historię…" },
+};
 
 const PRESETS: { value: LengthPreset; label: string }[] = [
   { value: "short", label: "Krótki" },
@@ -20,6 +38,7 @@ type Status = "idle" | "generating" | "done";
 
 export default function GenerateForm() {
   const [topic, setTopic] = useState("");
+  const [format, setFormat] = useState<GenerationFormat>("joke");
   const [preset, setPreset] = useState<LengthPreset>("medium");
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -44,6 +63,7 @@ export default function GenerateForm() {
     };
   }, [status]);
 
+  const copy = COPY[format];
   const trimmed = topic.trim();
   const canSubmit = trimmed.length >= TOPIC_MIN && trimmed.length <= TOPIC_MAX && status !== "generating";
 
@@ -78,7 +98,7 @@ export default function GenerateForm() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: trimmed, format: "joke", length: preset }),
+        body: JSON.stringify({ topic: trimmed, format, length: preset }),
       });
 
       if (!response.ok) {
@@ -116,9 +136,33 @@ export default function GenerateForm() {
   return (
     <div className="space-y-5">
       <div className="space-y-2">
+        <span className="text-sm font-medium text-white">Format</span>
+        <div className="flex gap-2">
+          {FORMATS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                setFormat(option.value);
+              }}
+              className={cn(
+                "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
+                format === option.value
+                  ? "border-purple-400 bg-purple-600/30 text-white"
+                  : "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10",
+              )}
+            >
+              <span className="block">{option.label}</span>
+              <span className="block text-xs opacity-60">{option.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
         <div className="flex items-baseline justify-between">
           <label htmlFor="topic" className="text-sm font-medium text-white">
-            O czym ma być dowcip?
+            {copy.topicLabel}
           </label>
           <span className={cn("text-xs", trimmed.length > TOPIC_MAX ? "text-red-300" : "text-blue-100/50")}>
             {trimmed.length} / {TOPIC_MAX}
@@ -159,7 +203,7 @@ export default function GenerateForm() {
             >
               <span className="block">{option.label}</span>
               {/* Limit slow pokazany wprost — wybor ma byc konkretny, nie estetyczny. */}
-              <span className="block text-xs opacity-60">do {wordLimitFor("joke", option.value)} słów</span>
+              <span className="block text-xs opacity-60">do {wordLimitFor(format, option.value)} słów</span>
             </button>
           ))}
         </div>
@@ -172,14 +216,14 @@ export default function GenerateForm() {
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
       >
         <Sparkles className="size-4" />
-        {status === "generating" ? "Piszę…" : "Wygeneruj dowcip"}
+        {status === "generating" ? "Piszę…" : copy.submit}
       </button>
 
       {status === "generating" && (
         <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-4">
           <div className="flex items-center gap-3">
             <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-white/20 border-t-purple-300" />
-            <span className="text-sm text-blue-100/80">Piszę dowcip…</span>
+            <span className="text-sm text-blue-100/80">{copy.pending}</span>
             <span className="ml-auto font-mono text-sm text-blue-100/50">{(elapsed / 1000).toFixed(1)} s</span>
           </div>
           <p className="text-xs text-blue-100/40">
