@@ -27,6 +27,21 @@ export function formatLabel(format: string): string {
 export const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short" });
 
 /**
+ * Godzina odnowienia dziennych limitow (S-04).
+ *
+ * Strefa jest przypieta do `Europe/Warsaw`, nie brana z przegladarki, i to jest
+ * celowe: granice doby liczy `public.usage_today()` wlasnie w tej strefie, wiec
+ * pokazanie jej w innej dawaloby godzine prawdziwa co do momentu, ale niezgodna
+ * z tym, co uzytkownik rozumie przez "polnoc" na tym samym ekranie. Produkt jest
+ * po polsku i tylko po polsku — patrz Non-Goals w `prd.md`.
+ */
+export const resetTimeFormat = new Intl.DateTimeFormat("pl-PL", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Warsaw",
+});
+
+/**
  * Polska liczba mnoga slow: 1 slowo, 2-4 slowa, 5+ slow — z wyjatkiem 12-14, ktore
  * ida jak 5+ ("13 slow"), i z powrotem do 22-24 ("22 slowa").
  */

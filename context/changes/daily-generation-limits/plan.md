@@ -509,30 +509,30 @@ usunięcie wymagałoby migracji odwrotnej.
 
 #### Automated
 
-- [x] 2.1 Testy jednostkowe przechodzą: `npm test`
-- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` — fdcb059
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check` — fdcb059
+- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi — fdcb059
 
 #### Manual
 
-- [x] 2.4 Generowanie działa normalnie poniżej limitu
-- [x] 2.5 Po wyczerpaniu limitu konta pojawia się polski komunikat, bez wpisu błędu w logach
-- [x] 2.6 Zatrzymanie lokalnej bazy skutkuje odmową generowania, nie generowaniem
+- [x] 2.4 Generowanie działa normalnie poniżej limitu — fdcb059
+- [x] 2.5 Po wyczerpaniu limitu konta pojawia się polski komunikat, bez wpisu błędu w logach — fdcb059
+- [x] 2.6 Zatrzymanie lokalnej bazy skutkuje odmową generowania, nie generowaniem — fdcb059
 
 ### Phase 3: Powierzchnia — panel i generator
 
 #### Automated
 
-- [ ] 3.1 Kontrola typów przechodzi: `npx astro check`
-- [ ] 3.2 Testy jednostkowe przechodzą: `npm test`
-- [ ] 3.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 3.1 Kontrola typów przechodzi: `npx astro check`
+- [x] 3.2 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.3 Lint plików dotkniętych w tej fazie przechodzi
 
 #### Manual
 
-- [ ] 3.4 Panel pokazuje oba liczniki i godzinę odnowienia, na obu zakładkach
-- [ ] 3.5 Licznik na generatorze zgadza się z panelem
-- [ ] 3.6 Po wyczerpaniu limitu licznik pokazuje zero, a komunikat wyjaśnia którą granicę
-- [ ] 3.7 Przy zatrzymanej bazie panel mówi o nieudanym odczycie, a nie pokazuje „0 z 10"
+- [x] 3.4 Panel pokazuje oba liczniki i godzinę odnowienia, na obu zakładkach
+- [x] 3.5 Licznik na generatorze zgadza się z panelem
+- [x] 3.6 Po wyczerpaniu limitu licznik pokazuje zero, a komunikat wyjaśnia którą granicę
+- [x] 3.7 Przy zatrzymanej bazie panel mówi o nieudanym odczycie, a nie pokazuje „0 z 10"
 
 ### Phase 4: Testy integracyjne, R-07 i tech-stack
 

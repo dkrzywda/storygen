@@ -4,10 +4,36 @@ import Topbar from "@/components/Topbar.astro";
 import GenerationList from "@/components/generations/GenerationList.astro";
 import { createClient } from "@/lib/supabase";
 import { fetchFavourites, fetchRanking } from "@/lib/generations";
+import { DAILY_APP_CEILING, DAILY_PER_ACCOUNT, fetchUsageToday, type UsageToday } from "@/lib/limits";
+import { resetTimeFormat } from "@/lib/generation-labels";
+import { logApiError } from "@/lib/api-errors";
 import type { GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
 const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+/**
+ * Wykorzystanie limitow (FR-012, FR-013).
+ *
+ * `null` znaczy "nie wiem", NIE "zero". Zero jest twierdzeniem o stanie, a przy
+ * nieudanym odczycie tego stanu nie znamy — pokazanie "0 z 10" byloby liczba
+ * wymyslona, i to akurat w kierunku zachecajacym do generowania.
+ *
+ * Nieudany odczyt NIE wywraca panelu: ranking i ulubione dzialaja bez licznika.
+ * To inna decyzja niz w endpoincie, gdzie ten sam blad odmawia generowania —
+ * roznica jest taka, ze tam brak licznika znaczy "sufit nie obowiazuje", a tutaj
+ * tylko "nie umiem tego pokazac".
+ */
+let usage: UsageToday | null = null;
+if (supabase) {
+  try {
+    usage = await fetchUsageToday(supabase);
+  } catch (error) {
+    // Bez tego wpisu nieudany odczyt nie zostawia zadnego sladu — uzytkownik widzi
+    // komunikat, a my nie wiemy, ze cos sie stalo.
+    logApiError("dashboard", "INTERNAL", error);
+  }
+}
 
 /**
  * Zakladki jada przez parametry adresu, nie przez wyspe Reacta.
@@ -50,6 +76,37 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
 
       <h1 class="text-ink mb-2 text-3xl font-bold">Panel</h1>
       <p class="text-ink-muted mb-6 text-sm">Twoje oceny i ulubione. Widzisz wyłącznie własne teksty.</p>
+
+      {
+        /* Blok stoi NAD zakladkami, wiec jest widoczny na obu — limit nie nalezy
+          ani do rankingu, ani do ulubionych, tylko do konta. */
+      }
+      <section class="border-hairline bg-panel mb-6 rounded-xl border p-4" aria-label="Wykorzystanie dziennego limitu">
+        {
+          usage ? (
+            <>
+              <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+                <span class="text-ink text-sm font-medium">Twój dzienny limit</span>
+                <span class="text-ink-muted text-sm">
+                  {usage.own} z {DAILY_PER_ACCOUNT}
+                </span>
+              </div>
+              <div class="mt-1 flex flex-wrap items-baseline justify-between gap-x-4">
+                <span class="text-ink-muted text-sm">Cała aplikacja</span>
+                <span class="text-ink-muted text-sm">
+                  {usage.app} z {DAILY_APP_CEILING}
+                </span>
+              </div>
+              <p class="text-ink-subtle mt-2 text-xs">
+                Oba odnowią się o {resetTimeFormat.format(usage.resetsAt)}. Liczone są próby, więc nieudana generacja
+                też zajmuje miejsce.
+              </p>
+            </>
+          ) : (
+            <p class="text-ink-muted text-sm">Nie udało się odczytać wykorzystania limitu. Odśwież stronę za chwilę.</p>
+          )
+        }
+      </section>
 
       <nav class="mb-4 flex gap-2" aria-label="Zakładki panelu">
         {

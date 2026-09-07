@@ -1,9 +1,42 @@
 ---
 import Topbar from "@/components/Topbar.astro";
 import GenerateForm from "@/components/generate/GenerateForm";
+import { createClient } from "@/lib/supabase";
+import { DAILY_PER_ACCOUNT, fetchUsageToday } from "@/lib/limits";
+import { resetTimeFormat } from "@/lib/generation-labels";
+import { logApiError } from "@/lib/api-errors";
 
 // Ekran generatora jako jeden komponent, bo stoi pod dwoma adresami: "/" (strona
 // glowna) i "/generate". Duplikat markupu rozjechalby sie przy pierwszej zmianie.
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+/**
+ * Wykorzystanie wlasnego limitu, pokazane PRZED klikniecim (FR-012).
+ *
+ * Do wyspy leci gotowy NAPIS godziny, nie `Date`: prop przechodzi przez granice
+ * serializacji, a wyspa nie musi wiedziec nic o strefach czasowych ani o Intl.
+ * Formatowanie zostaje po stronie serwera, w jednym miejscu dla panelu i generatora.
+ *
+ * Pokazujemy tylko limit KONTA, nie sufit aplikacji. Przy limicie 10 na konto
+ * i sufcie 30 na aplikacje wlasny prog domyka sie pierwszy, a gdyby jednak
+ * zadzialal sufit, komunikat odmowy nazywa go wprost. Panel pokazuje oba.
+ *
+ * `undefined` przy nieudanym odczycie znaczy "nie pokazuj licznika". Generowanie
+ * dziala dalej — o tym, czy wolno, rozstrzyga endpoint, nie ten odczyt.
+ */
+let usage: { own: number; limit: number; resetsAt: string } | undefined;
+if (supabase) {
+  try {
+    const today = await fetchUsageToday(supabase);
+    usage = {
+      own: today.own,
+      limit: DAILY_PER_ACCOUNT,
+      resetsAt: resetTimeFormat.format(today.resetsAt),
+    };
+  } catch (error) {
+    logApiError("generate-screen", "INTERNAL", error);
+  }
+}
 ---
 
 <div class="bg-app min-h-screen p-4 py-10">
@@ -16,7 +49,7 @@ import GenerateForm from "@/components/generate/GenerateForm";
     </p>
 
     <div class="border-hairline bg-panel rounded-2xl border p-6 shadow-sm">
-      <GenerateForm client:load />
+      <GenerateForm client:load usage={usage} />
     </div>
   </div>
 </div>

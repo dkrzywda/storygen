@@ -7,7 +7,43 @@ import RatingControls from "@/components/generations/RatingControls";
 import CopyButton from "@/components/generations/CopyButton";
 import { wordsLabel } from "@/lib/generation-labels";
 import { readApiError } from "@/lib/api-errors";
-import type { ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
+import type { ApiErrorCode, ApiSuccessBody, GenerationFormat, GenerationResult, LengthPreset } from "@/types";
+
+/**
+ * Wykorzystanie wlasnego dziennego limitu, policzone serwerowo przy renderze
+ * (`GenerateScreen.astro`). `resetsAt` przychodzi jako gotowy napis godziny — wyspa
+ * nie zna stref czasowych.
+ */
+interface Usage {
+  own: number;
+  limit: number;
+  resetsAt: string;
+}
+
+interface Props {
+  /** `undefined`, gdy odczyt licznika zawiodl — wtedy licznika nie pokazujemy wcale. */
+  usage?: Usage;
+}
+
+/**
+ * Kody, przy ktorych zadanie NIE zajelo miejsca w limicie — bo zostalo odrzucone
+ * przed bramka albo na niej samej.
+ *
+ * `INTERNAL` jest tu z wyboru, mimo ze jest DWUZNACZNY: moze pochodzic z nieudanego
+ * odczytu licznika (przed zuzyciem) albo z awarii juz po wywolaniu modelu (po zuzyciu).
+ * Traktujemy go jako niezuzywajacy, bo drugi przypadek konczy sie licznikiem o jeden
+ * zawyzonym do odswiezenia strony, a pierwszy — licznikiem falszywie zmniejszonym
+ * przy awarii, ktora niczego nie kosztowala. Z dwoch niedokladnosci ta pierwsza jest
+ * mniej myląca.
+ */
+const NOT_CONSUMED = new Set<ApiErrorCode>([
+  "VALIDATION_FAILED",
+  "UNAUTHORIZED",
+  "NOT_CONFIGURED",
+  "DAILY_LIMIT_REACHED",
+  "APP_LIMIT_REACHED",
+  "INTERNAL",
+]);
 
 /**
  * FR-004: dwa formaty i to, czym sie roznia dla uzytkownika.
@@ -35,7 +71,8 @@ const PRESETS: { value: LengthPreset; label: string }[] = [
 
 type Status = "idle" | "generating" | "done";
 
-export default function GenerateForm() {
+export default function GenerateForm({ usage }: Props) {
+  const [used, setUsed] = useState(usage?.own ?? 0);
   const [topic, setTopic] = useState("");
   const [format, setFormat] = useState<GenerationFormat>("joke");
   const [preset, setPreset] = useState<LengthPreset>("medium");
@@ -99,7 +136,24 @@ export default function GenerateForm() {
       });
 
       if (!response.ok) {
-        const { message, fields } = await readApiError(response);
+        const { code, message, fields } = await readApiError(response);
+
+        /*
+         * Licznik po odmowie. Serwer jest jedynym autorytetem, ale az do nastepnego
+         * renderu strony wyspa musi utrzymac liczbe uczciwa sama.
+         *
+         * Wyczerpany wlasny limit ustawia licznik na maksimum — serwer wlasnie
+         * powiedzial, ze miejsca nie ma, wiec pokazywanie "zostalo 2" byloby
+         * zaprzeczaniem komunikatowi stojacemu obok.
+         */
+        if (code === "DAILY_LIMIT_REACHED" && usage) {
+          setUsed(usage.limit);
+        } else if (!NOT_CONSUMED.has(code)) {
+          // Timeout, zlamany kontrakt i odmowa tematu ZAJELY miejsce: wiersz proby
+          // powstal przed wywolaniem modelu i neurony zostaly wydane.
+          setUsed((previous) => previous + 1);
+        }
+
         // Komunikat pola wygrywa nad ogolnym — uzytkownik ma wiedziec, co poprawic.
         if (fields?.topic) {
           setTopicError(fields.topic);
@@ -111,6 +165,10 @@ export default function GenerateForm() {
       }
 
       const body: ApiSuccessBody<GenerationResult> = await response.json();
+      // Udana generacja tez zajmuje miejsce. Bez tego licznik nie ruszalby sie po
+      // najczestszej sciezce w produkcie, a uzytkownik widzialby na jednym ekranie
+      // swiezy tekst i niezmieniona liczbe — czyli oczywisty falsz.
+      setUsed((previous) => previous + 1);
       setResult(body.data);
       setStatus("done");
     } catch {
@@ -204,6 +262,19 @@ export default function GenerateForm() {
         <Sparkles className="size-4" />
         {status === "generating" ? "Piszę…" : copy.submit}
       </button>
+
+      {/* Licznik stoi POD przyciskiem, nie nad formularzem: informacja ma byc tam,
+          gdzie zapada decyzja o klikniecu. Przycisk zostaje aktywny takze przy zerze —
+          o tym, czy wolno generowac, rozstrzyga serwer, a ta liczba moze byc
+          nieaktualna. Wygaszenie przycisku na podstawie nieswiezej liczby odebraloby
+          generowanie komus, kto ma jeszcze miejsce. */}
+      {usage && (
+        <p className="text-ink-subtle text-center text-xs">
+          {used < usage.limit
+            ? `Dzienny limit: zostało ${String(usage.limit - used)} z ${String(usage.limit)}. Odnowi się o ${usage.resetsAt}.`
+            : `Dzienny limit wyczerpany. Odnowi się o ${usage.resetsAt}.`}
+        </p>
+      )}
 
       {status === "generating" && (
         <div className="border-hairline bg-panel space-y-2 rounded-lg border p-4">
