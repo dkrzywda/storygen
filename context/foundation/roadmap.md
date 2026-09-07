@@ -3,7 +3,7 @@ project: "Storygen"
 version: 1
 status: draft
 created: 2026-09-03
-updated: 2026-09-04
+updated: 2026-09-07
 prd_version: 1
 main_goal: learn
 top_blocker: decisions
@@ -77,13 +77,15 @@ sekwencjonowania `learn` decyduje o remisach.
 | ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
 | F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done        |
 | S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
-| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | proposed    |
-| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | proposed    |
+| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
+| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
 | S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | proposed    |
 | S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | proposed    |
 | S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | proposed    |
-| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | proposed    |
+| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done        |
 | S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done        |
+| —    | `home-screen-generator`      | wejść na `/` i zobaczyć generator zamiast landingu startera        | S-01          | — (poza planem)                               | done        |
+| —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done        |
 
 ## Streams
 
@@ -332,19 +334,49 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   ją zaplanować i dowieźć niezależnie od blokady na `S-01`.
 - **Status:** done
 
+## Dług procesowy — 2026-09-07
+
+Pięć zmian weszło do repo **poza łańcuchem** `/10x-new` → `/10x-plan` →
+`/10x-plan-review` → `/10x-implement` → `/10x-impl-review`. Zapisane tutaj, bo
+inaczej tabela statusów sugerowałaby proces, którego nie było.
+
+| Change ID                           | Commit    | Plan                          | Przegląd |
+| ----------------------------------- | --------- | ----------------------------- | -------- |
+| `polish-auth-surface` (S-02)        | `2721cc9` | brak                          | brak     |
+| `home-screen-generator`             | `fa4e5c4` | brak, plastra też nie ma      | brak     |
+| `story-format-generation` (S-07)    | `2763aa2` | brak                          | brak     |
+| `generation-history-storage` (S-03) | `c4d9e7e` | brak                          | brak     |
+| `generation-rating`                 | `7f66fed` | brak, plastra i FR też nie ma | brak     |
+
+Wszystkie pięć powstało na **niedomkniętym S-01**: `first-joke-generation` ma
+status `implementing`, a w jego planie zostały niezaznaczone pozycje weryfikacji
+ręcznej (2.4, 3.6–3.10, 4.5–4.10, 5.3–5.4).
+
+Co z tego wynika dla czytelnika:
+
+- **`/10x-impl-review` ma z czym porównać tylko S-01.** Pozostałe cztery zmiany nie
+  mają kontraktu implementacji, więc przegląd wobec planu jest dla nich niewykonalny.
+- **`home-screen-generator` i `generation-rating` nie mają folderów zmian.** Ich
+  identyfikatory żyją tylko w komunikatach commitów. `/10x-new` by to naprawił.
+- **Ranking jest poza PRD.** Ocenianie, ranking i ulubione nie realizują żadnego
+  z 13 wymagań funkcjonalnych. Decyzja, czy należą do M-1, nie została podjęta.
+- **Jakość promptu dla S-07 jest niezmierzona**, w przeciwieństwie do dowcipu
+  (pomiar 2026-09-04). Trzy niewiadome: temperatura przy dłuższym tekście, limity
+  150/275/400, budżet ~14,5 s na próbę.
+
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                        |
-| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ------------------------------------------------------------ |
-| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                               |
-| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1` |
-| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | no                    | Czeka na F-01                                                |
-| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | no                    | Czeka na S-01                                                |
-| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                        |
-| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Czeka na S-03                                                |
-| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                |
-| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | no                    | Czeka na S-01                                                |
-| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`   |
+| Roadmap ID | Change ID                    | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                                                                                              |
+| ---------- | ---------------------------- | ------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| F-01       | `api-error-contract`         | Ustal kontrakt odpowiedzi API i warstwę komunikatów po polsku | yes                   | `/10x-plan api-error-contract`                                                                                     |
+| S-01       | `first-joke-generation`      | Generowanie dowcipu na temat użytkownika z kopiowaniem wyniku | yes                   | Plan gotowy — `/10x-implement first-joke-generation phase 1`                                                       |
+| S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
+| S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                     |
+| S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | no                    | Blokada: brak liczb dla FR-012/FR-013                                                                              |
+| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Odblokowane przez S-03. Lista działa, ale FR-010 „otwiera w całości" nie — widok pokazuje podgląd, nie pełny tekst |
+| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                      |
+| S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                 |
+| S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                         |
 
 ## Open Roadmap Questions
 
