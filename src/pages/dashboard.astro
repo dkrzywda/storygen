@@ -39,19 +39,17 @@ const FORMAT_TABS: { key: GenerationFormat; label: string }[] = [
 ];
 
 const tabClass = "rounded-lg border px-4 py-2 text-sm transition-colors";
-const activeClass = "border-purple-400 bg-purple-600/30 text-white";
-const idleClass = "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10";
+const activeClass = "border-brand bg-brand-soft text-brand-strong";
+const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
 ---
 
 <Layout title="Panel">
-  <div class="bg-cosmic min-h-screen p-4 py-10">
+  <div class="bg-app min-h-screen p-4 py-10">
     <div class="mx-auto w-full max-w-2xl">
       <Topbar />
 
-      <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Panel
-      </h1>
-      <p class="mb-6 text-sm text-blue-100/60">Twoje oceny i ulubione. Widzisz wyłącznie własne teksty.</p>
+      <h1 class="text-ink mb-2 text-3xl font-bold">Panel</h1>
+      <p class="text-ink-muted mb-6 text-sm">Twoje oceny i ulubione. Widzisz wyłącznie własne teksty.</p>
 
       <nav class="mb-4 flex gap-2" aria-label="Zakładki panelu">
         {
@@ -97,8 +95,8 @@ const idleClass = "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10
         )
       }
 
-      <p class="mt-8 text-center text-xs text-blue-100/30">
-        <a href="/generations" class="hover:text-blue-100/60 hover:underline">Zobacz całą historię</a>
+      <p class="text-ink-subtle mt-8 text-center text-xs">
+        <a href="/generations" class="hover:text-ink-muted hover:underline">Zobacz całą historię</a>
       </p>
     </div>
   </div>

@@ -35,14 +35,14 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
     });
 
     if (!response.ok) {
-      const body = (await response.json()) as ApiErrorBody;
+      const body: ApiErrorBody = await response.json();
       // Komunikat pola wygrywa nad ogolnym — uzytkownik ma wiedziec, co poprawic.
       setError(body.error.fields?.title ?? body.error.message);
       setStatus("idle");
       return;
     }
 
-    const body = (await response.json()) as ApiSuccessBody<Generation>;
+    const body: ApiSuccessBody<Generation> = await response.json();
     setTitle(body.data.title);
     setDraft(body.data.title ?? "");
     setEditing(false);
@@ -52,16 +52,14 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
   if (!editing) {
     return (
       <div className="flex items-start justify-between gap-3">
-        <p className={cn("text-sm", title ? "font-medium text-white" : "text-blue-100/50 italic")}>
-          {title ?? fallback}
-        </p>
+        <p className={cn("text-sm", title ? "text-ink font-medium" : "text-ink-subtle italic")}>{title ?? fallback}</p>
         <button
           type="button"
           onClick={() => {
             setEditing(true);
             setStatus("idle");
           }}
-          className="flex shrink-0 items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-2 py-1 text-xs text-blue-100/80 transition-colors hover:bg-white/15"
+          className="border-hairline bg-panel text-ink-muted hover:bg-app flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors"
         >
           <Pencil className="size-3" />
           {title ? "Zmień tytuł" : "Nadaj tytuł"}
@@ -72,7 +70,7 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
 
   return (
     <div className="space-y-2">
-      <label htmlFor={`title-${id}`} className="block text-xs text-blue-100/60">
+      <label htmlFor={`title-${id}`} className="text-ink-muted block text-xs">
         Tytuł tej pozycji
       </label>
       <div className="flex gap-2">
@@ -85,15 +83,15 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
           }}
           placeholder="np. Dowcip na spotkanie zespołu"
           className={cn(
-            "w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white placeholder:text-blue-100/30",
-            error ? "border-red-500/50" : "border-white/20",
+            "bg-panel text-ink placeholder:text-ink-subtle w-full rounded-lg border px-3 py-2 text-sm",
+            error ? "border-danger" : "border-hairline",
           )}
         />
         <button
           type="button"
           disabled={status === "saving"}
           onClick={() => void save(draft)}
-          className="flex shrink-0 items-center gap-1 rounded-lg bg-purple-600 px-3 py-2 text-sm text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+          className="bg-brand hover:bg-brand-strong flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-sm text-white transition-colors disabled:opacity-50"
         >
           <Check className="size-4" />
           Zapisz
@@ -107,7 +105,7 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
           type="button"
           disabled={status === "saving" || title === null}
           onClick={() => void save("")}
-          className="flex items-center gap-1 text-xs text-blue-100/60 underline-offset-2 transition-colors hover:text-blue-100 disabled:opacity-40 disabled:hover:text-blue-100/60"
+          className="text-ink-muted hover:text-ink disabled:hover:text-ink-muted flex items-center gap-1 text-xs underline-offset-2 transition-colors disabled:opacity-40"
         >
           <Eraser className="size-3" />
           Usuń tytuł
@@ -119,14 +117,14 @@ export default function TitleEditor({ id, initialTitle, fallback }: TitleEditorP
             setDraft(title ?? "");
             setError(null);
           }}
-          className="text-xs text-blue-100/60 transition-colors hover:text-blue-100"
+          className="text-ink-muted hover:text-ink text-xs transition-colors"
         >
           Anuluj
         </button>
-        {status === "saving" && <span className="text-xs text-blue-100/50">Zapisywanie…</span>}
+        {status === "saving" && <span className="text-ink-subtle text-xs">Zapisywanie…</span>}
       </div>
 
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

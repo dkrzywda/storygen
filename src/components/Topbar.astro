@@ -3,21 +3,21 @@ const { user } = Astro.locals;
 ---
 
 <div
-  class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80"
+  class="border-hairline bg-panel text-ink-muted mb-4 flex items-center justify-between rounded-xl border px-4 py-2 text-sm"
 >
   {
     user ? (
       <>
-        <span class="text-blue-100/70">{user.email}</span>
+        <span class="text-ink-muted">{user.email}</span>
         <div class="flex items-center gap-3">
-          <a href="/dashboard" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/dashboard" class="text-brand hover:text-brand-strong transition-colors hover:underline">
             Panel
           </a>
-          <a href="/generations" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/generations" class="text-brand hover:text-brand-strong transition-colors hover:underline">
             Historia
           </a>
           <form method="POST" action="/api/auth/signout">
-            <button type="submit" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+            <button type="submit" class="text-brand hover:text-brand-strong transition-colors hover:underline">
               Wyloguj się
             </button>
           </form>
@@ -25,12 +25,12 @@ const { user } = Astro.locals;
       </>
     ) : (
       <>
-        <span class="text-blue-100/70">Nie zalogowano</span>
+        <span class="text-ink-muted">Nie zalogowano</span>
         <div class="flex gap-3">
-          <a href="/auth/signin" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/auth/signin" class="text-brand hover:text-brand-strong transition-colors hover:underline">
             Zaloguj się
           </a>
-          <a href="/auth/signup" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/auth/signup" class="text-brand hover:text-brand-strong transition-colors hover:underline">
             Zarejestruj się
           </a>
         </div>

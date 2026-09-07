@@ -6,18 +6,16 @@ import GenerateForm from "@/components/generate/GenerateForm";
 // glowna) i "/generate". Duplikat markupu rozjechalby sie przy pierwszej zmianie.
 ---
 
-<div class="bg-cosmic min-h-screen p-4 py-10">
+<div class="bg-app min-h-screen p-4 py-10">
   <div class="mx-auto w-full max-w-xl">
     <Topbar />
-    <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-      Storygen
-    </h1>
-    <p class="mb-8 text-sm text-blue-100/60">
+    <h1 class="text-ink mb-2 text-3xl font-bold">Storygen</h1>
+    <p class="text-ink-muted mb-8 text-sm">
       Wybierz format, podaj temat i wybierz długość. Dowcip zaskoczy puentą, historia zostawi myśl — obydwa zmieszczą
       się w limicie słów.
     </p>
 
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
+    <div class="border-hairline bg-panel rounded-2xl border p-6 shadow-sm">
       <GenerateForm client:load />
     </div>
   </div>

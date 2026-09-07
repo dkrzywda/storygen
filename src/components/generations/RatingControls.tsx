@@ -90,7 +90,7 @@ export default function RatingControls({ id, initialRating, initialFavourite }: 
               aria-label={rating === value ? `Usuń ocenę ${String(value)}` : `Oceń na ${String(value)}`}
               aria-pressed={rating !== null && value <= rating}
             >
-              <Star className={cn("size-4", value <= shown ? "fill-amber-300 text-amber-300" : "text-white/25")} />
+              <Star className={cn("size-4", value <= shown ? "fill-star text-star" : "text-hairline")} />
             </button>
           ))}
         </div>
@@ -102,13 +102,13 @@ export default function RatingControls({ id, initialRating, initialFavourite }: 
           aria-label={favourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
           aria-pressed={favourite}
         >
-          <Heart className={cn("size-4", favourite ? "fill-rose-400 text-rose-400" : "text-white/25")} />
+          <Heart className={cn("size-4", favourite ? "fill-heart text-heart" : "text-hairline")} />
         </button>
 
-        {rating === null && <span className="text-xs text-blue-100/30">bez oceny</span>}
+        {rating === null && <span className="text-ink-subtle text-xs">bez oceny</span>}
       </div>
 
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

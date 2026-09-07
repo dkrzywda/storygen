@@ -5,14 +5,14 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #f7f8fb;
+  --foreground: #1a1d29;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -20,9 +20,9 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e4e7ef;
+  --input: #e4e7ef;
+  --ring: #0d9488;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -110,8 +110,39 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@utility bg-cosmic {
-  background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
+/*
+ * Tokeny motywu aplikacji.
+ *
+ * Ekrany NIE uzywaja juz zakodowanych klas Tailwinda (text-white, bg-white/10,
+ * purple-600). Do 2026-09-07 uzywaly — w 17 plikach i ~160 miejscach — dlatego
+ * zmiana kolorow byla zmiana w siedemnastu plikach, a nie w jednym.
+ *
+ * Nazwy opisuja ROLE, nie kolor: brand moze kiedys przestac byc morski, ale
+ * nadal bedzie akcentem. Nazwa brand, nie accent, bo shadcn ma juz wlasny token
+ * --color-accent (jasnoszary, uzywany przez warianty ghost i outline w button.tsx)
+ * i kolizja przemalowalaby komponenty biblioteki. Tokeny star i heart zostaja
+ * zlote i rozowe swiadomie —
+ * te dwa kolory niosa znaczenie (ocena, ulubione), nie stylistyke, wiec nie
+ * powinny sie zmieniac razem z paleta.
+ */
+@theme {
+  --color-app: #f7f8fb;
+  --color-panel: #ffffff;
+  --color-ink: #1a1d29;
+  --color-ink-muted: #5b6178;
+  --color-ink-subtle: #8b91a7;
+  --color-hairline: #e4e7ef;
+
+  --color-brand: #0d9488;
+  --color-brand-strong: #0f766e;
+  --color-brand-soft: #ccfbf1;
+
+  --color-star: #f59e0b;
+  --color-heart: #f43f5e;
+
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-danger-line: #fecaca;
 }
 
 @layer base {

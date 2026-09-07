@@ -132,7 +132,7 @@ export default function GenerateForm() {
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <span className="text-sm font-medium text-white">Format</span>
+        <span className="text-ink text-sm font-medium">Format</span>
         <div className="flex gap-2">
           {FORMATS.map((option) => (
             <button
@@ -144,8 +144,8 @@ export default function GenerateForm() {
               className={cn(
                 "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
                 format === option.value
-                  ? "border-purple-400 bg-purple-600/30 text-white"
-                  : "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10",
+                  ? "border-brand bg-brand-soft text-brand-strong"
+                  : "border-hairline bg-panel text-ink-muted hover:bg-app",
               )}
             >
               <span className="block">{option.label}</span>
@@ -157,10 +157,10 @@ export default function GenerateForm() {
 
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <label htmlFor="topic" className="text-sm font-medium text-white">
+          <label htmlFor="topic" className="text-ink text-sm font-medium">
             {copy.topicLabel}
           </label>
-          <span className={cn("text-xs", trimmed.length > TOPIC_MAX ? "text-red-300" : "text-blue-100/50")}>
+          <span className={cn("text-xs", trimmed.length > TOPIC_MAX ? "text-danger" : "text-ink-subtle")}>
             {trimmed.length} / {TOPIC_MAX}
           </span>
         </div>
@@ -173,15 +173,15 @@ export default function GenerateForm() {
           }}
           placeholder="np. koty programistów"
           className={cn(
-            "w-full rounded-lg border bg-white/5 px-3 py-2 text-white placeholder:text-blue-100/30",
-            fieldMessage ? "border-red-500/50" : "border-white/20",
+            "bg-panel text-ink placeholder:text-ink-subtle w-full rounded-lg border px-3 py-2",
+            fieldMessage ? "border-danger" : "border-hairline",
           )}
         />
-        {fieldMessage && <p className="text-xs text-red-300">{fieldMessage}</p>}
+        {fieldMessage && <p className="text-danger text-xs">{fieldMessage}</p>}
       </div>
 
       <div className="space-y-2">
-        <span className="text-sm font-medium text-white">Długość</span>
+        <span className="text-ink text-sm font-medium">Długość</span>
         <div className="flex gap-2">
           {PRESETS.map((option) => (
             <button
@@ -193,8 +193,8 @@ export default function GenerateForm() {
               className={cn(
                 "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
                 preset === option.value
-                  ? "border-purple-400 bg-purple-600/30 text-white"
-                  : "border-white/20 bg-white/5 text-blue-100/70 hover:bg-white/10",
+                  ? "border-brand bg-brand-soft text-brand-strong"
+                  : "border-hairline bg-panel text-ink-muted hover:bg-app",
               )}
             >
               <span className="block">{option.label}</span>
@@ -209,46 +209,46 @@ export default function GenerateForm() {
         type="button"
         disabled={!canSubmit}
         onClick={() => void generate()}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
+        className="bg-brand hover:bg-brand-strong flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium text-white transition-colors disabled:opacity-40"
       >
         <Sparkles className="size-4" />
         {status === "generating" ? "Piszę…" : copy.submit}
       </button>
 
       {status === "generating" && (
-        <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-4">
+        <div className="border-hairline bg-panel space-y-2 rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-white/20 border-t-purple-300" />
-            <span className="text-sm text-blue-100/80">{copy.pending}</span>
-            <span className="ml-auto font-mono text-sm text-blue-100/50">{(elapsed / 1000).toFixed(1)} s</span>
+            <span className="border-hairline border-t-brand size-4 shrink-0 animate-spin rounded-full border-2" />
+            <span className="text-ink-muted text-sm">{copy.pending}</span>
+            <span className="text-ink-subtle ml-auto font-mono text-sm">{(elapsed / 1000).toFixed(1)} s</span>
           </div>
-          <p className="text-xs text-blue-100/40">
+          <p className="text-ink-subtle text-xs">
             Jeśli pierwsza wersja nie zmieści się w limicie, napiszę ją jeszcze raz.
           </p>
         </div>
       )}
 
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">{error}</p>
+        <p className="border-danger-line bg-danger-soft text-danger rounded-lg border px-3 py-2 text-sm">{error}</p>
       )}
 
       {result && (
-        <div className="space-y-3 rounded-lg border border-white/10 bg-white/10 p-4">
-          <p className="whitespace-pre-wrap text-white">{result.text}</p>
+        <div className="border-hairline bg-panel space-y-3 rounded-lg border p-4">
+          <p className="text-ink whitespace-pre-wrap">{result.text}</p>
           {/* Zapis moze zawiesc mimo udanego generowania — wtedy `id` jest `null`
               i nie ma czego ocenic. Pokazanie martwych gwiazdek byloby klamstwem. */}
           {result.id !== null && (
-            <div className="border-t border-white/10 pt-3">
+            <div className="border-hairline border-t pt-3">
               <RatingControls id={result.id} initialRating={null} initialFavourite={false} />
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-blue-100/40">{result.words} słów</span>
+            <span className="text-ink-subtle text-xs">{result.words} słów</span>
             <button
               type="button"
               onClick={() => void copyResult()}
-              className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-blue-100/80 transition-colors hover:bg-white/15"
+              className="border-hairline bg-panel text-ink-muted hover:bg-app flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors"
             >
               {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
               {copied ? "Skopiowano" : "Kopiuj"}

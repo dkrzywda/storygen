@@ -47,16 +47,16 @@ const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeSty
 
 {
   items.length === 0 ? (
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
-      <p class="text-blue-100/80">{emptyTitle}</p>
-      <p class="mt-2 text-sm text-blue-100/50">{emptyHint}</p>
+    <div class="border-hairline bg-panel rounded-2xl border p-8 text-center shadow-sm">
+      <p class="text-ink-muted">{emptyTitle}</p>
+      <p class="text-ink-subtle mt-2 text-sm">{emptyHint}</p>
     </div>
   ) : (
     <ul class="space-y-3">
       {items.map((item, index) => (
-        <li class="rounded-2xl border border-white/10 bg-white/10 p-5 text-white backdrop-blur-xl">
+        <li class="border-hairline bg-panel text-ink rounded-2xl border p-5 shadow-sm">
           <div class="flex items-start gap-3">
-            {ranked && <span class="mt-0.5 min-w-6 text-center font-mono text-sm text-blue-100/40">{index + 1}.</span>}
+            {ranked && <span class="text-ink-subtle mt-0.5 min-w-6 text-center font-mono text-sm">{index + 1}.</span>}
             <div class="min-w-0 flex-1">
               <TitleEditor client:load id={item.id} initialTitle={item.title} fallback={preview(item.content)} />
               <div class="mt-3">
@@ -67,7 +67,7 @@ const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeSty
                   initialFavourite={item.is_favourite}
                 />
               </div>
-              <p class="mt-3 text-xs text-blue-100/40">
+              <p class="text-ink-subtle mt-3 text-xs">
                 {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
               </p>
             </div>
