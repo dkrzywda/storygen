@@ -100,7 +100,7 @@ Co zostaje w mocy, a co jest **unieważnione** w tekście poniżej:
 | `src/pages/404.astro`                        | **w mocy**, ale przestaje być celem odmowy; jego wartość to naprawa naruszenia NFR o języku |
 | Faza 2, poz. 3 — `ADMIN_ROUTES` w middleware | **UNIEWAŻNIONE** — martwy mechanizm bez wywołania; middleware wraca do stanu z `HEAD`       |
 | Faza 2, poz. 4 — pusta trasa `/admin`        | **UNIEWAŻNIONE** — zastąpiona warunkową sekcją w `/dashboard`                               |
-| Kryteria 2.5–2.8 i test integracyjny fazy 3  | **PRZEPISANE** — dowodzą obecności/braku sekcji, nie identyczności ciał 404                 |
+| Kryteria 2.5–2.8 i test integracyjny fazy 3  | **PRZEPISANE** — dowodzą obecności/braku sekcji, nie identyczności ciał 404. Test przeniesiony do `src/lib/account-role.integration.test.ts` (katalog `src/pages/admin/` nie istnieje) |
 
 Reguła z CLAUDE.md o ochronie tras w middleware **nie jest naruszona**: `/dashboard` jest
 w `PROTECTED_ROUTES`, więc ochrona trasy zostaje w middleware. Rozstrzyga się tu tylko, **co**
@@ -285,7 +285,7 @@ Dowód ścieżki negatywnej. To jedyna ścieżka w tej zmianie, która zawodzi w
 
 #### 2. Test integracyjny granicy
 
-**File**: `src/pages/admin/admin-gate.integration.test.ts`
+**File**: `src/lib/account-role.integration.test.ts` — ścieżka zmieniona wobec pierwotnego planu (`src/pages/admin/admin-gate.integration.test.ts`), bo katalog `src/pages/admin/` przestał istnieć; nowa lokalizacja jest zgodna z konwencją repo, gdzie testy integracyjne stoją obok podmiotu w `src/lib/`.
 
 **Intent**: Dowieść, że odmowa jest nierozróżnialna, a nie tylko obecna. Test jednostkowy
 sprawdzenia nie powie nic o tym, czy middleware faktycznie przepisuje na tę samą stronę.
@@ -306,11 +306,11 @@ zależy od adresów, których na czystej bazie nie ma.
 - Testy jednostkowe przechodzą: `npm test`
 - Testy integracyjne przechodzą: `npm run test:integration`
 - Testy padają po zdjęciu bramki — zmierzone, nie założone
-- Lint przechodzi na plikach testowych: `npx eslint src/lib/account-role.test.ts src/pages/admin/admin-gate.integration.test.ts`
+- Lint przechodzi na plikach testowych: `npx eslint src/lib/account-role.test.ts src/lib/account-role.integration.test.ts`
 
 #### Manual Verification:
 
-- Po zakomentowaniu bramki w middleware test integracyjny czerwienieje, potem przywrócone
+- Warunek `showAdmin` sprawdzony ręcznie: sekcja znika po zdjęciu roli i wraca po jej przywróceniu. Mutacja `isAdmin` czerwieni zestaw (3 jednostkowe, 1 integracyjny) — to jest część automatyczna.
 - `context/foundation/test-plan.md` odnotowuje nowy zestaw
 
 ---
@@ -403,10 +403,10 @@ rola w `app_metadata` bez kodu, który ją czyta, jest nieszkodliwa — nic jej 
 
 - [x] 3.1 Testy jednostkowe przechodzą: `npm test` — cda49e5
 - [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration` — cda49e5
-- [x] 3.3 Testy padają po zdjęciu warunku `showAdmin` — zmierzone — cda49e5
+- [x] 3.3 Mutacja `isAdmin` czerwieni 3 testy jednostkowe i 1 integracyjny — zmierzone — cda49e5
 - [x] 3.4 Lint przechodzi na plikach testowych — cda49e5
 
 #### Manual
 
-- [x] 3.5 Test integracyjny czerwienieje po zakomentowaniu warunku, potem przywrócone — cda49e5
+- [x] 3.5 Warunek `showAdmin` sprawdzony RECZNIE — sekcja znikla po zdjeciu roli i wrocila po przywroceniu; zadnym testem nie jest pokryty (patrz test-plan.md, zestaw R-08) — cda49e5
 - [x] 3.6 `context/foundation/test-plan.md` odnotowuje nowy zestaw — cda49e5

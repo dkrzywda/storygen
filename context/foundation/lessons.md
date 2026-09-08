@@ -63,3 +63,44 @@
   dla tej pracy. Jeśli nie — otwórz zmianę przez `/10x-new` i napisz plan przez
   `/10x-plan`. Bezpośredniość prośby użytkownika nie jest zgodą na pominięcie łańcucha.
 - **Applies to**: all
+
+## Weryfikacja bez tożsamości środowiska nie jest dowodem
+
+- **Context**: Każda ręczna aplikacja lub weryfikacja SQL na zdalnej bazie
+  wykonana poza migracjami CLI — SQL Editor dostawcy, konsola web, doraźny
+  klient. Dotyczy również skryptów sprawdzających stan po takiej aplikacji.
+- **Problem**: 2026-09-08, wdrożenie S-04 na produkcję. Port 5432 był
+  zablokowany w sieci, więc `supabase db push` nie przechodził i trzy migracje
+  poszły ręcznie przez SQL Editor, a po nich skrypt weryfikacyjny z trzynastoma
+  sprawdzeniami. Wynik: 13/13 na zielono, w tym punkt potwierdzający, że
+  `authenticated` może wołać `usage_today()`. Aplikacja i tak zwracała
+  `INTERNAL`, a `select * from public.usage_today()` na bazie produkcyjnej
+  odpowiadał `42883: function does not exist`. Zielone światło przyszło z innej
+  bazy niż ta, z której czyta produkcja. Skrypt nie zwracał ani
+  `current_database()`, ani identyfikatora projektu, więc nie było jak tego
+  zauważyć — trzynaście punktów i ani jeden o tym, gdzie się wykonały.
+- **Rule**: Każdy skrypt weryfikacyjny musi jako pierwszą pozycję zwracać
+  tożsamość środowiska, na którym się wykonał — nazwę bazy, identyfikator
+  projektu, host. Wynik bez tej pozycji nie jest dowodem i nie wolno na nim
+  opierać decyzji o wdrożeniu.
+- **Applies to**: all
+
+## Zielone czytaj z tego, co zmieniłoby się przy porażce
+
+- **Context**: Każde sprawdzenie, którego wynik ma być dowodem — skrypt weryfikacyjny,
+  kryterium sukcesu w planie, uruchomienie zestawu testów. Dotyczy zarówno odczytu
+  wyniku, jak i projektowania samego sprawdzenia.
+- **Problem**: 2026-09-08, jedna zmiana (`account-roles`), trzy niezależne wystąpienia
+  tego samego błędu. (1) Skrypt kontrolny stawiał `current_database()` jako kolumnę
+  tożsamości środowiska — a ta funkcja zwraca `postgres` i lokalnie, i na produkcyjnym
+  Supabase, więc nie odróżniała niczego. (2) Kryterium planu twierdziło „testy padają
+  po zdjęciu warunku `showAdmin`", choć żaden test nie renderuje strony, w której ten
+  warunek stoi — zmierzono mutację innej funkcji. (3) Kryterium „testy integracyjne
+  przechodzą" odhaczono na podstawie napisu „30 passed", gdy komenda zwracała kod
+  wyjścia 1. Wszystkie trzy dały zielone, którego porażka nie mogłaby zaczerwienić.
+- **Rule**: Zanim uznasz sprawdzenie za dowód, nazwij wartość, która **zmieniłaby się**,
+  gdyby sprawdzana rzecz była zepsuta — i czytaj wynik z niej. Kod wyjścia, a nie licznik
+  w wypisie. Wartość różnicująca środowiska, a nie taka, która jest wszędzie ta sama.
+  Test, który faktycznie wykonuje ścieżkę, a nie sąsiednią. Sprawdzenie niewrażliwe na
+  awarię, którą ma wykrywać, nie jest sprawdzeniem.
+- **Applies to**: all

@@ -31,3 +31,11 @@ update auth.users
 update auth.users
    set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'user')
  where email = 'damiano.krzywda@gmail.com';
+
+-- UWAGA NA ZBIEZNOSC NAZW — ustalenie F6 przegladu, zmierzone 2026-09-08.
+-- `auth.users` ma TAKZE wlasna KOLUMNE `role` (`character varying`, domyslnie
+-- `authenticated`), ktorej PostgREST uzywa jako roli BAZODANOWEJ z tokenu JWT.
+-- To zupelnie inna rzecz niz `raw_app_meta_data->>'role'`, ktore ustawiamy powyzej.
+-- Nie "upraszczaj" tego na `set role = 'admin'`: skladnia jest poprawna, a skutkiem
+-- byloby wywrocenie autoryzacji PostgREST w calej aplikacji — cicho, bo nic nie rzuci
+-- bledu przy zapisie.
