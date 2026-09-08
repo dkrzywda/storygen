@@ -522,7 +522,7 @@ o tym wiedzieć.
 
 #### Manual
 
-- [ ] 2.4 Przegląd limitów presetów — czy różnica jest odczuwalna
+- [x] 2.4 Przegląd limitów presetów — czy różnica jest odczuwalna
 
 ### Phase 3: Endpoint generowania
 
