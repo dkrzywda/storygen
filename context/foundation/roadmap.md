@@ -3,7 +3,7 @@ project: "Storygen"
 version: 1
 status: draft
 created: 2026-09-03
-updated: 2026-09-07
+updated: 2026-09-08
 prd_version: 1
 main_goal: learn
 top_blocker: decisions
@@ -76,7 +76,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
 | ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
 | F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done        |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | in-progress |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | done        |
 | S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
 | S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
 | S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | done        |
@@ -187,7 +187,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   kosztowe i wynika z kolejności: między dowiezieniem `S-01` a `S-04` generowanie stoi pod
   publicznym adresem z otwartą rejestracją i bez żadnego sufitu. Jeśli to nie do przyjęcia,
   przestaw `S-04` przed `S-03` albo trzymaj rejestrację zamkniętą do czasu `S-04`.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Użytkownik przechodzi rejestrację i logowanie w całości po polsku
 
@@ -494,3 +494,4 @@ Co z tego wynika dla czytelnika:
 - **S-06: użytkownik usuwa wybraną generację ze swojej historii i nie widzi jej ponownie.** — Archived 2026-09-07 → `context/archive/2026-09-07-delete-generation/`. Lesson: —.
 - **S-05: użytkownik widzi własne generacje od najnowszej i otwiera dowolną z nich w całości; próba sięgnięcia po cudzą jest odrzucana.** — Archived 2026-09-07 → `context/archive/2026-09-07-browse-generation-history/`. Lesson: —.
 - **S-04: użytkownik, który wyczerpał własny dzienny limit — albo trafił na wyczerpany sufit dzienny całej aplikacji — widzi wyjaśniający komunikat po polsku, a generowanie nie jest w ogóle podejmowane.** — Archived 2026-09-07 → `context/archive/2026-09-07-daily-generation-limits/`. Lesson: —.
+- **S-01: użytkownik wpisuje temat, wybiera format „dowcip" i długość, uruchamia generowanie i czyta wynik na tym samym ekranie, a jednym działaniem kopiuje go do schowka.** — Archived 2026-09-08 → `context/archive/2026-09-04-first-joke-generation/`. Lesson: —.
