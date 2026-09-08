@@ -1,17 +1,17 @@
 ---
 project: "Storygen"
-version: 1
+version: 2
 status: draft
 created: 2026-08-11
 context_type: greenfield
 product_type: web-app
 target_scale:
-  users: small          # derived from the shaping decision "single named user (the author)" — not directly stated; see Open Questions
+  users: small # derived from the shaping decision "single named user (the author)" — not directly stated; see Open Questions
   qps: low
   data_volume: small
 timeline_budget:
   mvp_weeks: 1
-  hard_deadline: null   # records the ABSENCE of a stated deadline, not a decision that none exists; see Open Questions
+  hard_deadline: null # records the ABSENCE of a stated deadline, not a decision that none exists; see Open Questions
   after_hours_only: true
 ---
 
@@ -38,7 +38,7 @@ The moment they reach for the product:
 
 Cost of the status quo for this persona: a web search that misses the topic, or manual prompting plus manual correction of the result.
 
-No secondary persona. The MVP serves the primary persona only, and the flat access model in `## Access Control` rests on that.
+No secondary persona. The MVP serves the primary persona only. Until 2026-09-08 the flat access model in `## Access Control` rested on that; the administrator role added then does **not** introduce a second persona — it is the same author holding a second account, and `## Access Control` records why that role is larger than this persona justifies.
 
 ## Success Criteria
 
@@ -87,9 +87,9 @@ Only the primary path was written as a user story during shaping. Stories for hi
 
 ## Functional Requirements
 
-All thirteen FRs are `must-have` by the author's explicit choice — no FR was demoted when the option was offered, and FR-013 was added at `must-have` during a later shaping round. Consequence recorded: the MVP carries no scope buffer, so if the one-week estimate proves short there is nothing pre-marked to cut.
+All fifteen FRs are `must-have` by the author's explicit choice — thirteen at the original writing, plus FR-014 and FR-015 added 2026-09-08 at the same priority. Among the original thirteen, no FR was demoted when the option was offered, and FR-013 was added at `must-have` during a later shaping round. Consequence recorded: the MVP carries no scope buffer, so if the one-week estimate proves short there is nothing pre-marked to cut.
 
-**Why the persistence and limit requirements are must-have despite sitting off the happy path.** The author's own scope criterion admits a feature only if the primary flow is impassable without it. FR-009 through FR-013 all fail that test — a joke can be generated and copied without saving, history, or any ceiling. They are must-have anyway, by explicit override: the learning objective stated in `## Vision & Problem Statement` is the *full* path including persistence, so those requirements sit on the learning path even though they do not sit on the product path. The ceilings are must-have because open registration (see `## Access Control`) leaves them as the only cost barrier in the design. This override is recorded rather than assumed.
+**Why the persistence and limit requirements are must-have despite sitting off the happy path.** The author's own scope criterion admits a feature only if the primary flow is impassable without it. FR-009 through FR-013 all fail that test — a joke can be generated and copied without saving, history, or any ceiling. They are must-have anyway, by explicit override: the learning objective stated in `## Vision & Problem Statement` is the _full_ path including persistence, so those requirements sit on the learning path even though they do not sit on the product path. The ceilings are must-have because open registration (see `## Access Control`) leaves them as the only cost barrier in the design. This override is recorded rather than assumed.
 
 ### Authentication
 
@@ -119,7 +119,15 @@ All thirteen FRs are `must-have` by the author's explicit choice — no FR was d
   > Socratic: Counter-argument considered: "with open registration, N accounts × the per-account daily limit leaves total spend unbounded, so this FR does not achieve what it was added for." Resolution: FR-012 is kept as the per-account fairness bound, and FR-013 was added as the actual cost bound. Registration stays open — that decision was not reversed.
 - FR-013: User is refused generation once an application-wide daily ceiling across all accounts is reached, and told why. Priority: must-have
 
-Ten of the thirteen FRs (FR-001, FR-002, FR-005 through FR-011, FR-013) carry no Socratic annotation: the challenge round was reduced to the three load-bearing FRs at the author's request, and those ten were never challenged. See `## Open Questions`.
+### Roles
+
+Added 2026-09-08 at the author's explicit request, **reversing** the flat user model this document argued for in `## Access Control` and the administration-panel entry in `## Non-Goals`. The reversal is recorded here rather than applied silently, because three earlier sections rested on the flat model.
+
+- FR-014: An account designated as administrator can view the list of accounts with, for each one, its registration date, its total generation count, and its usage against the daily per-account limit. Priority: must-have
+  > Scope boundary, decided when the requirement was added: the overview carries **counts only, never generated text**. This is what keeps the isolation NFR ("no generation is readable by any account other than the one that produced it") intact and unamended — the row-level policy on the generations table is not widened, and the administrator has no path to another account's content. Widening this later is a change to the one mechanism the whole access model rests on, and must be argued on its own.
+- FR-015: A non-administrator who requests the account overview is refused, and the refusal does not disclose whether the overview exists. Priority: must-have
+
+Ten of the original thirteen FRs (FR-001, FR-002, FR-005 through FR-011, FR-013) carry no Socratic annotation: the challenge round was reduced to the three load-bearing FRs at the author's request, and those ten were never challenged. FR-014 and FR-015, added later, carry the scope boundary above instead of a challenge round. See `## Open Questions`.
 
 ## Non-Functional Requirements
 
@@ -147,7 +155,11 @@ The user encounters the rule twice in the flow: once as refusal (an unacceptable
 
 **Registration is open**, gated by a hard per-account daily generation limit (FR-012) rather than by an invite list, with an application-wide daily ceiling behind it (FR-013).
 
-**Flat user model — a single user type.** No roles, no admin. An authenticated user sees only their own generations; there is no view onto anyone else's data and no capability to manage another account.
+**Two roles — regular user and administrator.** Amended 2026-09-08; this section previously read "Flat user model — a single user type. No roles, no admin." A regular user sees only their own generations and has no view onto anyone else's data. An administrator additionally sees the account overview defined in FR-014 — registration dates, generation counts, usage against the per-account limit — and nothing else: no generated text, and no capability to manage, block, or delete another account.
+
+The role is a property of the account, not of the person reading the screen, and it is **not** derived from an email address at request time — an address is user-supplied data and treating it as an authorisation claim would make the check forgeable. Which account holds which role is a data decision, recorded outside this document; the two accounts existing when this was added are `dkrzywda@amniscode.pl` (administrator) and `damiano.krzywda@gmail.com` (regular user).
+
+> Consequence recorded: the persona in `## User & Persona` is one user, and `target_scale.users: small` was derived from the shaping decision "single named user (the author)". Two named accounts with different capabilities makes that derivation stale — see `## Open Questions`, item 5, which anticipated exactly this. The administrator role is therefore larger than the persona justifies, the same way full email-and-password login already was: by choice, for the learning path, and recorded as such rather than argued as product need.
 
 **Unauthenticated access to a gated route redirects to the sign-in screen**, and after a successful sign-in the user lands on the route they originally requested.
 
@@ -162,7 +174,7 @@ The user encounters the rule twice in the flow: once as refusal (an unacceptable
 - **Advanced personalisation** — no custom instruction templates, no user-facing choice of which generator produces the text, no exposed generation parameters, no genre choice beyond the default neutral tone.
 - **More than one language** — a single interface and generation language. This is a non-functional non-goal as much as a functional one.
 - **Payments and plans** — no subscriptions, no paid tiers. The daily limit is identical for everyone.
-- **Human content moderation, an administration panel, and abuse reporting** — follows from the flat user model.
+- **Human content moderation and abuse reporting** — narrowed 2026-09-08; this entry previously also parked "an administration panel", which FR-014 now brings into scope as a **read-only account overview**. What stays out is everything the panel could have grown into and did not: no reading another account's generated text, no editing or deleting another account's data, no blocking or unblocking accounts, no adjusting anyone's limit, no moderation queue, no abuse reports. The administrator reads counts and nothing more.
 - **Images, voice, audio** — no illustrations for stories, no spoken output.
 - **Offline mode, a mobile application, a browser extension** — web only.
 - **Product analytics and A/B testing** beyond basic error logging.
@@ -171,7 +183,7 @@ The user encounters the rule twice in the flow: once as refusal (an unacceptable
 
 1. **Are the daily ceiling numbers right, and should the per-account limit differ by format?** A story costs more to generate than a joke, and neither the per-account count (FR-012) nor the application-wide ceiling (FR-013) has a number attached yet. Owner: author.
 2. **Is length three presets or a word-count slider?** Shaping assumed three presets as easier to validate; FR-005 encodes that assumption. Owner: author.
-3. **How is a disallowed topic defined?** The `## Business Logic` rule commits to refusing disallowed topics without defining the category boundary. Owner: author. Note: the *means* of enforcement is a downstream concern, but the boundary itself is a product decision.
+3. **How is a disallowed topic defined?** The `## Business Logic` rule commits to refusing disallowed topics without defining the category boundary. Owner: author. Note: the _means_ of enforcement is a downstream concern, but the boundary itself is a product decision.
 4. **Is there a hard deadline?** The question was put during shaping and not answered. `timeline_budget.hard_deadline` is `null` by absence, not by decision — a reader should not treat the field as settled. Owner: author.
 5. **Is `target_scale.users: small` correct?** It was derived from the shaping decision "single named user (the author)", not answered directly. If the intent ever widens beyond one user, this prior is wrong, and the flat user model, the absence of moderation, and the daily ceilings all rest on it. Owner: author.
 6. **Ten of thirteen FRs were never challenged.** FR-001, FR-002, and FR-005 through FR-011 and FR-013 carry no recorded counter-argument, and `## Business Logic`, `## Non-Functional Requirements`, and `## Non-Goals` were assembled from the author's prior writing rather than through a facilitated challenge round. Nothing is invented — but scrutiny is uneven, and a reviewer cannot tell a tested decision from an untested one outside FR-003, FR-004, and FR-012. Owner: author, if a deeper review pass is wanted before implementation.

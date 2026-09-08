@@ -4,17 +4,17 @@ version: 1
 status: draft
 created: 2026-09-03
 updated: 2026-09-08
-prd_version: 1
-main_goal: learn
-top_blocker: decisions
-milestone_id: full-path-mvp
-milestone_seq: 1
+prd_version: 2
+main_goal: quality
+top_blocker: none
+milestone_id: admin-account-visibility
+milestone_seq: 2
 milestone_status: open
 ---
 
 # Roadmap: Storygen
 
-> Wyprowadzone z `context/foundation/prd.md` (v1) + inwentaryzacji kodu z 2026-09-03.
+> Wyprowadzone z `context/foundation/prd.md` — `M-1` z v1 plus inwentaryzacja kodu z 2026-09-03; `M-2` z v2 (sekcja `### Roles`) plus sonda autoryzacji z 2026-09-08.
 > Edytuj w miejscu; archiwizuj, gdy dokument zostanie zastąpiony.
 > Plastry poniżej są ułożone w kolejności zależności. Tabela „At a glance" jest indeksem.
 > Nagłówki `##` i nazwy pól są po angielsku celowo — to kontrakt, po którym gripują skille
@@ -23,7 +23,25 @@ milestone_status: open
 
 ## Milestone
 
-**M-1: MVP — pełna ścieżka od rejestracji do historii** — Status: open
+**M-2: Rola administratora i przegląd kont** — Status: open
+
+- **Intent:** Wprowadzić drugą rolę i jeden ekran tylko do czytania, który pokazuje
+  administratorowi konta i ich liczby — bez treści generacji. Kamień dowodzi, że w tej
+  aplikacji da się postawić granicę dostępu **ponad** binarnym „zalogowany albo nie",
+  nie naruszając izolacji kont, na której stoi cały model dostępu.
+- **Source materials:** `context/foundation/prd.md` (v2) — delta wobec v1, czyli sekcja
+  `### Roles` dodana 2026-09-08.
+- **Done when:** `F-02` i `S-09` mają Status `done`.
+- **Scope anchors:** FR-014, FR-015, oraz `## Access Control` w brzmieniu z v2 (dwie role).
+- **Czego ten kamień świadomie NIE robi:** nie czyta cudzych generacji, nie zarządza kontami,
+  nie zmienia polityki RLS na tabeli `generations`. Granica zapisana przy FR-014 w PRD.
+
+> Odstępstwo od szablonu, zapisane jawnie: sekcja trzyma **dwa** chartery, nie jeden.
+> Charter `M-1` zostaje poniżej, bo jego kotwice `MS-01`…`MS-04` są nadal cytowane przez
+> pozycje w `## Slices` — usunięcie ich zawiesiłoby odwołania w `S-08`. Historia domknięcia
+> `M-1` mieszka w `## Milestone History`; charter zostaje wyłącznie jako źródło kotwic.
+
+**M-1: MVP — pełna ścieżka od rejestracji do historii** — Status: done
 
 - **Intent:** Dowieźć wszystkie trzynaście wymagań must-have z PRD, tak żeby zadeklarowany
   cel edukacyjny — przejście całej ścieżki technicznej auth → generowanie → zapis → deploy —
@@ -73,20 +91,22 @@ sekwencjonowania `learn` decyduje o remisach.
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status      |
-| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ----------- |
-| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done        |
-| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | done        |
-| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done        |
-| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done        |
-| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | done        |
-| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | done        |
-| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | done        |
-| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done        |
-| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done        |
-| —    | `home-screen-generator`      | wejść na `/` i zobaczyć generator zamiast landingu startera        | S-01          | — (poza planem)                               | done        |
-| —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done        |
-| —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done        |
+| ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status |
+| ---- | ---------------------------- | ------------------------------------------------------------------ | ------------- | --------------------------------------------- | ------ |
+| F-01 | `api-error-contract`         | (foundation) jeden kształt odpowiedzi API i mapowanie błędów na PL | —             | FR-007, NFR (komunikaty po polsku)            | done   |
+| S-01 | `first-joke-generation`      | wpisać temat, dostać dowcip w kontrakcie formatu i skopiować go    | F-01          | FR-003, FR-005, FR-006, FR-007, FR-008, US-01 | done   |
+| S-02 | `polish-auth-surface`        | przejść rejestrację, logowanie i błędy w całości po polsku         | F-01          | FR-001, FR-002, NFR (komunikaty po polsku)    | done   |
+| S-03 | `generation-history-storage` | mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"   | S-01          | FR-009, US-01                                 | done   |
+| S-04 | `daily-generation-limits`    | dostać czytelną odmowę po wyczerpaniu limitu, zamiast wyniku       | S-03          | FR-012, FR-013, US-01                         | done   |
+| S-05 | `browse-generation-history`  | przeglądać własne generacje od najnowszej i otwierać je w całości  | S-03          | FR-010, NFR (izolacja kont)                   | done   |
+| S-06 | `delete-generation`          | usunąć pozycję z własnej historii                                  | S-05          | FR-011                                        | done   |
+| S-07 | `story-format-generation`    | wybrać format „opowiadanie" i dostać tekst z początkiem i końcem   | S-01          | FR-004                                        | done   |
+| S-08 | `annotate-generation`        | nadać własny tytuł zapisanej generacji i później go zmienić        | F-01          | MS-01                                         | done   |
+| —    | `home-screen-generator`      | wejść na `/` i zobaczyć generator zamiast landingu startera        | S-01          | — (poza planem)                               | done   |
+| —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done   |
+| —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
+| F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
+| S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | proposed |
 
 ## Streams
 
@@ -101,6 +121,11 @@ równoległych torów.
 | C      | Sufit kosztu                    | `S-04`                                     | Dołącza do A przy `S-03` — dzieli z nim migracje i wzorzec RLS.                                   |
 | D      | Drugi format                    | `S-07`                                     | Dołącza do A przy `S-01`; ta sama integracja, ostrzejszy kontrakt formatu.                        |
 | E      | Metadane pozycji                | `S-08`                                     | Dołącza do A przy `F-01`; jedyny tor niezależny od dostawcy LLM.                                  |
+| F      | Granica dostępu                 | `F-02` → `S-09`                            | Tor `M-2`, niezależny od wszystkich powyżej. Przy celu `quality` fundament dostępu nie schodzi za pracę widoczną. |
+
+> Sześć torów przy limicie 2–5 — odstępstwo zapisane jawnie. Limit zakłada roadmapę jednego
+> kamienia; ten dokument indeksuje dwa. Zwinięcie jednoplastrowych torów `B`–`E` w `A` zmieściłoby
+> się w limicie, ale przepisałoby treść domkniętego `M-1`, czego chirurgiczne uzupełnienie ma unikać.
 
 ## Baseline
 
@@ -123,6 +148,16 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
 - **Dostawca LLM:** wybrany 2026-09-03, jeszcze niepodłączony — Cloudflare Workers AI
   (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) przez binding, bez klucza API. To jedyna integracja,
   od której PRD zależy, a której starter nie niesie.
+
+**Aktualizacja 2026-09-08.** Inwentaryzacja powyżej jest z `2026-09-03` i w trzech punktach
+już nie obowiązuje; zostaje w brzmieniu pierwotnym jako zapis stanu, w którym powstawał `M-1`.
+Co się zmieniło: **Data** → `present` (sześć migracji na produkcji), **Backend / API** →
+`present` (kontrakt odpowiedzi z `F-01`), **Deploy / infra** → `present` (wdrożone 2026-09-08,
+wersja Workera `5402fc2a`). Dwie rzeczy sondowane pod `M-2`, których pierwotna inwentaryzacja
+nie badała: **autoryzacja `absent`** — nie ma żadnego pojęcia roli, ochrona tras jest binarna
+(`src/middleware.ts`, `PROTECTED_ROUTES` plus test `locals.user == null`); **odczyt kont
+`absent`** — `auth.users` występuje wyłącznie jako cel klucza obcego, nic nie czyta tej tabeli
+w celu wylistowania kont.
 
 ## Foundations
 
@@ -147,6 +182,27 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   puste i użytkownik dostaje pustą czerwoną ramkę (`lessons.md`, wpis o pustym komunikacie).
   Sekwencjonowane pierwsze, bo dokładanie tego po generowaniu znaczy retrofit czterech
   trybów awarii zamiast jednego.
+- **Status:** done
+
+### F-02: Rola konta i serwerowe sprawdzenie dostępu
+
+- **Outcome:** (foundation) konto niesie rolę, serwer potrafi na jej podstawie odmówić dostępu
+  do trasy, a dwa istniejące konta mają role nadane.
+- **Change ID:** `account-roles`
+- **PRD refs:** `## Access Control` (dwie role, brzmienie z PRD v2), FR-015
+- **Unlocks:** `S-09`; redukuje też niewiadomą „gdzie mieszka rola i jak jest stwierdzana",
+  bez której `S-09` nie da się bezpiecznie zweryfikować.
+- **Prerequisites:** —
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:**
+  - Czy rola jest nadawana wyłącznie migracją, czy istnieje ścieżka zmiany bez wdrożenia? —
+    Owner: autor. Block: nie — `## Non-Goals` w v2 wyklucza zarządzanie kontami, więc nadanie
+    migracją jest minimalnym kontraktem, a szersza ścieżka wymagałaby własnego uzasadnienia.
+- **Risk:** rola wyprowadzona z adresu e-mail przy żądaniu byłaby podrabialna, a PRD zabrania
+  tego wprost — to jedyny sposób, w jaki ten fundament może zawieść cicho. Zakres jest celowo
+  minimalny: nie buduje warstwy autoryzacji, tylko własność konta i jedno sprawdzenie, które
+  `S-09` musi jeszcze zintegrować przez prawdziwą zdolność użytkownika.
 - **Status:** done
 
 ## Slices
@@ -205,7 +261,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   ramkę przy błędzie bez treści. Ten plaster domyka je do stanu zgodnego z PRD i obejmuje
   też `src/pages/404.astro`, którego dziś nie ma, przez co nieznana ścieżka zwraca 404
   z pustym ciałem. Może iść równolegle do `S-01` — dzieli z nim tylko `F-01`.
-- **Status:** proposed
+- **Status:** done
 
 ### S-03: Udana generacja zapisuje się na koncie użytkownika
 
@@ -229,7 +285,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   zamiast publishable — omija RLS bez błędu i bez testu, który by to złapał
   (`deploy-plan.md`, § Bramki ludzkie). Od tego plastra rollback przestaje być symetryczny:
   kod się cofa, migracje nie.
-- **Status:** proposed
+- **Status:** done
 
 ### S-04: Użytkownik po wyczerpaniu limitu dostaje wyjaśnienie zamiast wyniku
 
@@ -319,7 +375,7 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   niż dowcip. Tu też najpierw uderzy NFR opóźnienia — to jedyny plaster celujący w budżet
   30 s zamiast 15 s, i jedyny, w którym reguła „jedna ponowna próba" może wypchnąć łączny
   czas poza to, co użytkownik zaakceptuje.
-- **Status:** proposed
+- **Status:** done
 
 ### S-08: Użytkownik nadaje własny tytuł zapisanej generacji
 
@@ -340,6 +396,25 @@ Fundamenty poniżej zakładają, że to istnieje, i **nie** budują tego ponowni
   więc jest decyzją produktową, nie implementacyjną. Nie zależy od dostawcy LLM, więc da się
   ją zaplanować i dowieźć niezależnie od blokady na `S-01`.
 - **Status:** done
+
+### S-09: Administrator widzi listę kont i ich liczby
+
+- **Outcome:** administrator widzi listę kont z datą rejestracji, liczbą generacji i zużyciem
+  wobec dziennego limitu na konto; kto administratorem nie jest, dostaje odmowę, która nie
+  ujawnia, czy przegląd w ogóle istnieje.
+- **Change ID:** `admin-account-overview`
+- **PRD refs:** FR-014, FR-015
+- **Prerequisites:** F-02
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:**
+  - Czy lista obejmuje konta z zerem generacji? — Owner: autor. Block: nie.
+- **Risk:** agregacja ponad kontami wymaga funkcji `security definer`, bo RLS zwykłemu
+  użytkownikowi tego zabroni — ten sam wzorzec, w którym `S-04` dostał ustalenie krytyczne
+  w przeglądzie. Błąd w zakresie takiej funkcji przecieka treść, której FR-014 zabrania
+  wprost. Sekwencjonowane po `F-02`, bo bez roli nie ma czego sprawdzać, a przy celu
+  `quality` ekran bez granicy dostępu nie jest połową funkcji, tylko wyciekiem.
+- **Status:** proposed
 
 ## Dług procesowy — 2026-09-07
 
@@ -378,8 +453,6 @@ ręcznej (2.4, 3.6–3.10, 4.5–4.10, 5.3–5.4).
 | Decyzja, czy `generation-rating` należy do M-1, czy do następnego kamienia                                       | autor      |
 | Pomiar jakości promptu dla `S-07` — temperatura, limity 150/275/400, budżet ~14,5 s na próbę                     | autor      |
 | Test integracyjny RLS dla kolumn `rating` i `is_favourite` (wymaga Dockera)                                      | autor      |
-| Migracje `20260903125113` i `20260907125000` niewypchnięte na produkcyjne Supabase                               | autor      |
-| Niezaznaczone pozycje weryfikacji ręcznej w planie `S-01` (2.4, 3.6–3.10, 4.5–4.10, 5.3–5.4)                     | autor      |
 
 Co z tego wynika dla czytelnika:
 
@@ -406,6 +479,8 @@ Co z tego wynika dla czytelnika:
 | S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                                |
 | S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                           |
 | S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                                   |
+| F-02       | `account-roles`              | Rola konta i serwerowe sprawdzenie dostępu                    | yes                   | Plan przez `/10x-plan account-roles`                                                                                         |
+| S-09       | `admin-account-overview`     | Przegląd kont dla administratora — tylko liczby               | no                    | Czeka na F-02                                                                                                                |
 
 ## Open Roadmap Questions
 
@@ -457,6 +532,15 @@ Co z tego wynika dla czytelnika:
    PRD `## Open Questions` #6 — FR-001, FR-002 i FR-005 … FR-011, FR-013 nie mają zapisanego
    kontrargumentu. — Owner: autor. Block: nie blokuje.
 
+9. **Czy przegląd kont ma obejmować konta z zerem generacji?** Pytanie produktowe, nie
+   implementacyjne: lista bez nich jest krótsza, ale nie odpowiada na „kto się zarejestrował
+   i nic nie wygenerował". — Owner: autor. Block: nie blokuje `S-09`.
+10. **Punkt 7 powyżej jest nieaktualny w jednym słowie.** Powołuje się na „płaski model
+    użytkownika", którego od 2026-09-08 nie ma — PRD v2 wprowadził dwie role. Samo pytanie
+    o `target_scale.users` zostaje otwarte i staje się PILNIEJSZE, nie mniej pilne: dwa konta
+    o różnych uprawnieniach to dokładnie to poszerzenie, którego prior „jeden użytkownik"
+    zakazywał. — Owner: autor. Block: nie blokuje.
+
 ## Parked
 
 - **Logowanie przez zewnętrznego dostawcę tożsamości, magic linki, 2FA, reset hasła mailem** —
@@ -485,7 +569,7 @@ Co z tego wynika dla czytelnika:
 
 ## Milestone History
 
-(Pusta — to pierwszy kamień milowy.)
+- **M-1: MVP — pełna ścieżka od rejestracji do historii** (`full-path-mvp`) — closed 2026-09-08. Wszystkie trzynaście wymagań must-have z PRD dowiezione i wdrożone na produkcję (Worker `5402fc2a`, schemat Supabase z sześcioma migracjami). Trzy plastry — `S-02`, `S-03`, `S-07` — zamknięte wstecznie, bez folderu zmiany i bez planu.
 
 ## Done
 
@@ -495,3 +579,7 @@ Co z tego wynika dla czytelnika:
 - **S-05: użytkownik widzi własne generacje od najnowszej i otwiera dowolną z nich w całości; próba sięgnięcia po cudzą jest odrzucana.** — Archived 2026-09-07 → `context/archive/2026-09-07-browse-generation-history/`. Lesson: —.
 - **S-04: użytkownik, który wyczerpał własny dzienny limit — albo trafił na wyczerpany sufit dzienny całej aplikacji — widzi wyjaśniający komunikat po polsku, a generowanie nie jest w ogóle podejmowane.** — Archived 2026-09-07 → `context/archive/2026-09-07-daily-generation-limits/`. Lesson: —.
 - **S-01: użytkownik wpisuje temat, wybiera format „dowcip" i długość, uruchamia generowanie i czyta wynik na tym samym ekranie, a jednym działaniem kopiuje go do schowka.** — Archived 2026-09-08 → `context/archive/2026-09-04-first-joke-generation/`. Lesson: —.
+- **S-02: przejść rejestrację, logowanie i błędy w całości po polsku** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu: kod wszedł 7 września poza łańcuchem, więc `/10x-archive` nie miał czego zarchiwizować. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
+- **S-03: mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu, jak `S-02`. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
+- **S-07: wybrać format „opowiadanie" i dostać tekst z początkiem i końcem** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu, jak `S-02`. Jakość promptu dla tego formatu pozostaje niezmierzona. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
+- **F-02: (foundation) konto niesie rolę, serwer potrafi na jej podstawie odmówić dostępu do trasy, a dwa istniejące konta mają role nadane** — Archived 2026-09-08 → `context/archive/2026-09-08-account-roles/`. Lesson: `context/foundation/lessons.md` § „Zielone czytaj z tego, co zmieniłoby się przy porażce".
