@@ -536,11 +536,11 @@ o tym wiedzieć.
 
 #### Manual
 
-- [x] 3.6 Poprawny temat zwraca 200 i tekst w limicie presetu
-- [x] 3.7 Temat krótszy niż 3 znaki zwraca 400 z komunikatem przy polu
-- [x] 3.8 Temat dłuższy niż 80 znaków zwraca 400 z komunikatem przy polu
-- [x] 3.9 Żądanie bez sesji zwraca 401
-- [x] 3.10 Log przy awarii nie zawiera tematu użytkownika
+- [x] 3.6 Poprawny temat zwraca 200 i tekst w limicie presetu — 30956ef
+- [x] 3.7 Temat krótszy niż 3 znaki zwraca 400 z komunikatem przy polu — 30956ef
+- [x] 3.8 Temat dłuższy niż 80 znaków zwraca 400 z komunikatem przy polu — 30956ef
+- [x] 3.9 Żądanie bez sesji zwraca 401 — 30956ef
+- [x] 3.10 Log przy awarii nie zawiera tematu użytkownika — 30956ef
 
 ### Phase 4: Ekran generowania
 
@@ -553,12 +553,12 @@ o tym wiedzieć.
 
 #### Manual
 
-- [ ] 4.5 Wynik pojawia się na tym samym ekranie, bez przeładowania
-- [ ] 4.6 Postęp widoczny przez cały czas oczekiwania
-- [ ] 4.7 Kopiowanie działa jednym kliknięciem, bez zaznaczania
-- [ ] 4.8 Zmiana presetu daje odczuwalnie inną długość
-- [ ] 4.9 Za krótki i za długi temat pokazują komunikat przy polu
-- [ ] 4.10 Odmowa modelu kieruje do zmiany tematu
+- [x] 4.5 Wynik pojawia się na tym samym ekranie, bez przeładowania
+- [x] 4.6 Postęp widoczny przez cały czas oczekiwania
+- [x] 4.7 Kopiowanie działa jednym kliknięciem, bez zaznaczania
+- [x] 4.8 Zmiana presetu daje odczuwalnie inną długość
+- [x] 4.9 Za krótki i za długi temat pokazują komunikat przy polu
+- [x] 4.10 Odmowa modelu kieruje do zmiany tematu
 
 ### Phase 5: Dokumenty
 
