@@ -440,11 +440,11 @@ zostają nietknięte.
 
 #### Automated
 
-- [x] 3.1 Zestaw integracyjny przechodzi: `npm run test:integration`
-- [x] 3.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
-- [x] 3.3 Kontrola typów przechodzi: `npx astro check`
-- [x] 3.4 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 3.1 Zestaw integracyjny przechodzi: `npm run test:integration` — f940128
+- [x] 3.2 Szybki zestaw pozostaje wolny od Dockera: `npm test` — f940128
+- [x] 3.3 Kontrola typów przechodzi: `npx astro check` — f940128
+- [x] 3.4 Lint plików dotkniętych w tej fazie przechodzi — f940128
 
 #### Manual
 
-- [x] 3.5 Rozszerzenie polityki SELECT do `using (true)` robi nowe przypadki czerwonymi
+- [x] 3.5 Rozszerzenie polityki SELECT do `using (true)` robi nowe przypadki czerwonymi — f940128
