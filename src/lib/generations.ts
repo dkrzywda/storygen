@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase";
+import { escapeLike, type GenerationFilters } from "@/lib/generation-filters";
 import type { GenerationFormat, LengthPreset } from "@/types";
 
 /**
@@ -54,36 +55,105 @@ export async function saveGeneration(supabase: Client, input: SaveGenerationInpu
   return data.id;
 }
 
+/**
+ * Porzadek wyniku. Ranking i historia roznia sie NIE TYLKO filtrem, ale i sortowaniem —
+ * ranking bez `rating desc` przestaje byc rankingiem, a zaden typ tego nie zlapie.
+ */
+export type GenerationOrder = "newest" | "ranked";
+
+export interface FetchGenerationsOptions {
+  filters?: GenerationFilters;
+  order?: GenerationOrder;
+}
+
+/**
+ * Jedyny odczyt listy w produkcie. Historia, ranking i ulubione sa jego wywolaniami.
+ *
+ * Powstalo z tej zmiany: filtrowanie po formacie i po ulubionych istnialo wczesniej
+ * DWA RAZY (`fetchRanking`, `fetchFavourites`), a historia z filtrami bylaby trzecim
+ * razem. Trzy kopie rozjechalyby sie przy pierwszym dodaniu kolumny do `LIST_COLUMNS` —
+ * dokladnie ta klasa awarii, przed ktora ostrzega naglowek `GenerationList.astro`.
+ *
+ * Filtry lacza sie przez AND i kazdy jest niezalezny. To jedyna rzecz, ktorej zakladki
+ * panelu nie potrafia: "ulubione + ocena 5 + dowcipy" nie da sie zlozyc z dwoch zakladek.
+ *
+ * `minRating` zamiast "ma ocene": przy constraincie 1-5 `rating >= 1` jest rownowazne
+ * `rating is not null`, wiec ranking jest zwyklym przypadkiem tego filtra — i indeks
+ * czesciowy `WHERE (rating IS NOT NULL)` nadal sie stosuje, bo warunek go implikuje.
+ */
+export async function fetchGenerations(supabase: Client, options: FetchGenerationsOptions = {}) {
+  const { filters = {}, order = "newest" } = options;
+
+  let filtered = supabase.from("generations").select(LIST_COLUMNS);
+
+  if (filters.format !== undefined) {
+    filtered = filtered.eq("format", filters.format);
+  }
+  if (filters.minRating !== undefined) {
+    filtered = filtered.gte("rating", filters.minRating);
+  }
+  if (filters.favourite !== undefined) {
+    filtered = filtered.eq("is_favourite", true);
+  }
+  if (filters.query !== undefined) {
+    // `escapeLike` jest tu OBOWIAZKOWE, nie ozdobne: bez niego `%` i `_` z tematu
+    // dzialaja jak wieloznaczniki i wynik jest sensownie wygladajacy, ale nie ten.
+    filtered = filtered.ilike("topic", `%${escapeLike(filters.query)}%`);
+  }
+
+  // Data rozstrzyga remisy takze w rankingu, zeby kolejnosc byla stabilna miedzy
+  // odswiezeniami; bez tego dwie oceny 5/5 zmienialyby miejsca losowo.
+  const ordered =
+    order === "ranked"
+      ? filtered.order("rating", { ascending: false }).order("created_at", { ascending: false })
+      : filtered.order("created_at", { ascending: false });
+
+  const { data } = await ordered;
+  return data ?? [];
+}
+
 /** Historia: wszystko, od najnowszego. */
 export async function fetchHistory(supabase: Client) {
-  const { data } = await supabase.from("generations").select(LIST_COLUMNS).order("created_at", { ascending: false });
-  return data ?? [];
+  return fetchGenerations(supabase);
 }
 
 /**
  * Ranking jednego formatu: od najwyzej ocenionych.
  *
  * Nieocenione pozycje sa POMIJANE, nie wyswietlane na koncu — ranking pozycji bez
- * ocen nie jest rankingiem. Data rozstrzyga remisy, zeby kolejnosc byla stabilna
- * miedzy odswiezeniami; bez tego dwie oceny 5/5 zmienialyby miejsca losowo.
+ * ocen nie jest rankingiem. `minRating: 1` realizuje to samo co dawne
+ * `.not("rating", "is", null)`, bo constraint dopuszcza tylko 1-5.
  */
 export async function fetchRanking(supabase: Client, format: GenerationFormat) {
-  const { data } = await supabase
-    .from("generations")
-    .select(LIST_COLUMNS)
-    .eq("format", format)
-    .not("rating", "is", null)
-    .order("rating", { ascending: false })
-    .order("created_at", { ascending: false });
-  return data ?? [];
+  return fetchGenerations(supabase, { filters: { format, minRating: 1 }, order: "ranked" });
 }
 
 /** Ulubione: oznaczone, od najnowszego. */
 export async function fetchFavourites(supabase: Client) {
-  const { data } = await supabase
-    .from("generations")
-    .select(LIST_COLUMNS)
-    .eq("is_favourite", true)
-    .order("created_at", { ascending: false });
-  return data ?? [];
+  return fetchGenerations(supabase, { filters: { favourite: true } });
+}
+
+/**
+ * Jedna pozycja po identyfikatorze — zrodlo dla okna pozycji pod `?open=`.
+ *
+ * Istnieje, bo do tej zmiany okno bylo szukane w JUZ POBRANEJ liscie. Po dodaniu
+ * filtrow pozycja spoza filtra dawalaby 404, choc istnieje i nalezy do uzytkownika —
+ * czyli 404 zaczelo by znaczyc "odfiltrowane" i zepsulo nierozroznialnosc cudzego,
+ * nieistniejacego i niepoprawnego identyfikatora, ktorej wymagal plan S-05.
+ *
+ * BEZ filtra po `user_id`: cudza pozycje odcina RLS, nie kod. Filtr w kodzie dalby
+ * ten sam wynik dla poprawnej polityki i ZAMASKOWAL bledna.
+ *
+ * `null` takze przy bledzie bazy, i to jest wybor: niepoprawny uuid konczy sie po
+ * stronie Postgresa bledem (`invalid input syntax for type uuid`), a propagowanie go
+ * dalej dalo by 500 zamiast 404 i rozroznilo "niepoprawny" od "nie istnieje".
+ * Milczace pochloniecie bledu jest tu zgodne z rodzenstwem — pozostale odczyty w tym
+ * module tez zwracaja pusto zamiast rzucac (`data ?? []`).
+ */
+export async function fetchGenerationById(supabase: Client, id: string) {
+  const { data, error } = await supabase.from("generations").select(LIST_COLUMNS).eq("id", id).maybeSingle();
+  if (error) {
+    return null;
+  }
+  return data;
 }
