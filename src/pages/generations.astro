@@ -1,43 +1,72 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
+import FilterBar from "@/components/generations/FilterBar.astro";
 import GenerationList from "@/components/generations/GenerationList.astro";
 import TitleEditor from "@/components/generations/TitleEditor";
 import RatingControls from "@/components/generations/RatingControls";
 import DeleteButton from "@/components/generations/DeleteButton";
 import CopyButton from "@/components/generations/CopyButton";
 import { createClient } from "@/lib/supabase";
-import { fetchHistory } from "@/lib/generations";
+import { fetchGenerationById, fetchGenerations } from "@/lib/generations";
+import { filterLabels, filtersToQuery, hasAnyFilter, parseFilters } from "@/lib/generation-filters";
 import { countWords } from "@/lib/format-contract";
 import { dateFormat, formatLabel, wordsLabel } from "@/lib/generation-labels";
 import { API_ERRORS } from "@/lib/api-errors";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania,
-// zanim ten kod sie wykona. Prefiks obejmuje tez adres z parametrem `?open=`.
+// zanim ten kod sie wykona. Prefiks obejmuje tez adres z parametrami filtrow.
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 
+/**
+ * Filtry (`?format=&rating=&fav=&q=`) czytane z adresu, nie ze stanu wyspy.
+ *
+ * Wartosc spoza zbioru jest POMIJANA, nie jest bledem — patrz `parseFilters`. Skutkiem
+ * literowki w adresie jest widok szerszy, nie komunikat o bledzie.
+ */
+const filters = parseFilters(Astro.url.searchParams);
+const query = filtersToQuery(filters);
+const filtered = hasAnyFilter(filters);
+
 // Odczyt nie filtruje po `user_id` — izolacja stoi na RLS. Uzasadnienie w `@/lib/generations`.
-const items = supabase ? await fetchHistory(supabase) : [];
+const items = supabase ? await fetchGenerations(supabase, { filters }) : [];
 
 /**
- * Okno pozycji (FR-010, S-05).
+ * Okno pozycji (FR-010, S-05) — od tej zmiany z WLASNEGO odczytu.
  *
- * Pozycja jest szukana w JUZ POBRANEJ liscie — bez drugiego zapytania i bez
- * porownania wlasciciela w kodzie. Lista pobiera pelna tresc do podgladu, wiec
- * okno nie potrzebuje niczego wiecej, a ryzyko z roadmapy ("kazdy nowy odczyt to
- * nowa okazja do obejscia RLS filtrem w kodzie") nie zachodzi.
+ * Do `history-filters` pozycja byla szukana w juz pobranej liscie. Po dodaniu filtrow
+ * to by sie zepsulo: pozycja spoza filtra dawalaby 404, choc istnieje i nalezy do
+ * uzytkownika — czyli 404 zaczelo by znaczyc "odfiltrowane". Osobny odczyt po `id`
+ * przywraca 404 do jego wlasciwego znaczenia i pozwala otworzyc dowolna wlasna pozycje
+ * niezaleznie od tego, co filtr przepuszcza.
  *
- * Brak trafienia obejmuje cudzy, nieistniejacy i niepoprawny identyfikator
- * JEDNAKOWO — ta sama nierozroznialnosc co w `/api/generations/[id]`. Nic nie idzie
- * do bazy, wiec nie ma czego walidowac regexem. Status 404 na stronie z widoczna
- * lista jest nietypowy, ale zamierzony: odmowa z NFR ma byc widoczna i uczciwa w logach.
+ * Brak trafienia nadal obejmuje cudzy, nieistniejacy i NIEPOPRAWNY SKLADNIOWO
+ * identyfikator JEDNAKOWO — `fetchGenerationById` zwraca `null` takze przy bledzie
+ * bazy, wiec niepoprawny uuid konczy sie tym samym 404, a nie piecsetka. Ta
+ * nierozroznialnosc jest wymogiem, nie wygoda: rozroznienie potwierdzaloby istnienie
+ * cudzego rekordu.
  */
 const openParam = Astro.url.searchParams.get("open");
-const opened = openParam === null ? null : (items.find((item) => item.id === openParam) ?? null);
+const opened = openParam !== null && supabase ? await fetchGenerationById(supabase, openParam) : null;
 const notFound = openParam !== null && opened === null;
 if (notFound) {
   Astro.response.status = 404;
 }
+
+/** Powrot z okna do TYCH SAMYCH filtrow, nie na goly `/generations`. */
+const backHref = query ? `/generations?${query}` : "/generations";
+
+/**
+ * Stan pusty zalezny od filtra.
+ *
+ * "Nie masz jeszcze zadnych generacji" jest KLAMSTWEM, gdy masz dwadziescia, a filtr
+ * nic nie przepuscil. Rozdzielenie tych dwoch przypadkow nie wymagalo nowego mechanizmu —
+ * `GenerationList` przyjmuje oba teksty jako propsy od S-06.
+ */
+const emptyTitle = filtered ? "Nic nie pasuje do tych filtrów." : "Nie masz jeszcze żadnych generacji.";
+const emptyHint = filtered
+  ? `Aktywne filtry: ${filterLabels(filters).join(", ")}. Zdejmij któryś albo wyczyść wszystkie.`
+  : "Pojawią się tutaj automatycznie, gdy tylko wygenerujesz pierwszy tekst.";
 
 const closeClass =
   "border-hairline bg-panel text-ink-muted hover:bg-app shrink-0 rounded-lg border px-3 py-1.5 text-xs transition-colors";
@@ -46,10 +75,10 @@ const closeClass =
 <Layout title={opened ? (opened.title ?? opened.topic) : "Moje generacje"}>
   {
     /*
-     * Okno stoi PRZED lista w drzewie dokumentu — ustalenie F6 przegladu. Przy dzialajacym
-     * JS jest to bez znaczenia, bo `showModal()` przenosi element do warstwy gornej. Bez JS
-     * `<dialog open>` jest niemodalny i pozycjonowany w swoim miejscu w dokumencie: gdyby
-     * stal po liscie, "dziala bez JS" znaczyloby "jest, ale ponizej ekranu".
+     * Okno stoi PRZED lista w drzewie dokumentu — ustalenie F6 przegladu `S-05`. Przy
+     * dzialajacym JS jest to bez znaczenia, bo `showModal()` przenosi element do warstwy
+     * gornej. Bez JS `<dialog open>` jest niemodalny i pozycjonowany w swoim miejscu
+     * w dokumencie: gdyby stal po liscie, "dziala bez JS" znaczyloby "jest, ale ponizej ekranu".
      */
     openParam !== null && (
       <dialog
@@ -71,7 +100,7 @@ const closeClass =
                     {dateFormat.format(new Date(opened.created_at))} · {wordsLabel(countWords(opened.content))}
                   </p>
                 </div>
-                <a href="/generations" class:list={closeClass}>
+                <a href={backHref} class:list={closeClass}>
                   Zamknij
                 </a>
               </div>
@@ -98,12 +127,12 @@ const closeClass =
             </>
           ) : (
             /* `role="alert"` na tym `div`, NIE na `<h2>` — na naglowku nadpisywalby jego
-               role i wyrzucal go z konspektu dokumentu (ustalenie F8 przegladu). */
+               role i wyrzucal go z konspektu dokumentu (ustalenie F8 przegladu S-05). */
             <div role="alert" class="flex items-start justify-between gap-4">
               <h2 id="generation-dialog-title" class="text-ink text-lg font-semibold">
                 {API_ERRORS.NOT_FOUND.message}
               </h2>
-              <a href="/generations" class:list={closeClass}>
+              <a href={backHref} class:list={closeClass}>
                 Wróć do historii
               </a>
             </div>
@@ -118,16 +147,13 @@ const closeClass =
       <Topbar />
 
       <h1 class="text-ink mb-2 text-3xl font-bold">Moje generacje</h1>
-      <p class="text-ink-muted mb-8 text-sm">
+      <p class="text-ink-muted mb-6 text-sm">
         Widzisz wyłącznie własne teksty. Nadaj im tytuły, oceń gwiazdkami, oznacz ulubione, a niepotrzebne trwale usuń.
       </p>
 
-      <GenerationList
-        items={items}
-        deletable
-        emptyTitle="Nie masz jeszcze żadnych generacji."
-        emptyHint="Pojawią się tutaj automatycznie, gdy tylko wygenerujesz pierwszy tekst."
-      />
+      <FilterBar filters={filters} />
+
+      <GenerationList items={items} deletable query={query} emptyTitle={emptyTitle} emptyHint={emptyHint} />
     </div>
   </div>
 </Layout>
@@ -147,7 +173,7 @@ const closeClass =
    * zaladowania. Zdjecie atrybutu `open` wprost NIE emituje `close` — stad
    * `removeAttribute`, ktore w kazdym innym kontekscie byloby zlym pomyslem.
    *
-   * Bramka na `typeof` i `try`/`catch` to ustalenie F3 przegladu. Goly `instanceof
+   * Bramka na `typeof` i `try`/`catch` to ustalenie F3 przegladu S-05. Goly `instanceof
    * HTMLDialogElement` rzuca `ReferenceError` w silniku bez `<dialog>`, a wyjatek
    * z `showModal()` po zdjetym `open` zgasilby okno CALKOWICIE — czyli degradacja
    * odwrotna do obiecanej w planie. Tutaj `open` wraca i zostaje wersja bez focus-trapu.
@@ -163,10 +189,17 @@ const closeClass =
       dialog.setAttribute("open", "");
     }
     if (modal) {
-      // `replace`, nie `assign` — zamkniecie okna nie ma zostawiac go w historii,
-      // bo Wstecz otwieralby je ponownie (ustalenie F4 przegladu).
+      /*
+       * `replace`, nie `assign` — zamkniecie okna nie ma zostawiac go w historii,
+       * bo Wstecz otwieralby je ponownie (ustalenie F4 przegladu S-05).
+       *
+       * Adres powrotu jest czytany z atrybutu linku "Zamknij", zeby NIE zgubic filtrow.
+       * Wpisany na sztywno `/generations` cofalby uzytkownika do niezawezonej listy —
+       * czyli gubil dokladnie to, po co filtry powstaly.
+       */
+      const back = document.querySelector<HTMLAnchorElement>("#generation-dialog a[href]")?.href ?? "/generations";
       dialog.addEventListener("close", () => {
-        window.location.replace("/generations");
+        window.location.replace(back);
       });
     }
   }

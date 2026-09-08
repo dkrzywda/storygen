@@ -15,6 +15,7 @@ import { dateFormat, formatLabel } from "@/lib/generation-labels";
 interface Item {
   id: string;
   title: string | null;
+  topic: string;
   content: string;
   format: string;
   rating: number | null;
@@ -27,6 +28,13 @@ interface Props {
   /** Numeracja pozycji — ma sens w rankingu, nie w historii. */
   ranked?: boolean;
   /**
+   * Kanoniczny query string biezacego widoku, BEZ wiodacego `?`.
+   *
+   * Dopisywany do linku "Otworz", zeby zamkniecie okna wracalo do tych samych filtrow,
+   * a nie na goly `/generations`. Brak wartosci (panel) zachowuje dotychczasowy link.
+   */
+  query?: string;
+  /**
    * Akcja usuwania. Domyslnie WYLACZONA i to jest zamierzone: nowy widok nad ta lista
    * nie powinien dostawac nieodwracalnej akcji przez przypadek, tylko przez decyzje.
    */
@@ -35,7 +43,16 @@ interface Props {
   emptyHint: string;
 }
 
-const { items, ranked = false, deletable = false, emptyTitle, emptyHint } = Astro.props;
+const { items, ranked = false, deletable = false, query, emptyTitle, emptyHint } = Astro.props;
+
+/**
+ * Adres okna pozycji. Filtry biezacego widoku jada w linku, zeby "Zamknij" wracalo
+ * do tego samego zawezenia — inaczej odfiltrowanie i otwarcie pozycji gubi filtr.
+ */
+function openHref(id: string): string {
+  const suffix = query ? `&${query}` : "";
+  return `/generations?open=${id}${suffix}`;
+}
 
 function preview(content: string): string {
   const trimmed = content.trim();
@@ -66,14 +83,17 @@ function preview(content: string): string {
                 />
               </div>
               <div class="mt-3 flex items-end justify-between gap-3">
-                <p class="text-ink-subtle text-xs">
-                  {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
+                {/* Temat na pierwszym miejscu, bo to jedyna rzecz, ktora uzytkownik sam
+                    wpisal — i po ktorej szuka. Do tej zmiany byl niewidoczny na liscie,
+                    wiec wynik szukania po temacie nie tlumaczyl sie sam. */}
+                <p class="text-ink-subtle min-w-0 text-xs break-words">
+                  Temat: {item.topic} · {formatLabel(item.format)} · {dateFormat.format(new Date(item.created_at))}
                 </p>
                 <div class="flex items-end gap-3">
                   {/* Bez flagi — link jest nieszkodliwy wszedzie i daje panelowi (ranking, ulubione)
                       droge do pelnej tresci, ktorej dotad nie mial. Okno zyje pod /generations. */}
                   <a
-                    href={`/generations?open=${item.id}`}
+                    href={openHref(item.id)}
                     class="text-brand hover:text-brand-strong text-xs transition-colors hover:underline"
                   >
                     Otwórz

@@ -406,35 +406,35 @@ zostają nietknięte.
 
 #### Automated
 
-- [x] 1.1 Testy jednostkowe przechodzą: `npm test`
-- [x] 1.2 Kontrola typów przechodzi: `npx astro check`
-- [x] 1.3 Lint plików dotkniętych w tej fazie przechodzi
-- [x] 1.4 Zestaw integracyjny nadal przechodzi: `npm run test:integration`
+- [x] 1.1 Testy jednostkowe przechodzą: `npm test` — 6dab555
+- [x] 1.2 Kontrola typów przechodzi: `npx astro check` — 6dab555
+- [x] 1.3 Lint plików dotkniętych w tej fazie przechodzi — 6dab555
+- [x] 1.4 Zestaw integracyjny nadal przechodzi: `npm run test:integration` — 6dab555
 
 #### Manual
 
-- [x] 1.5 Ranking dowcipów i historii ma tę samą kolejność co przed zmianą
-- [x] 1.6 Zakładka ulubionych pokazuje to samo co przed zmianą
-- [x] 1.7 `/generations` pokazuje pełną historię, bez zmian
+- [x] 1.5 Ranking dowcipów i historii ma tę samą kolejność co przed zmianą — 6dab555
+- [x] 1.6 Zakładka ulubionych pokazuje to samo co przed zmianą — 6dab555
+- [x] 1.7 `/generations` pokazuje pełną historię, bez zmian — 6dab555
 
 ### Phase 2: Powierzchnia — pasek filtrów, temat, okno i stany puste
 
 #### Automated
 
-- [ ] 2.1 Kontrola typów przechodzi: `npx astro check`
-- [ ] 2.2 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 2.1 Kontrola typów przechodzi: `npx astro check`
+- [x] 2.2 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi
 
 #### Manual
 
-- [ ] 2.4 Każdy filtr osobno zawęża listę, a wszystkie razem działają jednocześnie
-- [ ] 2.5 Filtry zostają w adresie: odświeżenie, Wstecz i wklejony link
-- [ ] 2.6 Otwarcie pozycji przy filtrze działa, a zamknięcie wraca do filtrów
-- [ ] 2.7 Pozycja spoza filtra otwiera się z linku `?open=` zamiast dawać 404
-- [ ] 2.8 Niepoprawny identyfikator w `?open=` daje 404, nie 500
-- [ ] 2.9 Filtr bez trafień wylicza aktywne filtry i daje link czyszczący
-- [ ] 2.10 Temat widoczny przy każdej pozycji, także w panelu
-- [ ] 2.11 Pasek filtrów działa po wyłączeniu JavaScriptu
+- [x] 2.4 Każdy filtr osobno zawęża listę, a wszystkie razem działają jednocześnie
+- [x] 2.5 Filtry zostają w adresie: odświeżenie, Wstecz i wklejony link
+- [x] 2.6 Otwarcie pozycji przy filtrze działa, a zamknięcie wraca do filtrów
+- [x] 2.7 Pozycja spoza filtra otwiera się z linku `?open=` zamiast dawać 404
+- [x] 2.8 Niepoprawny identyfikator w `?open=` daje 404, nie 500
+- [x] 2.9 Filtr bez trafień wylicza aktywne filtry i daje link czyszczący
+- [x] 2.10 Temat widoczny przy każdej pozycji, także w panelu
+- [x] 2.11 Pasek filtrów działa po wyłączeniu JavaScriptu
 
 ### Phase 3: Testy integracyjne — filtry a izolacja kont
 

@@ -1,0 +1,100 @@
+---
+import { hasAnyFilter, type GenerationFilters } from "@/lib/generation-filters";
+import { TOPIC_MAX } from "@/lib/generate-request";
+
+/**
+ * Pasek filtrow historii.
+ *
+ * ZWYKLY FORMULARZ `method="get"`, nie wyspa Reacta — i to jest decyzja, nie zaniedbanie.
+ * Filtry maja zyc w adresie, zeby dalo sie je odswiezyc, wrocic do nich przyciskiem
+ * wstecz i wkleic komus link; przeglądarka robi to sama, bez ani jednego bajtu
+ * JavaScriptu. Ten sam wybor i to samo uzasadnienie co przy zakladkach panelu
+ * (`src/pages/dashboard.astro`): kazdy filtr to inne ZAPYTANIE do bazy, wiec wyspa
+ * musialaby i tak wolac serwer.
+ *
+ * Cena jest jawna: filtr zmienia sie dopiero po zatwierdzeniu, wiec szukanie nie
+ * reaguje na kazda litere. Przy tej skali danych to nie ma znaczenia, a linkowalnosc ma.
+ */
+
+interface Props {
+  filters: GenerationFilters;
+}
+
+const { filters } = Astro.props;
+
+/**
+ * Progi oceny jako "co najmniej". `1` znaczy "jakakolwiek ocena" — to ten sam prog,
+ * na ktorym stoi ranking, tylko nazwany od strony uzytkownika.
+ */
+const RATINGS = [1, 2, 3, 4, 5];
+
+const controlClass =
+  "border-hairline bg-panel text-ink rounded-lg border px-3 py-2 text-sm focus:border-brand focus:outline-none";
+const labelClass = "text-ink-muted block text-xs font-medium";
+---
+
+<form method="get" action="/generations" class="border-hairline bg-panel mb-6 rounded-xl border p-4">
+  <div class="flex flex-wrap items-end gap-3">
+    <div class="min-w-32 flex-1">
+      <label for="filter-q" class:list={labelClass}>Temat zawiera</label>
+      {
+        /* `type="search"` daje w przegladarce krzyzyk do wyczyszczenia pola, a `maxlength`
+          jest lustrzany wobec gornej granicy tematu z FR-003 — dluzsza fraza nie moze
+          mieć trafienia, bo dluzszy temat nie moze istniec. */
+      }
+      <input
+        id="filter-q"
+        type="search"
+        name="q"
+        value={filters.query ?? ""}
+        maxlength={TOPIC_MAX}
+        placeholder="np. koty"
+        class:list={`${controlClass} mt-1 w-full`}
+      />
+    </div>
+
+    <div>
+      <label for="filter-format" class:list={labelClass}>Format</label>
+      <select id="filter-format" name="format" class:list={`${controlClass} mt-1`}>
+        <option value="" selected={filters.format === undefined}>Wszystkie</option>
+        <option value="joke" selected={filters.format === "joke"}>Dowcipy</option>
+        <option value="story" selected={filters.format === "story"}>Historie</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="filter-rating" class:list={labelClass}>Ocena</label>
+      <select id="filter-rating" name="rating" class:list={`${controlClass} mt-1`}>
+        <option value="" selected={filters.minRating === undefined}>Dowolna</option>
+        {
+          RATINGS.map((value) => (
+            <option value={value} selected={filters.minRating === value}>
+              {value} i wyżej
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    {/* Niezaznaczony checkbox NIE jest wysylany, wiec `fav` znika z adresu sam. */}
+    <label class="text-ink-muted flex items-center gap-2 py-2 text-sm">
+      <input type="checkbox" name="fav" value="1" checked={filters.favourite === true} class="accent-brand size-4" />
+      Tylko ulubione
+    </label>
+
+    <button
+      type="submit"
+      class="bg-brand hover:bg-brand-strong rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+    >
+      Filtruj
+    </button>
+
+    {
+      hasAnyFilter(filters) && (
+        <a href="/generations" class="text-ink-muted hover:text-ink py-2 text-sm underline">
+          Wyczyść filtry
+        </a>
+      )
+    }
+  </div>
+</form>
