@@ -553,12 +553,12 @@ o tym wiedzieć.
 
 #### Manual
 
-- [x] 4.5 Wynik pojawia się na tym samym ekranie, bez przeładowania
-- [x] 4.6 Postęp widoczny przez cały czas oczekiwania
-- [x] 4.7 Kopiowanie działa jednym kliknięciem, bez zaznaczania
-- [x] 4.8 Zmiana presetu daje odczuwalnie inną długość
-- [x] 4.9 Za krótki i za długi temat pokazują komunikat przy polu
-- [x] 4.10 Odmowa modelu kieruje do zmiany tematu
+- [x] 4.5 Wynik pojawia się na tym samym ekranie, bez przeładowania — 09e3fab
+- [x] 4.6 Postęp widoczny przez cały czas oczekiwania — 09e3fab
+- [x] 4.7 Kopiowanie działa jednym kliknięciem, bez zaznaczania — 09e3fab
+- [x] 4.8 Zmiana presetu daje odczuwalnie inną długość — 09e3fab
+- [x] 4.9 Za krótki i za długi temat pokazują komunikat przy polu — 09e3fab
+- [x] 4.10 Odmowa modelu kieruje do zmiany tematu — 09e3fab
 
 ### Phase 5: Dokumenty
 
@@ -569,5 +569,5 @@ o tym wiedzieć.
 
 #### Manual
 
-- [ ] 5.3 Czytelnik `S-07` rozumie, co dziedziczy
-- [ ] 5.4 Osłabienie gwarancji wobec PRD zapisane jasno
+- [x] 5.3 Czytelnik `S-07` rozumie, co dziedziczy
+- [x] 5.4 Osłabienie gwarancji wobec PRD zapisane jasno
