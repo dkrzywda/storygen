@@ -569,5 +569,5 @@ o tym wiedzieć.
 
 #### Manual
 
-- [x] 5.3 Czytelnik `S-07` rozumie, co dziedziczy
-- [x] 5.4 Osłabienie gwarancji wobec PRD zapisane jasno
+- [x] 5.3 Czytelnik `S-07` rozumie, co dziedziczy — fe32dcb
+- [x] 5.4 Osłabienie gwarancji wobec PRD zapisane jasno — fe32dcb

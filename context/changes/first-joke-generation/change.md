@@ -1,9 +1,9 @@
 ---
 change_id: first-joke-generation
 title: "Generowanie dowcipu na temat uzytkownika z kopiowaniem wyniku"
-status: implementing
+status: implemented
 created: 2026-09-04
-updated: 2026-09-07
+updated: 2026-09-08
 archived_at: null
 ---
 
