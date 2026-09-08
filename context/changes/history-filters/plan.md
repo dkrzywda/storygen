@@ -421,30 +421,30 @@ zostają nietknięte.
 
 #### Automated
 
-- [x] 2.1 Kontrola typów przechodzi: `npx astro check`
-- [x] 2.2 Testy jednostkowe przechodzą: `npm test`
-- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 2.1 Kontrola typów przechodzi: `npx astro check` — 1443d0e
+- [x] 2.2 Testy jednostkowe przechodzą: `npm test` — 1443d0e
+- [x] 2.3 Lint plików dotkniętych w tej fazie przechodzi — 1443d0e
 
 #### Manual
 
-- [x] 2.4 Każdy filtr osobno zawęża listę, a wszystkie razem działają jednocześnie
-- [x] 2.5 Filtry zostają w adresie: odświeżenie, Wstecz i wklejony link
-- [x] 2.6 Otwarcie pozycji przy filtrze działa, a zamknięcie wraca do filtrów
-- [x] 2.7 Pozycja spoza filtra otwiera się z linku `?open=` zamiast dawać 404
-- [x] 2.8 Niepoprawny identyfikator w `?open=` daje 404, nie 500
-- [x] 2.9 Filtr bez trafień wylicza aktywne filtry i daje link czyszczący
-- [x] 2.10 Temat widoczny przy każdej pozycji, także w panelu
-- [x] 2.11 Pasek filtrów działa po wyłączeniu JavaScriptu
+- [x] 2.4 Każdy filtr osobno zawęża listę, a wszystkie razem działają jednocześnie — 1443d0e
+- [x] 2.5 Filtry zostają w adresie: odświeżenie, Wstecz i wklejony link — 1443d0e
+- [x] 2.6 Otwarcie pozycji przy filtrze działa, a zamknięcie wraca do filtrów — 1443d0e
+- [x] 2.7 Pozycja spoza filtra otwiera się z linku `?open=` zamiast dawać 404 — 1443d0e
+- [x] 2.8 Niepoprawny identyfikator w `?open=` daje 404, nie 500 — 1443d0e
+- [x] 2.9 Filtr bez trafień wylicza aktywne filtry i daje link czyszczący — 1443d0e
+- [x] 2.10 Temat widoczny przy każdej pozycji, także w panelu — 1443d0e
+- [x] 2.11 Pasek filtrów działa po wyłączeniu JavaScriptu — 1443d0e
 
 ### Phase 3: Testy integracyjne — filtry a izolacja kont
 
 #### Automated
 
-- [ ] 3.1 Zestaw integracyjny przechodzi: `npm run test:integration`
-- [ ] 3.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
-- [ ] 3.3 Kontrola typów przechodzi: `npx astro check`
-- [ ] 3.4 Lint plików dotkniętych w tej fazie przechodzi
+- [x] 3.1 Zestaw integracyjny przechodzi: `npm run test:integration`
+- [x] 3.2 Szybki zestaw pozostaje wolny od Dockera: `npm test`
+- [x] 3.3 Kontrola typów przechodzi: `npx astro check`
+- [x] 3.4 Lint plików dotkniętych w tej fazie przechodzi
 
 #### Manual
 
-- [ ] 3.5 Rozszerzenie polityki SELECT do `using (true)` robi nowe przypadki czerwonymi
+- [x] 3.5 Rozszerzenie polityki SELECT do `using (true)` robi nowe przypadki czerwonymi

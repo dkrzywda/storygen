@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { beforeAll, describe, expect, it } from "vitest";
+import { fetchGenerationById, fetchGenerations } from "@/lib/generations";
 
 /**
  * R-05 z `context/foundation/test-plan.md` — jedyne ryzyko oznaczone jako krytyczne.
@@ -253,5 +254,159 @@ describe("izolacja kont na tabeli generations (R-05)", () => {
 
     const { data: after } = await alice.from("generations").select("id").eq("id", rowId);
     expect(after).toHaveLength(0);
+  });
+});
+
+/**
+ * FILTRY HISTORII A IZOLACJA KONT — dopisane przez `history-filters`.
+ *
+ * Roadmapa nazywa kazdy nowy odczyt nowa okazja do obejscia RLS filtrem w kodzie,
+ * a ta zmiana dodaje dwie sciezki: `fetchGenerations` z filtrami i `fetchGenerationById`.
+ * Naturalnym odruchem przy pisaniu filtra jest dopisanie `.eq("user_id", …)` obok
+ * `.eq("format", …)` — dalo by to ten sam wynik dla poprawnej polityki i ZAMASKOWALO
+ * bledna, czyli odebralo temu plikowi sile dowodowa.
+ *
+ * Przypadki wolaja PRAWDZIWE funkcje z `@/lib/generations`, nie odtworzone zapytania.
+ * Odtworzenie sprawdzaloby test, nie produkt — a ucieczka znakow `LIKE` zyje wlasnie
+ * wewnatrz `fetchGenerations` i inaczej nie byla by tu w ogole dotknieta.
+ *
+ * Wlasne konta, nie te z bloku R-05: tamten plik ostrzega, ze wspoldzielony wiersz
+ * wiaze przypadki kolejnoscia deklaracji.
+ */
+describe("filtry historii nie omijaja izolacji kont (R-05)", () => {
+  let owner: SupabaseClient<Database>;
+  let stranger: SupabaseClient<Database>;
+  let ownerId: string;
+  let matchingRowId: string;
+
+  /** Temat z LITERALNYM `%` — dowod, ze ucieczka dziala na prawdziwym zapytaniu. */
+  const TOPIC_WITH_WILDCARD = "100%_pewne koty";
+
+  beforeAll(async () => {
+    assertSafeTestTarget();
+    [owner, stranger] = await Promise.all([signUpFreshUser(), signUpFreshUser()]);
+    ownerId = await requireUserId(owner);
+
+    const { data, error } = await owner
+      .from("generations")
+      .insert([
+        {
+          user_id: ownerId,
+          topic: TOPIC_WITH_WILDCARD,
+          format: "story",
+          length_preset: "short",
+          content: "Kot byl pewny swojego. Reszta swiata dopiero sie dostosowywala.",
+          rating: 5,
+          is_favourite: true,
+        },
+        {
+          user_id: ownerId,
+          topic: "psy w biurze",
+          format: "joke",
+          length_preset: "short",
+          content: "Pies przyszedl na standup i jako jedyny mial cos konkretnego do powiedzenia.",
+          rating: 1,
+          is_favourite: false,
+        },
+      ])
+      .select("id, topic");
+
+    if (error) {
+      throw new Error(`Wlasciciel nie zapisal wierszy: ${error.message || "brak tresci bledu"}`);
+    }
+    const matching = data.find((row) => row.topic === TOPIC_WITH_WILDCARD);
+    if (!matching) {
+      throw new Error("Nie znaleziono wiersza z wieloznacznikiem w temacie");
+    }
+    matchingRowId = matching.id;
+  });
+
+  describe("kontrola pozytywna — filtr musi cokolwiek przepuszczac", () => {
+    /*
+     * Bez tych przypadkow zielony wynik izolacji ponizej moglby znaczyc, ze filtr nie
+     * przepuszcza NIKOGO — czyli ze jest zepsuty, a nie ze chroni.
+     */
+    it("wlasciciel widzi swoj wiersz przez filtr formatu", async () => {
+      const rows = await fetchGenerations(owner, { filters: { format: "story" } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].topic).toBe(TOPIC_WITH_WILDCARD);
+    });
+
+    it("wlasciciel widzi swoj wiersz przez wszystkie filtry razem", async () => {
+      const rows = await fetchGenerations(owner, {
+        filters: { format: "story", minRating: 5, favourite: true, query: "pewne" },
+      });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].id).toBe(matchingRowId);
+    });
+
+    it("filtr oceny odsiewa wlasny wiersz o nizszej ocenie", async () => {
+      const rows = await fetchGenerations(owner, { filters: { minRating: 5 } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].topic).toBe(TOPIC_WITH_WILDCARD);
+    });
+
+    /*
+     * UCIECZKA ZNAKOW NA PRAWDZIWYM ZAPYTANIU. Bez niej `%` byloby wieloznacznikiem
+     * i fraza dopasowalaby OBA wiersze wlasciciela. Z ucieczka dopasowuje ten jeden,
+     * ktory ma literalny procent w temacie.
+     */
+    it("fraza z `%` dopasowuje literalny znak, nie wszystko", async () => {
+      const rows = await fetchGenerations(owner, { filters: { query: "%" } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].topic).toBe(TOPIC_WITH_WILDCARD);
+    });
+
+    it("fraza z `_` tez jest traktowana literalnie", async () => {
+      const rows = await fetchGenerations(owner, { filters: { query: "%_pewne" } });
+      expect(rows).toHaveLength(1);
+    });
+  });
+
+  describe("izolacja — obcy nie widzi nic, przy zadnym filtrze", () => {
+    it.each([
+      ["bez filtra", {}],
+      ["format", { format: "story" as const }],
+      ["ocena", { minRating: 1 }],
+      ["ulubione", { favourite: true as const }],
+      ["fraza", { query: "pewne" }],
+      ["fraza z wieloznacznikiem", { query: "%" }],
+      ["wszystkie razem", { format: "story" as const, minRating: 5, favourite: true as const, query: "pewne" }],
+    ])("obcy nie widzi wierszy wlasciciela: %s", async (_opis, filters) => {
+      const rows = await fetchGenerations(stranger, { filters });
+      expect(rows).toHaveLength(0);
+    });
+  });
+
+  describe("odczyt po identyfikatorze", () => {
+    it("wlasciciel odczytuje swoj wiersz", async () => {
+      const row = await fetchGenerationById(owner, matchingRowId);
+      expect(row?.id).toBe(matchingRowId);
+    });
+
+    /*
+     * Sedno tej sciezki: `fetchGenerationById` NIE filtruje po `user_id`, wiec jedyne,
+     * co odcina cudzy wiersz, to polityka SELECT. Gdyby byla zbyt szeroka, ten przypadek
+     * zapali sie na czerwono — i to jest cala jego wartosc.
+     */
+    it("obcy nie odczyta wiersza wlasciciela", async () => {
+      const row = await fetchGenerationById(stranger, matchingRowId);
+      expect(row).toBeNull();
+    });
+
+    it("nieistniejacy identyfikator daje null, nie blad", async () => {
+      const row = await fetchGenerationById(owner, "00000000-0000-0000-0000-000000000000");
+      expect(row).toBeNull();
+    });
+
+    /*
+     * NIEPOPRAWNY SKLADNIOWO identyfikator. Postgres odpowiada bledem
+     * (`invalid input syntax for type uuid`), a propagowanie go dalo by 500 zamiast 404
+     * i ROZROZNILO "niepoprawny" od "nie istnieje" — czego plan S-05 zakazuje, bo
+     * rozroznienie potwierdza istnienie cudzego rekordu.
+     */
+    it("niepoprawny uuid daje null, a nie wyjatek", async () => {
+      await expect(fetchGenerationById(owner, "nie-jest-uuidem")).resolves.toBeNull();
+    });
   });
 });
