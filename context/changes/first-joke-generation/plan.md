@@ -522,7 +522,7 @@ o tym wiedzieć.
 
 #### Manual
 
-- [x] 2.4 Przegląd limitów presetów — czy różnica jest odczuwalna
+- [x] 2.4 Przegląd limitów presetów — czy różnica jest odczuwalna — 167d0d5
 
 ### Phase 3: Endpoint generowania
 
@@ -536,11 +536,11 @@ o tym wiedzieć.
 
 #### Manual
 
-- [ ] 3.6 Poprawny temat zwraca 200 i tekst w limicie presetu
-- [ ] 3.7 Temat krótszy niż 3 znaki zwraca 400 z komunikatem przy polu
-- [ ] 3.8 Temat dłuższy niż 80 znaków zwraca 400 z komunikatem przy polu
-- [ ] 3.9 Żądanie bez sesji zwraca 401
-- [ ] 3.10 Log przy awarii nie zawiera tematu użytkownika
+- [x] 3.6 Poprawny temat zwraca 200 i tekst w limicie presetu
+- [x] 3.7 Temat krótszy niż 3 znaki zwraca 400 z komunikatem przy polu
+- [x] 3.8 Temat dłuższy niż 80 znaków zwraca 400 z komunikatem przy polu
+- [x] 3.9 Żądanie bez sesji zwraca 401
+- [x] 3.10 Log przy awarii nie zawiera tematu użytkownika
 
 ### Phase 4: Ekran generowania
 
