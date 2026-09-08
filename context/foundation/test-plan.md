@@ -2,7 +2,7 @@
 project: "Storygen"
 version: 1
 created: 2026-09-03
-updated: 2026-09-07
+updated: 2026-09-08
 runner: "Vitest 4.1.11 — `npm test`"
 ---
 
@@ -26,6 +26,7 @@ odpowiada 200, wygląda normalnie, a gwarancja jest już naruszona.
 | R-05 | Konto czyta lub zmienia cudze generacje                                                       | RLS milczy przy zbyt szerokiej polityce; zapytanie zwraca wiersze, nikt nie widzi błędu | **krytyczna** | `src/lib/generations.integration.test.ts`  | **pokryte**                          |
 | R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | `src/lib/format-contract.test.ts`          | **częściowo pokryte** — patrz zestaw |
 | R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | `src/lib/limits.test.ts` + `.integration.` | **pokryte**                          |
+| R-08 | Rola administratora daje się podrobić albo sekcja admina wycieka do zwykłego konta       | Panel renderuje się poprawnie, status 200 — ktoś po prostu widzi sekcję, której nie powinien | **krytyczna** | `src/lib/account-role.test.ts` + `.integration.` | **pokryte**                          |
 
 **R-06 jest pokryte tylko częściowo i to jest świadome.** Szczegóły w jego zestawie poniżej —
 przeczytaj je, zanim uznasz kontrakt formatu za zabezpieczony.
@@ -197,6 +198,45 @@ jednej instrukcji `insert`. Świadomie odłożone, nie przeoczone.
 przodu względem bazy, przez co świeżo wystawiony token ma `iat` w przyszłości i pierwsze
 zapytanie wraca błędem `JWT issued at future`. Zestaw ma wąską pętlę ponawiającą **wyłącznie**
 ten komunikat; każdy inny błąd wywraca test natychmiast.
+
+## Zestaw R-08 — rola administratora i szczelność sekcji
+
+**Pliki:** `src/lib/account-role.test.ts` (12 przypadków) oraz
+`src/lib/account-role.integration.test.ts` (3 przypadki, wymaga `npx supabase start`).
+
+Ryzyko łamie się cicho w sposób szczególnie nieprzyjemny: błąd w `isAdmin` **nie rzuca
+wyjątku i nie psuje strony**. Objawia się tym, że ktoś widzi sekcję administratora — czyli
+dokładnie tak, jak działająca funkcja. Nie ma czerwonego builda ani białego ekranu, które
+obroniłyby się same.
+
+**Podział między zestawami jest znaczący, nie przypadkowy.** Test jednostkowy karmi `isAdmin`
+atrapą zbudowaną rękami autora, więc dowodzi tylko zgodności funkcji z *wyobrażeniem* autora
+o kształcie `app_metadata`. Jedyne założenie tej funkcji — że rola przychodzi w `app_metadata`,
+a nie w polu zapisywalnym przez użytkownika — potwierdzić może wyłącznie odpowiedź prawdziwego
+serwera auth. Dlatego istnieją oba.
+
+**Najważniejszy przypadek w całym zestawie to próba podrobienia.** Konto testowe zapisuje
+`role: "admin"` w `user_metadata` przez `updateUser` — czyli robi to, co może zrobić każdy,
+bo klucz publishable jest w kodzie klienta. Test dowodzi trzech rzeczy naraz: podrobienie
+faktycznie ląduje tam, gdzie użytkownik ma zapis; **nie** przecieka do `app_metadata`, którego
+SDK nie umie zapisać; a granica dostępu go nie widzi. PRD `## Access Control` zabrania
+wyprowadzania roli z czegokolwiek, co użytkownik kontroluje — to jedyne miejsce sprawdzające,
+że zakaz obowiązuje wobec realnego SDK, nie tylko w komentarzu.
+
+**Zmierzona skuteczność, nie założona.** 2026-09-08 wprowadzono trzy regresy i za każdym razem
+zestaw zaczerwieniał: `Boolean(role)` zamiast porównania identycznościowego → 3 czerwone
+jednostkowe; odczyt `user_metadata` zamiast `app_metadata` → 3 czerwone jednostkowe i 1 integracyjny.
+Po przywróceniu 241 jednostkowych i 30 integracyjnych na zielono.
+
+**Czego ten zestaw NIE dowodzi** — świadoma luka, nie przeoczenie:
+
+1. **Ścieżki pozytywnej przez SDK.** Zbudowanie konta *z rolą* wymaga zapisu do
+   `auth.users.raw_app_meta_data`, na co klucz publishable nie ma prawa — a `service_role`
+   strażnik odrzuca, bo omija RLS i uczyniłby cały zestaw bezwartościowym. Że rola nadana
+   migracją jest widziana przez `getUser()`, zmierzono ręcznie 2026-09-08.
+2. **Warunku w szablonie.** Że `dashboard.astro` renderuje sekcję wtedy i tylko wtedy, gdy
+   `isAdmin` zwraca `true`, nie sprawdza tu nic — ten runner nie mówi po HTTP. Zweryfikowane
+   ręcznie: sekcja zniknęła po zdjęciu roli i wróciła po jej przywróceniu.
 
 ## Jak to uruchomić
 

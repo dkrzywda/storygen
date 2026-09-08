@@ -1,0 +1,39 @@
+---
+import Layout from "@/layouts/Layout.astro";
+
+/**
+ * Strona nieznalezionej sciezki.
+ *
+ * DWA POWODY, DLA KTORYCH TEN PLIK ISTNIEJE:
+ *
+ * 1. Astro ma wbudowana strone 404 po ANGIELSKU (zmierzone na produkcji 2026-09-08:
+ *    4319 B, `<html lang="en">`, "404: Not Found"). PRD wymaga interfejsu wylacznie
+ *    po polsku, wiec ta strona byla naruszeniem NFR niezaleznie od F-02.
+ *
+ * 2. Odmowa dostepu do trasy administratora przepisuje zadanie WLASNIE TUTAJ
+ *    (`src/middleware.ts`, ADMIN_ROUTES). FR-015 wymaga, by odmowa nie ujawniala,
+ *    ze przeglad kont istnieje — a to znaczy, ze musi byc NIEROZROZNIALNA od
+ *    prawdziwego pudla, nie tylko podobna. Jedna strona dla obu sciezek czyni te
+ *    tozsamosc strukturalna: nie da sie ich rozjechac, bo to ten sam plik.
+ *
+ * DLATEGO TRESC NIE MOZE ZDRADZAC ISTNIENIA ZADNEJ TRASY ADMINA. Zaden komunikat
+ * o uprawnieniach, zadne "byc moze nie masz dostepu" — to by przeciekalo dokladnie
+ * to, co FR-015 chroni.
+ *
+ * STATUS USTAWIONY JAWNIE. Bez tego przepisanie z middleware oddaje 200, i strona
+ * bledu wygladalaby jak poprawna odpowiedz — dla przegladarki, dla `curl` i dla
+ * kazdego narzedzia patrzacego na kod statusu.
+ */
+Astro.response.status = 404;
+---
+
+<Layout title="Nie znaleziono strony">
+  <div class="bg-app flex min-h-screen items-center justify-center p-4">
+    <div class="border-hairline bg-panel text-ink w-full max-w-sm rounded-2xl border p-8 text-center shadow-sm">
+      <div class="mb-4 text-5xl">🔍</div>
+      <h1 class="text-ink mb-3 text-2xl font-bold">Nie znaleziono strony</h1>
+      <p class="text-ink-muted mb-6">Ten adres nie istnieje. Sprawdź, czy nie ma w nim literówki.</p>
+      <a href="/" class="text-brand text-sm hover:underline">Wróć do generatora</a>
+    </div>
+  </div>
+</Layout>

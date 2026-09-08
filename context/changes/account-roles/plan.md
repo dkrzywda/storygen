@@ -2,10 +2,14 @@
 
 ## Overview
 
-Konto zyskuje rolę (`user` albo `admin`) trzymaną w `app_metadata`, a serwer zyskuje jedno
-sprawdzenie, które bramkuje trasy administratora odpowiedzią **nierozróżnialną od nieistniejącej
-ścieżki**. To fundament `F-02` — nie dostarcza żadnej zdolności widocznej dla użytkownika poza
-tym, że `/admin` istnieje dla jednego konta i nie istnieje dla wszystkich pozostałych.
+Konto zyskuje rolę (`user` albo `admin`) trzymaną w `app_metadata`, a `/dashboard` zyskuje
+**sekcję widoczną wyłącznie dla administratora**. To fundament `F-02`: nie dostarcza jeszcze
+przeglądu kont (to `S-09`, FR-014), tylko granicę, na której ten przegląd stanie.
+
+> Ten akapit opisuje projekt po zmianie z 2026-09-08 — patrz `## Zmiana projektu` poniżej.
+> Pierwotny plan zakładał osobną trasę `/admin` maskowaną odpowiedzią nierozróżnialną od
+> nieistniejącej ścieżki; ta droga została porzucona, bo sekcja warunkowa spełnia FR-015
+> strukturalnie, a nie przez wysiłek.
 
 ## Current State Analysis
 
@@ -32,17 +36,18 @@ tym, że `/admin` istnieje dla jednego konta i nie istnieje dla wszystkich pozos
 ## Desired End State
 
 Konto `dkrzywda@amniscode.pl` ma w `app_metadata` rolę `admin`, `damiano.krzywda@gmail.com`
-rolę `user` (jeśli konto istnieje). Wejście na `/admin`:
+rolę `user` (jeśli konto istnieje). Wejście na `/dashboard`:
 
-| kto                                  | co widzi                                                           |
-| ------------------------------------ | ------------------------------------------------------------------ |
-| administrator                        | pustą stronę `/admin` z informacją, że przegląd stanie tu w `S-09` |
-| zalogowany bez roli admin            | polską stronę 404 ze statusem 404                                  |
-| niezalogowany                        | **to samo** — polską stronę 404, bez przekierowania na logowanie   |
-| ktokolwiek na `/nie-ma-takiej-trasy` | **tę samą** polską stronę 404                                      |
+| kto                                  | co widzi                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------- |
+| administrator                        | panel + sekcję „Administracja" z informacją, że przegląd stanie tu w `S-09` |
+| zalogowany bez roli admin            | panel **bez żadnego śladu** tej sekcji — także w źródle strony              |
+| niezalogowany                        | przekierowanie na `/auth/signin`, jak dotąd (`PROTECTED_ROUTES`)            |
+| ktokolwiek na `/nie-ma-takiej-trasy` | polską stronę 404 ze statusem 404                                           |
+| ktokolwiek na `/admin`               | **to samo** — ta trasa nie istnieje i nie ma jej powstać                    |
 
-Weryfikowalne: trzy ostatnie wiersze muszą dać **identyczną treść i status**. Różnica choćby
-w długości ciała ujawnia, że `/admin` istnieje, i łamie FR-015.
+Weryfikowalne: źródło `/dashboard` dla konta bez roli nie może zawierać ani słowa
+„Administracja", ani `aria-label` tej sekcji. Obecność jednego i drugiego jest dowodem wycieku.
 
 ### Key Discoveries:
 
@@ -77,24 +82,43 @@ istnieje, ale nic jej nie czyta — bezpiecznym do wdrożenia osobno. Faza 2 dok
 i nierozróżnialną odmowę. Faza 3 dowodzi ścieżki negatywnej, bo to jedyna ścieżka, która
 zawodzi w ciszy.
 
+## Zmiana projektu — 2026-09-08, w trakcie fazy 2
+
+**Sekcja w `/dashboard` zamiast osobnej trasy `/admin`.** Zmiana na żądanie autora, przyjęta —
+i jest **mocniejsza wobec FR-015, nie słabsza**. FR-015 wymaga, żeby odmowa nie ujawniała, że
+przegląd kont istnieje. Osobny adres spełniał to _przez wysiłek_: trzeba go było maskować
+odpowiedzią nierozróżnialną od nieistniejącej ścieżki, z pułapką w postaci przekierowania,
+które by go zdradziło. Sekcja warunkowa spełnia to _strukturalnie_: nie ma adresu do odgadnięcia,
+więc nie ma czego odmawiać. Zwykłe konto widzi panel, konto administratora widzi panel z jedną
+sekcją więcej.
+
+Co zostaje w mocy, a co jest **unieważnione** w tekście poniżej:
+
+| element planu                                | stan                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `isAdmin()` w `src/lib/account-role.ts`      | **w mocy** — teraz woła go `src/pages/dashboard.astro`                                      |
+| `src/pages/404.astro`                        | **w mocy**, ale przestaje być celem odmowy; jego wartość to naprawa naruszenia NFR o języku |
+| Faza 2, poz. 3 — `ADMIN_ROUTES` w middleware | **UNIEWAŻNIONE** — martwy mechanizm bez wywołania; middleware wraca do stanu z `HEAD`       |
+| Faza 2, poz. 4 — pusta trasa `/admin`        | **UNIEWAŻNIONE** — zastąpiona warunkową sekcją w `/dashboard`                               |
+| Kryteria 2.5–2.8 i test integracyjny fazy 3  | **PRZEPISANE** — dowodzą obecności/braku sekcji, nie identyczności ciał 404                 |
+
+Reguła z CLAUDE.md o ochronie tras w middleware **nie jest naruszona**: `/dashboard` jest
+w `PROTECTED_ROUTES`, więc ochrona trasy zostaje w middleware. Rozstrzyga się tu tylko, **co**
+strona renderuje, nie **czy** wpuszcza.
+
 ## Critical Implementation Details
 
-**Timing & lifecycle — `/admin` NIE może wejść do `PROTECTED_ROUTES`.** Trasa z tej listy dostaje
-`redirect("/auth/signin")` dla niezalogowanego, a przekierowanie **ujawnia, że trasa istnieje** —
-prawdziwe pudło nie przekierowuje. FR-015 tego zabrania. Bramka admina musi więc obsłużyć oba
-przypadki — brak sesji i sesja bez roli — tą samą odpowiedzią 404, i musi być rozstrzygnięta
-**przed** logiką przekierowania z `PROTECTED_ROUTES`.
+**Debug & observability — cena seeda po e-mailu jest realna i trzeba ją opłacić w fazie 1.**
+Administrator, któremu seed cicho nie nadał roli, po prostu nie zobaczy sekcji — bez żadnego
+komunikatu, bo dla konta bez roli brak sekcji jest stanem poprawnym. Dlatego zapytanie
+kontrolne w fazie 1 nie jest opcjonalne: bez niego „nie mam roli" i „wszystko działa, nie jestem
+adminem" są nieodróżnialne.
 
-**User experience spec — odmowa musi być identyczna, nie podobna.** `new Response(null, {status: 404})`
-różni się długością ciała od prawdziwego pudła i przez to przecieka. Odmowa dociera do
-`src/pages/404.astro` przez `context.rewrite`, a ta strona ustawia status jawnie
-(`Astro.response.status = 404`) — bez tego przepisanie oddaje 200 i strona błędu wyglądałaby
-jak poprawna odpowiedź.
-
-**Debug & observability — cena 404 jest realna i trzeba ją opłacić w fazie 1.** Administrator,
-któremu seed cicho nie nadał roli, zobaczy 404 i przeczyta to jako zepsutą trasę, nie jako brak
-uprawnień. Dlatego zapytanie kontrolne w fazie 1 nie jest opcjonalne: bez niego jedyny objaw
-nieudanego seeda jest nieodróżnialny od objawu poprawnie działającej odmowy.
+**Timing & lifecycle — na świeżej bazie seed nigdy nie nada roli.** Migracje biegną przed
+rejestracją kont, więc `update … where email = …` dopasowuje zero wierszy. Zmierzone 2026-09-08
+po `db reset`: oba konta z werdyktem „KONTA NIE MA". Na nowym środowisku kolejność jest wymuszona —
+najpierw rejestracja, potem ponowne uruchomienie pliku migracji przez `psql`. Plik migracji jest
+więc jednocześnie migracją i skryptem operacyjnym; to ustalenie do triage'u, nie usterka.
 
 ---
 
@@ -345,44 +369,44 @@ rola w `app_metadata` bez kodu, który ją czyta, jest nieszkodliwa — nic jej 
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czystej bazie: `npx supabase db reset`
-- [x] 1.2 Typy przechodzą: `npx tsc --noEmit`
-- [x] 1.3 Lint przechodzi na zmienionych plikach
-- [x] 1.4 Testy jednostkowe przechodzą: `npm test`
+- [x] 1.1 Migracja stosuje się na czystej bazie: `npx supabase db reset` — 10aa463
+- [x] 1.2 Typy przechodzą: `npx tsc --noEmit` — 10aa463
+- [x] 1.3 Lint przechodzi na zmienionych plikach — 10aa463
+- [x] 1.4 Testy jednostkowe przechodzą: `npm test` — 10aa463
 
 #### Manual
 
-- [x] 1.5 Zapytanie kontrolne pokazuje `admin` przy właściwym adresie
-- [x] 1.6 Zapytanie kontrolne pokazuje jawny wiersz dla konta, którego nie ma
-- [x] 1.7 `npx supabase db reset` przechodzi na bazie bez żadnych kont
+- [x] 1.5 Zapytanie kontrolne pokazuje `admin` przy właściwym adresie — 10aa463
+- [x] 1.6 Zapytanie kontrolne pokazuje jawny wiersz dla konta, którego nie ma — 10aa463
+- [x] 1.7 `npx supabase db reset` przechodzi na bazie bez żadnych kont — 10aa463
 
 ### Phase 2: Bramka i nierozróżnialna odmowa
 
 #### Automated
 
-- [ ] 2.1 Typy przechodzą: `npx tsc --noEmit`
-- [ ] 2.2 Lint przechodzi na zmienionych plikach
-- [ ] 2.3 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.4 Build przechodzi: `npx astro build`
+- [x] 2.1 Typy przechodzą: `npx tsc --noEmit`
+- [x] 2.2 Lint przechodzi na zmienionych plikach
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.4 Build przechodzi: `npx astro build`
 
 #### Manual
 
-- [ ] 2.5 Administrator widzi stronę zastępczą pod `/admin`
-- [ ] 2.6 Zalogowany bez roli admin dostaje 404, nie przekierowanie
-- [ ] 2.7 Niezalogowany dostaje 404, nie przekierowanie
-- [ ] 2.8 Odpowiedź odmowy identyczna z odpowiedzią dla nieistniejącej ścieżki
-- [ ] 2.9 Strona 404 jest po polsku
+- [x] 2.5 Konto administratora widzi sekcję „Administracja" w `/dashboard`
+- [x] 2.6 Konto bez roli nie widzi sekcji ani żadnego jej śladu w źródle strony
+- [x] 2.7 Niezalogowany nadal jest odsyłany na logowanie przez istniejące middleware
+- [x] 2.8 Nie istnieje żadna trasa `/admin` — adres oddaje 404 jak każdy inny nieznany
+- [x] 2.9 Strona 404 jest po polsku
 
 ### Phase 3: Testy granicy
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [ ] 3.3 Testy padają po zdjęciu bramki — zmierzone
-- [ ] 3.4 Lint przechodzi na plikach testowych
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
+- [x] 3.3 Testy padają po zdjęciu warunku `showAdmin` — zmierzone
+- [x] 3.4 Lint przechodzi na plikach testowych
 
 #### Manual
 
-- [ ] 3.5 Test integracyjny czerwienieje po zakomentowaniu bramki, potem przywrócone
-- [ ] 3.6 `context/foundation/test-plan.md` odnotowuje nowy zestaw
+- [x] 3.5 Test integracyjny czerwienieje po zakomentowaniu warunku, potem przywrócone
+- [x] 3.6 `context/foundation/test-plan.md` odnotowuje nowy zestaw

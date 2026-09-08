@@ -7,10 +7,30 @@ import { fetchFavourites, fetchRanking } from "@/lib/generations";
 import { fetchUsageToday, type UsageToday } from "@/lib/limits";
 import { resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
+import { isAdmin } from "@/lib/account-role";
 import type { GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
 const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+/**
+ * Czy pokazac sekcje administratora (F-02, FR-015).
+ *
+ * SEKCJA W PANELU, A NIE OSOBNA TRASA `/admin` — i to jest mocniejsze wobec FR-015,
+ * nie slabsze. FR-015 wymaga, by odmowa nie ujawniala, ze przeglad kont istnieje.
+ * Osobny adres spelnialby to przez WYSILEK: trzeba by go maskowac odpowiedzia
+ * nierozroznialna od nieistniejacej sciezki, z pulapka w postaci przekierowania,
+ * ktore by go zdradzilo. Tutaj nie ma czego odmawiac, bo nie ma adresu do odgadniecia:
+ * nie-admin dostaje panel, admin dostaje panel z jedna sekcja wiecej.
+ *
+ * OCHRONA TRASY ZOSTAJE W MIDDLEWARE. `/dashboard` jest w `PROTECTED_ROUTES`, wiec
+ * regula z CLAUDE.md o middleware-driven auth obowiazuje bez zmian — tutaj rozstrzyga
+ * sie tylko, CO strona renderuje, nie CZY wpuszcza.
+ *
+ * `isAdmin` jest fail-closed, wiec kazde nieoczekiwane `app_metadata` daje `false`
+ * i sekcja po prostu nie powstaje.
+ */
+const showAdmin = isAdmin(Astro.locals.user);
 
 /**
  * Wykorzystanie limitow (FR-012, FR-013).
@@ -107,6 +127,26 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
           )
         }
       </section>
+
+      {
+        /* Sekcja administratora. Stoi NAD zakladkami, obok bloku limitu, bo — tak jak on —
+          dotyczy konta, nie wybranej zakladki. Zwykle konto nie widzi tu NICZEGO: zadnego
+          napisu, zadnej ramki, zadnego sladu, ze cos takiego istnieje. */
+      }
+      {
+        showAdmin && (
+          <section class="border-hairline bg-panel mb-6 rounded-xl border p-4" aria-label="Sekcja administratora">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+              <span class="text-ink text-sm font-medium">Administracja</span>
+              <span class="text-ink-subtle text-xs">Twoje konto ma rolę administratora</span>
+            </div>
+            <p class="text-ink-muted mt-2 text-sm">
+              Przegląd kont — adresy, data rejestracji, liczba generacji i zużycie wobec limitu — stanie tutaj. Nigdy
+              nie pokaże treści cudzych tekstów.
+            </p>
+          </section>
+        )
+      }
 
       <nav class="mb-4 flex gap-2" aria-label="Zakładki panelu">
         {
