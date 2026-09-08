@@ -1,10 +1,10 @@
 ---
 change_id: history-filters
 title: Filtrowanie i szukanie w historii generacji
-status: impl_reviewed
+status: archived
 created: 2026-09-08
 updated: 2026-09-08
-archived_at: null
+archived_at: 2026-09-08T10:16:35Z
 ---
 
 ## Notes
