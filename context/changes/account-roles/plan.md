@@ -384,29 +384,29 @@ rola w `app_metadata` bez kodu, który ją czyta, jest nieszkodliwa — nic jej 
 
 #### Automated
 
-- [x] 2.1 Typy przechodzą: `npx tsc --noEmit`
-- [x] 2.2 Lint przechodzi na zmienionych plikach
-- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
-- [x] 2.4 Build przechodzi: `npx astro build`
+- [x] 2.1 Typy przechodzą: `npx tsc --noEmit` — cda49e5
+- [x] 2.2 Lint przechodzi na zmienionych plikach — cda49e5
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test` — cda49e5
+- [x] 2.4 Build przechodzi: `npx astro build` — cda49e5
 
 #### Manual
 
-- [x] 2.5 Konto administratora widzi sekcję „Administracja" w `/dashboard`
-- [x] 2.6 Konto bez roli nie widzi sekcji ani żadnego jej śladu w źródle strony
-- [x] 2.7 Niezalogowany nadal jest odsyłany na logowanie przez istniejące middleware
-- [x] 2.8 Nie istnieje żadna trasa `/admin` — adres oddaje 404 jak każdy inny nieznany
-- [x] 2.9 Strona 404 jest po polsku
+- [x] 2.5 Konto administratora widzi sekcję „Administracja" w `/dashboard` — cda49e5
+- [x] 2.6 Konto bez roli nie widzi sekcji ani żadnego jej śladu w źródle strony — cda49e5
+- [x] 2.7 Niezalogowany nadal jest odsyłany na logowanie przez istniejące middleware — cda49e5
+- [x] 2.8 Nie istnieje żadna trasa `/admin` — adres oddaje 404 jak każdy inny nieznany — cda49e5
+- [x] 2.9 Strona 404 jest po polsku — cda49e5
 
 ### Phase 3: Testy granicy
 
 #### Automated
 
-- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration`
-- [x] 3.3 Testy padają po zdjęciu warunku `showAdmin` — zmierzone
-- [x] 3.4 Lint przechodzi na plikach testowych
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` — cda49e5
+- [x] 3.2 Testy integracyjne przechodzą: `npm run test:integration` — cda49e5
+- [x] 3.3 Testy padają po zdjęciu warunku `showAdmin` — zmierzone — cda49e5
+- [x] 3.4 Lint przechodzi na plikach testowych — cda49e5
 
 #### Manual
 
-- [x] 3.5 Test integracyjny czerwienieje po zakomentowaniu warunku, potem przywrócone
-- [x] 3.6 `context/foundation/test-plan.md` odnotowuje nowy zestaw
+- [x] 3.5 Test integracyjny czerwienieje po zakomentowaniu warunku, potem przywrócone — cda49e5
+- [x] 3.6 `context/foundation/test-plan.md` odnotowuje nowy zestaw — cda49e5
