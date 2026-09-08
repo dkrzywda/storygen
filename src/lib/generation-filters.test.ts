@@ -108,6 +108,32 @@ describe("escapeLike", () => {
   it("radzi sie z odwrotnym ukosnikiem PRZED znakiem specjalnym", () => {
     expect(escapeLike("\\%")).toBe("\\\\\\%");
   });
+
+  /*
+   * GWIAZDKA — ustalenie F1 przegladu. Do poprawki `*` przechodzil nietkniety, a
+   * PostgREST przepisywal go na `%`, czyli na wieloznacznik dowolnego CIAGU. Zmierzone
+   * wtedy: `q=*` zwracalo wszystkie 7 pozycji konta. Ucieczki dla `*` nie ma (`\*` po
+   * podmianie daje `\%`), wiec schodzi do `_` — wieloznacznika na JEDEN znak.
+   *
+   * Do poprawki oba zestawy byly ZIELONE przy tym bledzie, bo zaden przypadek nie
+   * uzywal gwiazdki. Te testy sa strażnikiem tej poprawki.
+   */
+  it.each([
+    ["*", "_"],
+    ["koty*psy", "koty_psy"],
+    ["*_*", "_\\__"],
+  ])("odwzorowuje gwiazdke w %j na %j", (input, expected) => {
+    expect(escapeLike(input)).toBe(expected);
+  });
+
+  /*
+   * KOLEJNOSC: `*` musi byc podmieniane PO ucieczce `_`. Gdyby bylo przed, wstawione
+   * `_` samo dostaloby ucieczke i gwiazdka stalaby sie literalnym podkresleniem —
+   * czyli nie pasowalaby do niczego zamiast pasowac do jednego znaku.
+   */
+  it("gwiazdka nie zostaje sama poddana ucieczce", () => {
+    expect(escapeLike("*")).not.toBe("\\_");
+  });
 });
 
 describe("hasAnyFilter", () => {

@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase";
 import { escapeLike, type GenerationFilters } from "@/lib/generation-filters";
+import { logApiError } from "@/lib/api-errors";
 import type { GenerationFormat, LengthPreset } from "@/types";
 
 /**
@@ -61,6 +62,22 @@ export async function saveGeneration(supabase: Client, input: SaveGenerationInpu
  */
 export type GenerationOrder = "newest" | "ranked";
 
+/**
+ * Gorna granica liczby zwracanych wierszy — ustalenie F3 przegladu.
+ *
+ * Do tej poprawki odczyt nie mial ZADNEJ granicy, a `GenerationList` hydruje dwie
+ * wyspy Reacta na pozycje (`TitleEditor`, `RatingControls`, oba `client:load`). Przy
+ * dziennym limicie 10 generacji miesiac uzycia to ~300 wierszy, czyli ~600 gorliwie
+ * hydrowanych wysp w jednym dokumencie.
+ *
+ * CENA JEST JAWNA I NIEPRZYJEMNA: bez paginacji limit znaczy CICHE OBCIECIE. Po
+ * przekroczeniu 200 pozycji czesc historii przestanie byc osiagalna, a uzytkownik nie
+ * dowie sie, ze cos odcieto — czyli ta sama klasa milczenia, ktora ta zmiana zwalczala
+ * przy stanach pustych. Wartosc jest dlatego wysoka: przy maksymalnym tempie to ~20 dni
+ * uzycia. WLASCIWA naprawa to paginacja, nie wieksza liczba tutaj.
+ */
+const RESULT_LIMIT = 200;
+
 export interface FetchGenerationsOptions {
   filters?: GenerationFilters;
   order?: GenerationOrder;
@@ -103,12 +120,21 @@ export async function fetchGenerations(supabase: Client, options: FetchGeneratio
 
   // Data rozstrzyga remisy takze w rankingu, zeby kolejnosc byla stabilna miedzy
   // odswiezeniami; bez tego dwie oceny 5/5 zmienialyby miejsca losowo.
-  const ordered =
+  const sorted =
     order === "ranked"
       ? filtered.order("rating", { ascending: false }).order("created_at", { ascending: false })
       : filtered.order("created_at", { ascending: false });
 
-  const { data } = await ordered;
+  const ordered = sorted.limit(RESULT_LIMIT);
+
+  const { data, error } = await ordered;
+  if (error) {
+    // Ustalenie F2 przegladu. Zwracany KSZTALT zostaje pusty — strona ma sie
+    // wyrenderowac — ale awaria musi zostawic slad. Bez tego niedostepna baza dawala
+    // "Nie masz jeszcze zadnych generacji.", czyli TE SAMA kategorie klamstwa, ktora
+    // ta zmiana naprawila dla filtrow, i nie bylo tego widac nigdzie.
+    logApiError("generations/list", "INTERNAL", error);
+  }
   return data ?? [];
 }
 
@@ -147,12 +173,15 @@ export async function fetchFavourites(supabase: Client) {
  * `null` takze przy bledzie bazy, i to jest wybor: niepoprawny uuid konczy sie po
  * stronie Postgresa bledem (`invalid input syntax for type uuid`), a propagowanie go
  * dalej dalo by 500 zamiast 404 i rozroznilo "niepoprawny" od "nie istnieje".
- * Milczace pochloniecie bledu jest tu zgodne z rodzenstwem — pozostale odczyty w tym
- * module tez zwracaja pusto zamiast rzucac (`data ?? []`).
+ * Blad jest POCHLANIANY, ale NIE MILCZACY — ustalenie F2 przegladu. Do tej poprawki
+ * nie zostawial sladu nigdzie, wiec niedostepna baza wygladala jak "nie ma takiej
+ * pozycji" i nie dalo sie tego odroznic po fakcie. Ekran nadal nie rozroznia tych
+ * przypadkow, bo nie moze — ale log rozroznia.
  */
 export async function fetchGenerationById(supabase: Client, id: string) {
   const { data, error } = await supabase.from("generations").select(LIST_COLUMNS).eq("id", id).maybeSingle();
   if (error) {
+    logApiError("generations/byId", "INTERNAL", error);
     return null;
   }
   return data;

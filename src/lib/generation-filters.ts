@@ -79,12 +79,26 @@ export function parseFilters(params: URLSearchParams): GenerationFilters {
  * `100%_pewne` szuka czegos innego, niz uzytkownik napisal — a wynik wyglada sensownie,
  * jest tylko nie ten. To blad niewidoczny, dlatego ma wlasna funkcje i wlasne testy.
  *
- * KOLEJNOSC PODMIAN JEST ISTOTNA: `\` musi byc pierwsze, inaczej ucieczka dodana
- * dla `%` zostanie sama poddana ucieczce w kolejnym przebiegu i wzorzec bedzie szukal
- * doslownego `\`.
+ * KOLEJNOSC PODMIAN JEST ISTOTNA i ma DWA powody, nie jeden:
+ *
+ * 1. `\` musi byc pierwsze, inaczej ucieczka dodana dla `%` zostanie sama poddana
+ *    ucieczce w kolejnym przebiegu i wzorzec bedzie szukal doslownego `\`.
+ * 2. `*` musi byc OSTATNIE, bo wstawia surowe `_` — wieloznacznik, ktory ma taki
+ *    zostac. Podmieniony wczesniej zostalby zjedzony przez ucieczke `_` w kroku 3.
+ *
+ * DLACZEGO `*` W OGOLE TU JEST — ustalenie F1 przegladu, zmierzone 2026-09-08.
+ * PostgREST ma WLASNA warstwe wieloznacznikow nad SQL-em: przepisuje `*` na `%`
+ * wewnatrz wartosci filtra `like`/`ilike`, a `URLSearchParams` przepuszcza `*` bez
+ * kodowania. Zmierzone na koncie z 7 pozycjami: `q=%` zwracalo 1 wiersz (ucieczka
+ * dzialala), a `q=*` zwracalo WSZYSTKIE 7.
+ *
+ * Ucieczki dla `*` NIE MA: `\*` po podmianie daje `\%`, czyli literalny procent
+ * i zero trafien. Dlatego `*` schodzi do `_` — wieloznacznika na JEDEN znak. Cena
+ * jest jawna: `koty*psy` znajdzie i `koty*psy`, i `kotyXpsy`. To falszywe trafienia
+ * zamiast falszywie szerokich, czyli mniejsze zlo, nie brak zla.
  */
 export function escapeLike(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/\*/g, "_");
 }
 
 /** Czy jakikolwiek filtr jest aktywny. Rozstrzyga o stanie pustym i o linku "wyczysc". */

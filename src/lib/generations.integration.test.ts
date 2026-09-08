@@ -361,6 +361,32 @@ describe("filtry historii nie omijaja izolacji kont (R-05)", () => {
       const rows = await fetchGenerations(owner, { filters: { query: "%_pewne" } });
       expect(rows).toHaveLength(1);
     });
+
+    /*
+     * GWIAZDKA NA PRAWDZIWYM ZAPYTANIU — ustalenie F1 przegladu.
+     *
+     * PostgREST ma wlasna warstwe wieloznacznikow nad SQL-em i przepisywal `*` na `%`,
+     * czyli na "dowolny CIAG". Po poprawce `*` schodzi do `_`, czyli "dowolny JEDEN
+     * znak". Temat wlasciciela to "100%_pewne koty", wiec miedzy "100" i "pewne" stoja
+     * DWA znaki (`%` i `_`):
+     *
+     *   przed poprawka: `100%pewne` — pasuje (dowolny ciag)
+     *   po poprawce:    `100_pewne` — NIE pasuje (jeden znak, a stoja dwa)
+     *
+     * To jest przypadek rozrozniajacy: przed poprawka byl zielony przy zlym zachowaniu.
+     */
+    it("gwiazdka pasuje do jednego znaku, nie do dowolnego ciagu", async () => {
+      const rows = await fetchGenerations(owner, { filters: { query: "100*pewne" } });
+      expect(rows).toHaveLength(0);
+    });
+
+    // Kontrola pozytywna do powyzszego: literalny `%`, potem dowolny JEDEN znak, potem
+    // "pewne" — dopasowuje sie, wiec gwiazdka nadal jest uzytecznym wieloznacznikiem.
+    it("gwiazdka laczy sie z literalnym procentem", async () => {
+      const rows = await fetchGenerations(owner, { filters: { query: "100%*pewne" } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].topic).toBe(TOPIC_WITH_WILDCARD);
+    });
   });
 
   describe("izolacja — obcy nie widzi nic, przy zadnym filtrze", () => {
