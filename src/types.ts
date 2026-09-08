@@ -40,6 +40,19 @@ export type GenerationFormat = "joke" | "story";
 /** Preset dlugosci wybierany przez uzytkownika (FR-005). */
 export type LengthPreset = "short" | "medium" | "long";
 
+/**
+ * Rola konta (F-02, PRD v2 § Access Control).
+ *
+ * Zamkniety zestaw, nie `string` — literal wymusza blad kompilacji przy literowce
+ * w porownaniu, zamiast cichego `false`.
+ *
+ * Rola mieszka w `app_metadata` uzytkownika Supabase, wiec middleware dostaje ja
+ * razem z sesja i nie placi za nia dodatkowym zapytaniem. NIE jest wyprowadzana
+ * z adresu e-mail przy zadaniu: adres to dane od uzytkownika, a traktowanie go jako
+ * roszczenia o uprawnienia czyniloby sprawdzenie podrabialnym.
+ */
+export type AccountRole = "user" | "admin";
+
 /** Mapa nazwa pola → komunikat po polsku. Puste pole klucza (`_`) oznacza blad calego formularza. */
 export type ApiFieldErrors = Record<string, string>;
 
