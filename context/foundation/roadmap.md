@@ -9,7 +9,7 @@ main_goal: quality
 top_blocker: none
 milestone_id: admin-account-visibility
 milestone_seq: 2
-milestone_status: open
+milestone_status: done
 ---
 
 # Roadmap: Storygen
@@ -23,7 +23,7 @@ milestone_status: open
 
 ## Milestone
 
-**M-2: Rola administratora i przegląd kont** — Status: open
+**M-2: Rola administratora i przegląd kont** — Status: done
 
 - **Intent:** Wprowadzić drugą rolę i jeden ekran tylko do czytania, który pokazuje
   administratorowi konta i ich liczby — bez treści generacji. Kamień dowodzi, że w tej
@@ -570,6 +570,7 @@ Co z tego wynika dla czytelnika:
 ## Milestone History
 
 - **M-1: MVP — pełna ścieżka od rejestracji do historii** (`full-path-mvp`) — closed 2026-09-08. Wszystkie trzynaście wymagań must-have z PRD dowiezione i wdrożone na produkcję (Worker `5402fc2a`, schemat Supabase z sześcioma migracjami). Trzy plastry — `S-02`, `S-03`, `S-07` — zamknięte wstecznie, bez folderu zmiany i bez planu.
+- **M-2: Rola administratora i przegląd kont** (`admin-account-visibility`) — closed 2026-09-09. Druga rola i przegląd kont tylko do czytania dowiezione i wdrożone na produkcję (Worker `4451375b`, funkcja `accounts_overview()` w schemacie produkcyjnym). Granica FR-014 utrzymana: przegląd niesie liczby, nigdy treść generacji, a polityka RLS na `generations` nie została poszerzona ani o wiersz. Dwie reguły dopisane do `lessons.md`: o kopiowaniu listy rol do `revoke` w nowej funkcji uprzywilejowanej i o tym, że `try/catch` przy odczycie nie chroni formatowania w szablonie.
 
 ## Done
 
