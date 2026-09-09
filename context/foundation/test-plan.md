@@ -2,7 +2,7 @@
 project: "Storygen"
 version: 1
 created: 2026-09-03
-updated: 2026-09-08
+updated: 2026-09-09
 runner: "Vitest 4.1.11 — `npm test`"
 ---
 
@@ -27,6 +27,7 @@ odpowiada 200, wygląda normalnie, a gwarancja jest już naruszona.
 | R-06 | Wyjście łamie kontrakt formatu, a mimo to trafia do użytkownika                               | Tekst jest poprawny językowo, tylko za długi albo bez puenty                            | wysoka        | `src/lib/format-contract.test.ts`          | **częściowo pokryte** — patrz zestaw |
 | R-07 | Licznik limitu nie domyka się i sufit kosztu nie działa                                       | Generowanie działa dalej — awarią jest rachunek, nie błąd                               | wysoka        | `src/lib/limits.test.ts` + `.integration.` | **pokryte**                          |
 | R-08 | Rola administratora daje się podrobić albo sekcja admina wycieka do zwykłego konta       | Panel renderuje się poprawnie, status 200 — ktoś po prostu widzi sekcję, której nie powinien | **krytyczna** | `src/lib/account-role.test.ts` + `.integration.` | **pokryte**                          |
+| R-09 | Przegląd kont wystawia dane szerzej, niż zamierzono — cudzą treść albo komukolwiek poza administratorem | Panel renderuje się poprawnie, status 200 — ktoś po prostu widzi więcej, niż powinien | **krytyczna** | `src/lib/admin-accounts.integration.test.ts` | **pokryte** |
 
 **R-06 jest pokryte tylko częściowo i to jest świadome.** Szczegóły w jego zestawie poniżej —
 przeczytaj je, zanim uznasz kontrakt formatu za zabezpieczony.
@@ -237,6 +238,50 @@ Po przywróceniu 241 jednostkowych i 30 integracyjnych na zielono.
 2. **Warunku w szablonie.** Że `dashboard.astro` renderuje sekcję wtedy i tylko wtedy, gdy
    `isAdmin` zwraca `true`, nie sprawdza tu nic — ten runner nie mówi po HTTP. Zweryfikowane
    ręcznie: sekcja zniknęła po zdjęciu roli i wróciła po jej przywróceniu.
+
+## Zestaw R-09 — szczelność przeglądu kont
+
+**Plik:** `src/lib/admin-accounts.integration.test.ts` (3 przypadki, wymaga `npx supabase start`).
+
+To **druga funkcja w tym projekcie omijająca RLS**, i o szerszym zasięgu niż pierwsza:
+`accounts_overview()` czyta `auth.users` **wszystkich** kont. Pierwsza (`usage_today` z `S-04`)
+dostała w przeglądzie ustalenie krytyczne — przy tej stawka jest wyższa.
+
+**Dlaczego bramki nie da się wyrazić grantem, i co z tego wynika dla testów.** Rola admina
+jest **danymi** w `app_metadata`, nie rolą bazodanową, więc `authenticated` **musi** mieć
+prawo wykonania — inaczej administrator też by go nie miał. O dostępie decyduje warunek
+w środku funkcji. Ten zestaw pilnuje dokładnie tego rozdziału: **prawo wykonania nie oznacza
+dostępu do danych**.
+
+**Przypadki.** Konto bez roli dostaje **zero wierszy, nie błąd** — pusty zbiór jest
+nieodróżnialny od „brak kont", więc nie ujawnia, że przegląd istnieje (FR-015); wyjątek
+potwierdzałby jego istnienie każdemu, kto zgadnie nazwę funkcji. `anon` **nie wykona**
+funkcji — to strażnik regresu z `S-04`, gdzie `revoke execute … from public` nie odebrał
+prawa roli `anon`, bo Supabase dokłada jawne granty przez `alter default privileges`.
+Trzeci przypadek jest **kontrolą przeciw fałszywej zieleni**: konto testowe samo istnieje,
+a mimo to jego wynik jest pusty — bez tego „zero wierszy" mogłoby znaczyć „baza jest pusta",
+a nie „nie masz dostępu".
+
+**Zmierzona skuteczność, nie założona.** 2026-09-09 zdjęto z funkcji warunek roli
+(`create or replace` bez `where exists`): dwa przypadki zaczerwieniły się, `exit=1`.
+Po przywróceniu z pliku migracji: 53 testy integracyjne, `exit=0`, `anon_moze = f`.
+
+**Czego ten zestaw NIE dowodzi** — świadome luki, nie przeoczenia:
+
+1. **Ścieżki pozytywnej.** Zbudowanie konta *z rolą* wymaga zapisu do
+   `auth.users.raw_app_meta_data`, na co klucz publishable nie ma prawa — a `service_role`
+   strażnik odrzuca, bo omija RLS i uczyniłby cały zestaw bezwartościowym. Że administrator
+   dostaje wiersze, zmierzono ręcznie 2026-09-09.
+2. **Braku pól z treścią.** Dla konta bez roli wynik jest **pusty**, więc nie ma czego
+   obejrzeć. Gwarancja jest **strukturalna, nie testowa**: funkcja zwraca pięć kolumn
+   (`email, registered_at, generations, used_today, own_limit`) i nie ma wśród nich
+   `topic`, `title` ani `content`. Zmierzone w fazie 1 przez `proargnames`.
+
+**Uwaga środowiskowa — zmierzone 2026-09-09.** Zestaw `R-07` zużywa dobowy sufit aplikacji
+i po trzech przebiegach `npm run test:integration` **kończy się kodem 1 przy zerze padniętych
+testów** — jego `beforeAll` rzuca, bo brakuje wolnych miejsc. Objaw jest myląco łagodny
+(„53 passed"), a komenda zawodzi. Czyść `public.generation_attempts` przed pomiarem
+i czytaj **kod wyjścia**, nie licznik.
 
 ## Jak to uruchomić
 

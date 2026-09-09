@@ -337,41 +337,41 @@ z ręcznym zaksięgowaniem wersji w `supabase_migrations.schema_migrations` — 
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czystej bazie: `npx supabase db reset`
-- [x] 1.2 Typy przechodzą: `npx tsc --noEmit`
-- [x] 1.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 1.1 Migracja stosuje się na czystej bazie: `npx supabase db reset` — b0e8347
+- [x] 1.2 Typy przechodzą: `npx tsc --noEmit` — b0e8347
+- [x] 1.3 Testy jednostkowe przechodzą: `npm test` — b0e8347
 
 #### Manual
 
-- [x] 1.4 Zapytanie kontrolne: `anon` nie może wykonać, `authenticated` może
-- [x] 1.5 Administrator dostaje wiersze, konto bez roli zero
-- [x] 1.6 Żadna kolumna wyniku nie niesie treści generacji
+- [x] 1.4 Zapytanie kontrolne: `anon` nie może wykonać, `authenticated` może — b0e8347
+- [x] 1.5 Administrator dostaje wiersze, konto bez roli zero — b0e8347
+- [x] 1.6 Żadna kolumna wyniku nie niesie treści generacji — b0e8347
 
 ### Phase 2: Odczyt i widok
 
 #### Automated
 
-- [ ] 2.1 Typy przechodzą: `npx tsc --noEmit`
-- [ ] 2.2 Lint przechodzi na zmienionych plikach
-- [ ] 2.3 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.4 Build przechodzi: `npx astro build`
+- [x] 2.1 Typy przechodzą: `npx tsc --noEmit`
+- [x] 2.2 Lint przechodzi na zmienionych plikach
+- [x] 2.3 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.4 Build przechodzi: `npx astro build`
 
 #### Manual
 
-- [ ] 2.5 Administrator widzi tabelę kont z adresem i liczbami
-- [ ] 2.6 Konto bez roli nie widzi sekcji ani jej śladu w źródle
-- [ ] 2.7 Zużycie dobowe zgadza się z licznikiem własnego konta
-- [ ] 2.8 W źródle strony nie ma treści generacji
+- [x] 2.5 Administrator widzi tabelę kont z adresem i liczbami
+- [x] 2.6 Konto bez roli nie widzi sekcji ani jej śladu w źródle
+- [x] 2.7 Zużycie dobowe zgadza się z licznikiem własnego konta
+- [x] 2.8 W źródle strony nie ma treści generacji
 
 ### Phase 3: Testy granicy
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 3.2 Testy integracyjne przechodzą, kod wyjścia 0: `npm run test:integration`
-- [ ] 3.3 Mutacja bramki czerwieni zestaw — zmierzone
-- [ ] 3.4 Lint przechodzi na plikach testowych
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 3.2 Testy integracyjne przechodzą, kod wyjścia 0: `npm run test:integration`
+- [x] 3.3 Mutacja bramki czerwieni zestaw — zmierzone
+- [x] 3.4 Lint przechodzi na plikach testowych
 
 #### Manual
 
-- [ ] 3.5 `context/foundation/test-plan.md` odnotowuje `R-09` i jego zestaw
+- [x] 3.5 `context/foundation/test-plan.md` odnotowuje `R-09` i jego zestaw

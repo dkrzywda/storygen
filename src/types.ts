@@ -53,6 +53,28 @@ export type LengthPreset = "short" | "medium" | "long";
  */
 export type AccountRole = "user" | "admin";
 
+/**
+ * Wiersz przegladu kont dla administratora (S-09, FR-014).
+ *
+ * LICZBY, NIGDY TRESC. Ten typ nie ma i nie moze miec pola z tematem, tytulem
+ * ani tekstem generacji — to granica zapisana przy FR-014 w PRD v2 i wlasnie ona
+ * utrzymuje NFR o izolacji kont nienaruszony. Dolozenie tu pola z trescia jest
+ * zmiana w modelu dostepu, nie rozszerzeniem widoku.
+ *
+ * `registeredAt` jest `Date`, nie stringiem: RPC oddaje `timestamptz` jako tekst,
+ * a mapowanie na `Date` dzieje sie raz, w `@/lib/admin-accounts` — tak samo jak
+ * `resetsAt` w `UsageToday`.
+ */
+export interface AccountOverviewRow {
+  email: string;
+  registeredAt: Date;
+  /** Liczba generacji ogolem na tym koncie. */
+  generations: number;
+  /** Zuzycie dzisiejsze wobec `ownLimit` — obie liczby przychodza z bazy. */
+  usedToday: number;
+  ownLimit: number;
+}
+
 /** Mapa nazwa pola → komunikat po polsku. Puste pole klucza (`_`) oznacza blad calego formularza. */
 export type ApiFieldErrors = Record<string, string>;
 

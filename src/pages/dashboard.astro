@@ -5,10 +5,11 @@ import GenerationList from "@/components/generations/GenerationList.astro";
 import { createClient } from "@/lib/supabase";
 import { fetchFavourites, fetchRanking } from "@/lib/generations";
 import { fetchUsageToday, type UsageToday } from "@/lib/limits";
-import { resetTimeFormat } from "@/lib/generation-labels";
+import { dateFormat, resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/account-role";
-import type { GenerationFormat } from "@/types";
+import { fetchAccountsOverview } from "@/lib/admin-accounts";
+import type { AccountOverviewRow, GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
 const supabase = createClient(Astro.request.headers, Astro.cookies);
@@ -31,6 +32,34 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
  * i sekcja po prostu nie powstaje.
  */
 const showAdmin = isAdmin(Astro.locals.user);
+
+/**
+ * Przeglad kont (S-09, FR-014).
+ *
+ * ODCZYT TYLKO GDY `showAdmin` — konto bez roli nie generuje nawet zapytania.
+ * Bramka jest DODATKOWO w samej funkcji SQL (`accounts_overview()` oddaje pusty
+ * zbior bez roli `admin`), wiec te dwa sprawdzenia sa nadmiarowe wobec siebie
+ * CELOWO: to warstwa w bazie jest granica bezpieczenstwa, a ten warunek tylko
+ * oszczedza obrot.
+ *
+ * `null` znaczy "nie wiem", NIE "brak kont" — dokladnie jak `usage` powyzej. Pusta
+ * tablica to inna rzecz: to poprawna odpowiedz bazy, a interfejs musi je rozroznic,
+ * bo "nie udalo sie odczytac" i "nie ma zadnych kont" to dwa rozne komunikaty.
+ *
+ * Nieudany odczyt NIE wywraca panelu: ranking i ulubione nie maja z przegladem
+ * nic wspolnego.
+ */
+let accounts: AccountOverviewRow[] | null = null;
+if (showAdmin && supabase) {
+  try {
+    accounts = await fetchAccountsOverview(supabase);
+  } catch (error) {
+    logApiError("dashboard/accounts", "INTERNAL", error);
+  }
+}
+
+/** Sufit z `accounts_overview()`. Rowna liczba wierszy znaczy, ze lista MOGLA zostac obcieta. */
+const ACCOUNTS_LIMIT = 200;
 
 /**
  * Wykorzystanie limitow (FR-012, FR-013).
@@ -138,12 +167,62 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
           <section class="border-hairline bg-panel mb-6 rounded-xl border p-4" aria-label="Sekcja administratora">
             <div class="flex flex-wrap items-baseline justify-between gap-x-4">
               <span class="text-ink text-sm font-medium">Administracja</span>
-              <span class="text-ink-subtle text-xs">Twoje konto ma rolę administratora</span>
+              <span class="text-ink-subtle text-xs">
+                {accounts === null ? "Twoje konto ma rolę administratora" : `${String(accounts.length)} kont`}
+              </span>
             </div>
-            <p class="text-ink-muted mt-2 text-sm">
-              Przegląd kont — adresy, data rejestracji, liczba generacji i zużycie wobec limitu — stanie tutaj. Nigdy
-              nie pokaże treści cudzych tekstów.
-            </p>
+
+            {/* TRZY STANY, NIE DWA. `null` to "nie udalo sie odczytac", pusta tablica to
+                "nie ma kont" — pokazanie jednego zamiast drugiego byloby twierdzeniem
+                o stanie, ktorego nie znamy. Ten sam wybor co przy liczniku limitu wyzej. */}
+            {accounts === null ? (
+              <p class="text-ink-muted mt-2 text-sm">
+                Nie udało się odczytać przeglądu kont. Odśwież stronę za chwilę.
+              </p>
+            ) : accounts.length === 0 ? (
+              <p class="text-ink-muted mt-2 text-sm">Nie ma jeszcze żadnych kont.</p>
+            ) : (
+              <>
+                <div class="mt-3 overflow-x-auto">
+                  <table class="w-full text-left text-sm">
+                    <thead class="text-ink-subtle text-xs">
+                      <tr>
+                        <th class="py-1 pr-4 font-medium">Konto</th>
+                        <th class="py-1 pr-4 font-medium">Rejestracja</th>
+                        <th class="py-1 pr-4 text-right font-medium">Generacje</th>
+                        <th class="py-1 text-right font-medium">Dziś</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-ink-muted">
+                      {accounts.map((account) => (
+                        <tr class="border-hairline border-t">
+                          <td class="text-ink py-2 pr-4 break-all">{account.email}</td>
+                          <td class="py-2 pr-4 whitespace-nowrap">{dateFormat.format(account.registeredAt)}</td>
+                          <td class="py-2 pr-4 text-right">{account.generations}</td>
+                          <td class="py-2 text-right whitespace-nowrap">
+                            {account.usedToday} z {account.ownLimit}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Sufit bez komunikatu zamienia "widzisz wszystko" w "widzisz czesc"
+                      bez sladu. Rowna liczba wierszy znaczy, ze lista MOGLA zostac obcieta —
+                      nie ze zostala, bo kont moze byc dokladnie tyle. */}
+                {accounts.length === ACCOUNTS_LIMIT && (
+                  <p class="text-ink-subtle mt-2 text-xs">
+                    Pokazano pierwsze {ACCOUNTS_LIMIT} kont, od najnowszego. Jeśli jest ich więcej, reszta nie jest tu
+                    widoczna.
+                  </p>
+                )}
+
+                <p class="text-ink-subtle mt-2 text-xs">
+                  Przegląd pokazuje wyłącznie liczby. Nigdy nie pokaże treści cudzych tekstów.
+                </p>
+              </>
+            )}
           </section>
         )
       }

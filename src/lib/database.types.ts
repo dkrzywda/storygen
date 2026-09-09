@@ -93,6 +93,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accounts_overview: {
+        Args: never;
+        Returns: {
+          email: string;
+          generations: number;
+          own_limit: number;
+          registered_at: string;
+          used_today: number;
+        }[];
+      };
       daily_app_ceiling: { Args: never; Returns: number };
       daily_per_account: { Args: never; Returns: number };
       record_attempt_if_allowed: { Args: { p_format: string }; Returns: string };
