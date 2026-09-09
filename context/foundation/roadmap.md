@@ -3,7 +3,7 @@ project: "Storygen"
 version: 1
 status: draft
 created: 2026-09-03
-updated: 2026-09-08
+updated: 2026-09-09
 prd_version: 2
 main_goal: quality
 top_blocker: none
@@ -106,7 +106,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done   |
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
-| S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | in-progress |
+| S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
 
 ## Streams
 
@@ -414,7 +414,7 @@ w celu wylistowania kont.
   w przeglądzie. Błąd w zakresie takiej funkcji przecieka treść, której FR-014 zabrania
   wprost. Sekwencjonowane po `F-02`, bo bez roli nie ma czego sprawdzać, a przy celu
   `quality` ekran bez granicy dostępu nie jest połową funkcji, tylko wyciekiem.
-- **Status:** in-progress
+- **Status:** done
 
 ## Dług procesowy — 2026-09-07
 
@@ -583,3 +583,4 @@ Co z tego wynika dla czytelnika:
 - **S-03: mieć każdą udaną generację zapisaną na koncie bez akcji „zapisz"** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu, jak `S-02`. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
 - **S-07: wybrać format „opowiadanie" i dostać tekst z początkiem i końcem** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu, jak `S-02`. Jakość promptu dla tego formatu pozostaje niezmierzona. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
 - **F-02: (foundation) konto niesie rolę, serwer potrafi na jej podstawie odmówić dostępu do trasy, a dwa istniejące konta mają role nadane** — Archived 2026-09-08 → `context/archive/2026-09-08-account-roles/`. Lesson: `context/foundation/lessons.md` § „Zielone czytaj z tego, co zmieniłoby się przy porażce".
+- **S-09: administrator widzi listę kont z datą rejestracji, liczbą generacji i zużyciem wobec dziennego limitu na konto; kto administratorem nie jest, dostaje odmowę, która nie ujawnia, czy przegląd w ogóle istnieje** — Archived 2026-09-09 → `context/archive/2026-09-08-admin-account-overview/`. Lesson: `context/foundation/lessons.md` § „Nowa funkcja uprzywilejowana kopiuje listę rol" oraz § „Degradacja odczytu nie chroni renderowania".

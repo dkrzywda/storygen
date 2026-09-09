@@ -1,10 +1,10 @@
 ---
 change_id: admin-account-overview
 title: Przegląd kont dla administratora
-status: impl_reviewed
+status: archived
 created: 2026-09-08
 updated: 2026-09-09
-archived_at: null
+archived_at: 2026-09-09T08:57:46Z
 ---
 
 ## Notes
