@@ -32,10 +32,20 @@ select
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'accounts_overview')          as funkcja,
 
-  -- UPRAWNIENIA — najwazniejsze trzy wiersze tej kontroli. Regres z S-04:
+  -- UPRAWNIENIA — najwazniejsza czesc tej kontroli. Regres z S-04:
   -- `revoke ... from public` nie odbiera prawa `anon`, wiec bez tego sprawdzenia
   -- niezalogowany moglby wywolac przeglad wszystkich kont.
+  --
+  -- `service_role` DOPISANY — ustalenie F2 przegladu, 2026-09-09. Wczesniej ta
+  -- kontrola sprawdzala tylko `anon` i `authenticated`, wiec gdy migracja pominela
+  -- `service_role` w `revoke`, werdykt i tak wypisal `OK`. Sprawdzenie bylo
+  -- NIEWRAZLIWE NA AWARIE, KTORA MIALO WYKRYWAC — regula z `lessons.md`
+  -- § "Zielone czytaj z tego, co zmienilo by sie przy porazce".
+  --
+  -- KAZDA ROLA, KTOREJ DOTYCZY `revoke`, MUSI MIEC TU SWOJ WIERSZ. Rola pominieta
+  -- w kontroli to grant, ktory przejdzie na zielono.
   has_function_privilege('anon',          'public.accounts_overview()', 'execute') as anon_moze,
+  has_function_privilege('service_role',  'public.accounts_overview()', 'execute') as service_moze,
   has_function_privilege('authenticated', 'public.accounts_overview()', 'execute') as auth_moze,
 
   -- Funkcja MUSI byc `security definer` — bez tego `authenticated` nie ma prawa
@@ -50,6 +60,8 @@ select
       then 'BLAD: funkcji nie ma'
     when has_function_privilege('anon', 'public.accounts_overview()', 'execute')
       then 'BLAD: anon moze wykonac — przeglad kont wyciekl niezalogowanym'
+    when has_function_privilege('service_role', 'public.accounts_overview()', 'execute')
+      then 'BLAD: service_role ma prawo wykonania — revoke pominal te role'
     when not has_function_privilege('authenticated', 'public.accounts_overview()', 'execute')
       then 'BLAD: authenticated nie moze wykonac — admin tez nie zobaczy przegladu'
     else 'OK'

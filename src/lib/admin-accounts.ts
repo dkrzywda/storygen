@@ -41,5 +41,6 @@ export async function fetchAccountsOverview(supabase: Client): Promise<AccountOv
     generations: row.generations,
     usedToday: row.used_today,
     ownLimit: row.own_limit,
+    rowLimit: row.row_limit,
   }));
 }

@@ -73,6 +73,15 @@ export interface AccountOverviewRow {
   /** Zuzycie dzisiejsze wobec `ownLimit` — obie liczby przychodza z bazy. */
   usedToday: number;
   ownLimit: number;
+  /**
+   * Sufit liczby wierszy, jaki nalozyla funkcja w bazie (ustalenie F3 przegladu).
+   *
+   * Przychodzi Z BAZY, a nie ze stalej w widoku, i to jest istota tego pola: gdy
+   * liczba wierszy rowna sie temu sufitowi, lista MOGLA zostac obcieta i interfejs
+   * musi to powiedziec. Kopia tej liczby po stronie widoku ciszalaby ten komunikat
+   * przy kazdej zmianie sufitu w SQL — bez zadnego bledu.
+   */
+  rowLimit: number;
 }
 
 /** Mapa nazwa pola → komunikat po polsku. Puste pole klucza (`_`) oznacza blad calego formularza. */

@@ -100,6 +100,7 @@ export type Database = {
           generations: number;
           own_limit: number;
           registered_at: string;
+          row_limit: number;
           used_today: number;
         }[];
       };

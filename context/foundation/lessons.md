@@ -104,3 +104,42 @@
   Test, który faktycznie wykonuje ścieżkę, a nie sąsiednią. Sprawdzenie niewrażliwe na
   awarię, którą ma wykrywać, nie jest sprawdzeniem.
 - **Applies to**: all
+
+## Nowa funkcja uprzywilejowana kopiuje listę rol, nie wymyśla jej
+
+- **Context**: Każda nowa funkcja `security definer` w `supabase/migrations/` — czyli każda,
+  która celowo omija RLS. Dotyczy zarówno samej migracji, jak i skryptu kontrolnego, który
+  po niej sprawdza uprawnienia.
+- **Problem**: 2026-09-09, `accounts_overview()`. Migracja zrobiła
+  `revoke execute … from public, anon`. Wszystkie **cztery** poprzednie uprzywilejowane funkcje
+  w tym repo wymieniają trzy role: `public, anon, service_role` (`20260907192600:127`,
+  `20260907221126:85`, `20260907221925:135` i `:142`). Zmierzone:
+  `has_function_privilege('service_role', …)` zwracało `t` — prawo faktycznie zostało. Skrypt
+  kontrolny sprawdzał `anon` i `authenticated`, ale **nie** `service_role`, więc wypisał `OK`.
+  Dostęp nie przeciekł tylko dlatego, że `auth.uid()` jest `null` dla tej roli — czyli uratował
+  nas przypadek w bramce, nie sprawdzenie.
+- **Rule**: Pisząc `revoke`/`grant` dla nowej funkcji uprzywilejowanej, **przeczytaj poprzednią
+  taką migrację i skopiuj z niej listę rol** — nie odtwarzaj jej z pamięci. Skrypt kontrolny musi
+  sprawdzać `has_function_privilege` dla **każdej** roli, której `revoke` dotyczy; rola pominięta
+  w kontroli to grant, który przejdzie na zielono.
+- **Applies to**: plan, implement, impl-review
+
+## Degradacja odczytu nie chroni renderowania
+
+- **Context**: Każdy komponent Astro, który czyta dane w `try/catch` we frontmatterze,
+  a potem formatuje je w szablonie — datami, liczbami, `Intl.*`. Dotyczy zwłaszcza sekcji,
+  które mają degradować się osobno od reszty strony.
+- **Problem**: 2026-09-09, `dashboard.astro`. Odczyt przeglądu kont stoi w `try/catch`,
+  a `null` znaczy „nie wiem" i sekcja pokazuje komunikat, nie wywracając panelu. Ale
+  `dateFormat.format(account.registeredAt)` stoi w **szablonie**, poza tym blokiem.
+  Zmierzone: `auth.users.email` i `created_at` mają `is_nullable = YES`, a wygenerowany
+  `database.types.ts` deklaruje je jako nie-null — typ jest **węższy niż schemat**. Wartość
+  nieparsowalna w dacie rzuciłaby więc z `Intl.format`, czyli **z szablonu**, wywracając całą
+  stronę — łącznie z rankingiem i ulubionymi, które z tą sekcją nie mają nic wspólnego.
+  Ostrożny `try` przy odczycie dał złudzenie izolacji, której nie ma.
+- **Rule**: `try/catch` przy odczycie chroni tylko odczyt. Jeśli sekcja ma degradować się
+  osobno, **przenieś formatowanie do frontmatteru, do tego samego bloku co odczyt** — albo
+  zabezpiecz wartość przed wejściem do szablonu. Nie zakładaj też, że typy generowane
+  z `auth.*` odpowiadają schematowi: sprawdź `is_nullable`, zanim potraktujesz kolumnę
+  jako pewną.
+- **Applies to**: plan, implement, impl-review

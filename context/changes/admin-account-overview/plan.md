@@ -174,6 +174,19 @@ Moduł dostępu, typ i tabela w sekcji panelu, z degradacją przy błędzie.
 
 ### Changes Required:
 
+#### 0. Regeneracja typów bazy
+
+**File**: `src/lib/database.types.ts`
+
+**Intent**: Bez regeneracji `.rpc("accounts_overview")` nie ma typu — nowa funkcja z fazy 1
+nie istnieje w wygenerowanym pliku. Krok dopisany po przeglądzie (ustalenie F7): pierwotny
+plan go pomijał, choć `CLAUDE.md` dokumentuje go jako wymagany po każdej zmianie schematu.
+
+**Contract**: `npx supabase gen types typescript --local > src/lib/database.types.ts`,
+potem `npx prettier --write` na tym pliku — CLI nie zna Prettiera. Plik jest ESLint-ignorowany
+jako wyjście generatora. **Sprawdź zakres diffa**: regeneracja ma dołożyć wyłącznie sygnaturę
+nowej funkcji; cokolwiek więcej znaczy, że schemat lokalny rozjechał się z migracjami.
+
 #### 1. Typ wiersza przeglądu
 
 **File**: `src/types.ts`

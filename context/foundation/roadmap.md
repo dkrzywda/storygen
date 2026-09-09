@@ -106,7 +106,7 @@ sekwencjonowania `learn` decyduje o remisach.
 | —    | `generation-rating`          | ocenić tekst gwiazdkami, zobaczyć ranking per format i ulubione    | S-03          | — (poza planem i poza PRD)                    | done   |
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
-| S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | proposed |
+| S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | in-progress |
 
 ## Streams
 
@@ -414,7 +414,7 @@ w celu wylistowania kont.
   w przeglądzie. Błąd w zakresie takiej funkcji przecieka treść, której FR-014 zabrania
   wprost. Sekwencjonowane po `F-02`, bo bez roli nie ma czego sprawdzać, a przy celu
   `quality` ekran bez granicy dostępu nie jest połową funkcji, tylko wyciekiem.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Dług procesowy — 2026-09-07
 

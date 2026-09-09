@@ -49,17 +49,44 @@ const showAdmin = isAdmin(Astro.locals.user);
  * Nieudany odczyt NIE wywraca panelu: ranking i ulubione nie maja z przegladem
  * nic wspolnego.
  */
-let accounts: AccountOverviewRow[] | null = null;
+/**
+ * Wiersz gotowy do wyswietlenia: data juz sformatowana, nie surowy `Date`.
+ *
+ * USTALENIE F4 PRZEGLADU. Formatowanie MUSI stac w tym samym `try`, co odczyt.
+ * Wczesniej `dateFormat.format(...)` stalo w szablonie, czyli POZA blokiem ponizej —
+ * a wtedy wartosc nieparsowalna rzucalaby z `Intl.format` przy renderowaniu i wywracala
+ * CALA strone, lacznie z rankingiem i ulubionymi, ktore z ta sekcja nie maja nic
+ * wspolnego. Ostrozny `try` przy odczycie dawal zludzenie izolacji, ktorej nie bylo.
+ *
+ * Dlaczego to nie jest paranoja: `auth.users.email` i `created_at` sa nullowalne
+ * (`is_nullable = YES`, zmierzone), a wygenerowany `database.types.ts` deklaruje je jako
+ * nie-null — typ jest WEZSZY NIZ SCHEMAT. Dzis nieosiagalne, bo rejestracja jest tylko
+ * e-mailem i haslem; osiagalne przy logowaniu anonimowym albo po numerze telefonu.
+ */
+type AccountRowView = AccountOverviewRow & { registeredLabel: string };
+
+let accounts: AccountRowView[] | null = null;
 if (showAdmin && supabase) {
   try {
-    accounts = await fetchAccountsOverview(supabase);
+    const rows = await fetchAccountsOverview(supabase);
+    accounts = rows.map((row) => ({ ...row, registeredLabel: dateFormat.format(row.registeredAt) }));
   } catch (error) {
     logApiError("dashboard/accounts", "INTERNAL", error);
   }
 }
 
-/** Sufit z `accounts_overview()`. Rowna liczba wierszy znaczy, ze lista MOGLA zostac obcieta. */
-const ACCOUNTS_LIMIT = 200;
+/**
+ * Czy lista kont MOGLA zostac obcieta — ustalenie F3 przegladu.
+ *
+ * Sufit przychodzi Z BAZY, w kolumnie `row_limit`, a nie ze stalej w tym pliku.
+ * Wczesniej liczba 200 stala tu drugi raz, obok `limit 200` w SQL: zmiana sufitu
+ * w migracji uciszalaby wtedy ten komunikat BEZ ZADNEGO BLEDU, a lista znowu
+ * twierdzilaby "widzisz wszystko", gdy widzisz czesc.
+ *
+ * "MOGLA", nie "zostala": kont moze byc dokladnie tyle, ile sufit — stad ostrozne
+ * brzmienie komunikatu.
+ */
+const accountsTruncated = accounts !== null && accounts.length > 0 && accounts.length === accounts[0].rowLimit;
 
 /**
  * Wykorzystanie limitow (FR-012, FR-013).
@@ -197,7 +224,7 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                       {accounts.map((account) => (
                         <tr class="border-hairline border-t">
                           <td class="text-ink py-2 pr-4 break-all">{account.email}</td>
-                          <td class="py-2 pr-4 whitespace-nowrap">{dateFormat.format(account.registeredAt)}</td>
+                          <td class="py-2 pr-4 whitespace-nowrap">{account.registeredLabel}</td>
                           <td class="py-2 pr-4 text-right">{account.generations}</td>
                           <td class="py-2 text-right whitespace-nowrap">
                             {account.usedToday} z {account.ownLimit}
@@ -211,10 +238,10 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                 {/* Sufit bez komunikatu zamienia "widzisz wszystko" w "widzisz czesc"
                       bez sladu. Rowna liczba wierszy znaczy, ze lista MOGLA zostac obcieta —
                       nie ze zostala, bo kont moze byc dokladnie tyle. */}
-                {accounts.length === ACCOUNTS_LIMIT && (
+                {accountsTruncated && (
                   <p class="text-ink-subtle mt-2 text-xs">
-                    Pokazano pierwsze {ACCOUNTS_LIMIT} kont, od najnowszego. Jeśli jest ich więcej, reszta nie jest tu
-                    widoczna.
+                    Pokazano pierwsze {accounts[0].rowLimit} kont, od najnowszego. Jeśli jest ich więcej, reszta nie
+                    jest tu widoczna.
                   </p>
                 )}
 
