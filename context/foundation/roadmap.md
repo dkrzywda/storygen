@@ -4,12 +4,12 @@ version: 1
 status: draft
 created: 2026-09-03
 updated: 2026-09-09
-prd_version: 2
+prd_version: 3
 main_goal: quality
-top_blocker: none
-milestone_id: admin-account-visibility
-milestone_seq: 2
-milestone_status: done
+top_blocker: decisions
+milestone_id: admin-account-management
+milestone_seq: 3
+milestone_status: open
 ---
 
 # Roadmap: Storygen
@@ -22,6 +22,32 @@ milestone_status: done
 > operacyjnych w tym repo.
 
 ## Milestone
+
+**M-3: Zarządzanie kontami** — Status: open
+
+- **Intent:** Dać administratorowi trzy operacje na koncie — nadanie i odebranie roli,
+  blokadę, usunięcie — i zastąpić nimi ręczny SQL, którym te rzeczy dzieją się dziś.
+  Kamień dowodzi, że granica dostępu potrafi nie tylko **pokazać** cudze konto, ale je
+  **zmienić**, nie naruszając jedynej gwarancji, której żadne wymaganie nie ma prawa
+  poszerzyć: cudza treść pozostaje nieczytelna.
+- **Source materials:** `context/foundation/prd.md` (v3) — delta wobec v2, czyli podsekcja
+  `### Account management` dodana 2026-09-09 wraz z odwróceniem trzech pozycji z `## Non-Goals`.
+- **Done when:** `S-10`, `S-11` i `S-12` mają Status `done`.
+- **Scope anchors:** FR-016, FR-017, FR-018, oraz `## Access Control` i `## Non-Goals`
+  w brzmieniu z v3.
+- **Czego ten kamień świadomie NIE robi:** nie czyta cudzych generacji, nie zmienia ani nie
+  usuwa **pojedynczych** generacji na cudzym koncie (usunięcie konta niszczy je razem z nim —
+  to inna operacja), nie reguluje niczyjego dziennego limitu, nie wprowadza kolejki
+  moderacyjnej ani zgłaszania nadużyć. Wszystkie cztery zostają w `## Non-Goals` PRD v3.
+- **Stan wejściowy, zmierzony 2026-09-09 (nie założony):** żadna funkcja w repo nie pisze do
+  `auth.*` — jedyny taki zapis to jednorazowy `update auth.users` w migracji seeda
+  (`20260908124854:27`, `:31`). Wzorzec zapisu w funkcji uprzywilejowanej **istnieje**
+  (`record_attempt_if_allowed` jest `security definer` bez `stable`, czyli volatile), ale nie
+  dla `auth.*`. Klienta `service_role` nie ma nigdzie w `src/` — trzynaście trafień na tę
+  nazwę to wyłącznie strażniki testów, które sekretny klucz **odrzucają** — a `astro.config.mjs`
+  zna tylko `SUPABASE_URL` i `SUPABASE_KEY`. Ścieżkę zapisu wybiera więc `S-10`, dla wszystkich trzech.
+
+> Odstępstwo od szablonu, zapisane jawnie: sekcja trzyma **trzy** chartery, nie jeden.
 
 **M-2: Rola administratora i przegląd kont** — Status: done
 
@@ -36,10 +62,17 @@ milestone_status: done
 - **Czego ten kamień świadomie NIE robi:** nie czyta cudzych generacji, nie zarządza kontami,
   nie zmienia polityki RLS na tabeli `generations`. Granica zapisana przy FR-014 w PRD.
 
-> Odstępstwo od szablonu, zapisane jawnie: sekcja trzyma **dwa** chartery, nie jeden.
-> Charter `M-1` zostaje poniżej, bo jego kotwice `MS-01`…`MS-04` są nadal cytowane przez
-> pozycje w `## Slices` — usunięcie ich zawiesiłoby odwołania w `S-08`. Historia domknięcia
-> `M-1` mieszka w `## Milestone History`; charter zostaje wyłącznie jako źródło kotwic.
+> Chartery `M-1` i `M-2` zostają poniżej, bo kotwice `MS-01`…`MS-04` z `M-1` są nadal cytowane
+> przez `S-08`, a `S-09` cytuje FR-014/FR-015 z zakresu `M-2` — usunięcie ich zawiesiłoby te
+> odwołania. Historia domknięć mieszka w `## Milestone History`; chartery zostają wyłącznie
+> jako źródło kotwic.
+>
+> Drugie odstępstwo, też jawne: `M-3` został otwarty **chirurgicznie**, a nie przez regenerację
+> całego dokumentu, której szablon dla tego przejścia oczekuje. Powód jest ten sam, który kazał
+> zostawić charter `M-1`: regeneracja z PRD odtworzyłaby pozycje `M-1` i `M-2` bez sekcji
+> `## Dług procesowy`, bez rozstrzygnięć dopisanych do `## Open Roadmap Questions` i bez wpisów
+> w `## Done`, których jedynym pisarzem jest `/10x-archive`. Dodanie jest tu tańsze
+> i bezpieczniejsze od odtworzenia.
 
 **M-1: MVP — pełna ścieżka od rejestracji do historii** — Status: done
 
@@ -89,6 +122,15 @@ sekwencjonowania `learn` decyduje o remisach.
 > wcześnie, jak pozwalają jego zależności, bo cała reszta ma znaczenie tylko wtedy, gdy on
 > działa.
 
+Gwiazda przewodnia powyżej należy do `M-1` i zostaje jako zapis. Dla `M-3`:
+
+**S-10: administrator nadaje innemu kontu rolę administratora i odbiera ją** — jedyna z trzech
+operacji tego kamienia, która niczego nie niszczy i niczego użytkownikowi nie odbiera, a przy
+tym **już się dzieje ręcznie**: rola administratora została nadana 2026-09-08 przez wklejenie
+SQL-a do edytora dostawcy. Plaster zamienia więc istniejące obejście na powierzchnię produktu
+przy zerowym ryzyku destrukcji — i to on wybiera ścieżkę zapisu, którą `S-11` i `S-12`
+odziedziczą.
+
 ## At a glance
 
 | ID   | Change ID                    | Outcome (user can …)                                               | Prerequisites | PRD refs                                      | Status |
@@ -107,6 +149,9 @@ sekwencjonowania `learn` decyduje o remisach.
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
+| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | blocked |
+| S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | blocked |
+| S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | blocked |
 
 ## Streams
 
@@ -122,9 +167,10 @@ równoległych torów.
 | D      | Drugi format                    | `S-07`                                     | Dołącza do A przy `S-01`; ta sama integracja, ostrzejszy kontrakt formatu.                        |
 | E      | Metadane pozycji                | `S-08`                                     | Dołącza do A przy `F-01`; jedyny tor niezależny od dostawcy LLM.                                  |
 | F      | Granica dostępu                 | `F-02` → `S-09`                            | Tor `M-2`, niezależny od wszystkich powyżej. Przy celu `quality` fundament dostępu nie schodzi za pracę widoczną. |
+| G      | Zapis do stanu konta            | `S-10` → `S-11` → `S-12`                   | Tor `M-3`. Dołącza do `F` przy `F-02`, dalej biegnie sam. Kolejność rośnie z ryzykiem: nadanie roli niczego nie niszczy, usunięcie niszczy nieodwracalnie. |
 
-> Sześć torów przy limicie 2–5 — odstępstwo zapisane jawnie. Limit zakłada roadmapę jednego
-> kamienia; ten dokument indeksuje dwa. Zwinięcie jednoplastrowych torów `B`–`E` w `A` zmieściłoby
+> Siedem torów przy limicie 2–5 — odstępstwo zapisane jawnie. Limit zakłada roadmapę jednego
+> kamienia; ten dokument indeksuje trzy. Zwinięcie jednoplastrowych torów `B`–`E` w `A` zmieściłoby
 > się w limicie, ale przepisałoby treść domkniętego `M-1`, czego chirurgiczne uzupełnienie ma unikać.
 
 ## Baseline
@@ -416,6 +462,45 @@ w celu wylistowania kont.
   `quality` ekran bez granicy dostępu nie jest połową funkcji, tylko wyciekiem.
 - **Status:** done
 
+### S-10: Administrator nadaje i odbiera rolę administratora
+
+- **Outcome:** nadać innemu kontu rolę administratora i odebrać ją, bez ręcznego SQL-a.
+- **Change ID:** `admin-grant-role`
+- **PRD refs:** FR-018
+- **Prerequisites:** F-02
+- **Parallel with:** — (`S-11` i `S-12` dziedziczą po tym plastrze ścieżkę zapisu, więc żaden nie biegnie równolegle)
+- **Blockers:** —
+- **Unknowns:**
+  - Czy administrator może działać na własnym koncie, i czy da się odebrać **ostatnią** rolę administratora? PRD `## Open Questions` #9. Pomyłka w tym drugim wyjmuje administrację z produktu bez drogi powrotnej przez jego własne powierzchnie. — Owner: autor. Block: yes.
+- **Risk:** Pierwszy zapis do `auth.users` z wnętrza aplikacji, więc ten plaster wybiera mechanizm za cały kamień: funkcja `security definer` volatile (precedens w repo: `record_attempt_if_allowed`) albo nowy sekret `service_role` — a tego drugiego projekt świadomie nie ma i dołożenie go jest osobną decyzją, nie szczegółem planu. Druga rzecz do rozstrzygnięcia w planie, nie tutaj: `auth.users` niesie **dwa** różne pola o nazwie `role` — kolumnę bazodanową, po której PostgREST autoryzuje, i klucz w `raw_app_meta_data`. Pomylenie ich zepsułoby autoryzację całej aplikacji, nie tylko tego plastra.
+- **Status:** blocked
+
+### S-11: Administrator blokuje i odblokowuje konto
+
+- **Outcome:** zablokować konto i je odblokować; zablokowany dowiaduje się, że dostęp zawieszono, a nie widzi ogólnej awarii.
+- **Change ID:** `admin-block-account`
+- **PRD refs:** FR-016
+- **Prerequisites:** S-10
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:**
+  - Co widzi zablokowany — odmowę przy logowaniu, czy sesję, która otwiera się normalnie i odmawia generowania? PRD `## Open Questions` #7. Odpowiedź decyduje, ile produktu widzi ktoś, kto stracił dostęp. — Owner: autor. Block: yes.
+- **Risk:** Pierwszy plaster kamienia dotykający ścieżki **logowania**, a nie tylko panelu, więc pomyłka odcina dostęp szerzej, niż zamierzono. Do zmierzenia w planie, nie do założenia: stan zablokowania trzyma dostawca auth we własnych kolumnach, które wypełnia sam — pisanie po nich z funkcji obchodzi jego logikę, a w repo nie ma dziś ani jednego przypadku, który by to sprawdzał.
+- **Status:** blocked
+
+### S-12: Administrator usuwa konto
+
+- **Outcome:** usunąć konto, wiedząc **przed** wykonaniem, co zostanie zniszczone razem z nim.
+- **Change ID:** `admin-delete-account`
+- **PRD refs:** FR-017
+- **Prerequisites:** S-11
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:**
+  - Czy usunięcie ma przed sobą stan odwracalny? PRD `## Open Questions` #8. Odpowiedź „tak" może **zlać ten plaster z `S-11`** — dlatego stoi po nim, a nie równolegle. — Owner: autor. Block: yes.
+- **Risk:** Jedyna nieodwracalna operacja w całym produkcie. Wszystkie klucze obce do `auth.users` kasują kaskadowo, więc usunięcie konta niszczy jego generacje **i** zwalnia zużyty przez nie udział w dziennym sufcie aplikacji (FR-013) — po usunięciu sufit przestaje być zapisem realnego wydatku dnia, co dotyka wymagania z innego kamienia. Guardrail dopisany do PRD v3 wymaga ostrzeżenia przed wykonaniem, więc ten plaster ma kryterium, które porażka faktycznie zaczerwieni: ekran usuwający bez powiedzenia, co usuwa, łamie je nawet działając poprawnie.
+- **Status:** blocked
+
 ## Dług procesowy — 2026-09-07
 
 Sześć zmian weszło do repo **poza łańcuchem** `/10x-new` → `/10x-plan` →
@@ -475,12 +560,15 @@ Co z tego wynika dla czytelnika:
 | S-02       | `polish-auth-surface`        | Rejestracja, logowanie i błędy w całości po polsku            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                               |
 | S-03       | `generation-history-storage` | Zapis generacji na konto — pierwsza migracja i RLS            | —                     | Dowiezione 2026-09-07 bez `/10x-plan` — patrz „Dług procesowy"                                                               |
 | S-04       | `daily-generation-limits`    | Dzienny limit na konto i sufit dzienny całej aplikacji        | yes                   | Liczby ustalone 2026-09-07: 30/dobę aplikacja, 10/dobę konto. Plan gotowy — `/10x-implement daily-generation-limits phase 1` |
-| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | no                    | Odblokowane przez S-03. Lista działa, ale FR-010 „otwiera w całości" nie — widok pokazuje podgląd, nie pełny tekst           |
-| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | no                    | Czeka na S-05                                                                                                                |
+| S-05       | `browse-generation-history`  | Przeglądanie własnej historii generacji                       | —                     | Dowiezione i zarchiwizowane 2026-09-07                                                                                       |
+| S-06       | `delete-generation`          | Usuwanie pozycji z historii                                   | —                     | Dowiezione i zarchiwizowane 2026-09-07                                                                                       |
 | S-07       | `story-format-generation`    | Format „opowiadanie" — drugi kontrakt formatu                 | —                     | Dowiezione 2026-09-07 bez `/10x-plan`; jakość promptu niezmierzona                                                           |
 | S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                                   |
-| F-02       | `account-roles`              | Rola konta i serwerowe sprawdzenie dostępu                    | yes                   | Plan przez `/10x-plan account-roles`                                                                                         |
-| S-09       | `admin-account-overview`     | Przegląd kont dla administratora — tylko liczby               | no                    | Czeka na F-02                                                                                                                |
+| F-02       | `account-roles`              | Rola konta i serwerowe sprawdzenie dostępu                    | —                     | Dowiezione i wdrożone 2026-09-08                                                                                             |
+| S-09       | `admin-account-overview`     | Przegląd kont dla administratora — tylko liczby               | —                     | Dowiezione i wdrożone 2026-09-09; kamień `M-2` domknięty                                                                     |
+| S-10       | `admin-grant-role`           | Nadawanie i odbieranie roli administratora                    | no                    | Bramkowane przez PRD `## Open Questions` #9 (działanie na sobie, ostatnia rola)                                              |
+| S-11       | `admin-block-account`        | Blokowanie i odblokowanie konta                               | no                    | Bramkowane przez PRD #7 (co widzi zablokowany) i przez `S-10`                                                                |
+| S-12       | `admin-delete-account`       | Usunięcie konta z ostrzeżeniem o skutkach                     | no                    | Bramkowane przez PRD #8 (czy jest stan odwracalny) i przez `S-11`                                                            |
 
 ## Open Roadmap Questions
 
@@ -540,6 +628,18 @@ Co z tego wynika dla czytelnika:
     o `target_scale.users` zostaje otwarte i staje się PILNIEJSZE, nie mniej pilne: dwa konta
     o różnych uprawnieniach to dokładnie to poszerzenie, którego prior „jeden użytkownik"
     zakazywał. — Owner: autor. Block: nie blokuje.
+
+11. **Co widzi zablokowany użytkownik?** PRD `## Open Questions` #7, dopisane z v3. — Owner: autor.
+    Block: `S-11`.
+12. **Czy usunięcie konta ma przed sobą stan odwracalny?** PRD `## Open Questions` #8. Odpowiedź „tak"
+    może zlać `S-12` z `S-11` w jeden plaster. — Owner: autor. Block: `S-12`.
+13. **Czy administrator może działać na własnym koncie i czy da się odebrać ostatnią rolę?**
+    PRD `## Open Questions` #9. — Owner: autor. Block: `S-10`.
+
+> Te trzy bramkują **cały** kamień `M-3`: każdy jego plaster ma Status `blocked`, więc żaden ruch
+> planistyczny nie jest dziś dostępny. To nie jest zastój do obejścia — trzy decyzje produktowe
+> zostały świadomie **nie** podjęte przy pisaniu PRD v3, żeby nie zapisać jako wymagania czegoś,
+> czego nikt nie zdecydował.
 
 ## Parked
 
