@@ -4,9 +4,9 @@ version: 1
 status: draft
 created: 2026-09-03
 updated: 2026-09-09
-prd_version: 3
+prd_version: 4
 main_goal: quality
-top_blocker: decisions
+top_blocker: none
 milestone_id: admin-account-management
 milestone_seq: 3
 milestone_status: open
@@ -149,9 +149,9 @@ odziedziczą.
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
-| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | blocked |
-| S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | blocked |
-| S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | blocked |
+| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | ready |
+| S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | proposed |
+| S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | proposed |
 
 ## Streams
 
@@ -471,9 +471,9 @@ w celu wylistowania kont.
 - **Parallel with:** — (`S-11` i `S-12` dziedziczą po tym plastrze ścieżkę zapisu, więc żaden nie biegnie równolegle)
 - **Blockers:** —
 - **Unknowns:**
-  - Czy administrator może działać na własnym koncie, i czy da się odebrać **ostatnią** rolę administratora? PRD `## Open Questions` #9. Pomyłka w tym drugim wyjmuje administrację z produktu bez drogi powrotnej przez jego własne powierzchnie. — Owner: autor. Block: yes.
+  - ~~Czy administrator może działać na własnym koncie i czy da się odebrać **ostatnią** rolę?~~ **ROZSTRZYGNIĘTE 2026-09-09: tak na oba, bez podłogi.** PRD `## Open Questions` #9. Konsekwencja przyjęta świadomie i zapisana w PRD: produkt ma dziś jedno konto z rolą, więc jej odebranie kończy administrację, a żaden ekran w produkcie jej nie przywróci — droga powrotna jest poza produktem, w konsoli dostawcy. FR-018 wymaga dodatkowo ostrzeżenia przed odebraniem ostatniej roli. — Owner: autor. Block: —.
 - **Risk:** Pierwszy zapis do `auth.users` z wnętrza aplikacji, więc ten plaster wybiera mechanizm za cały kamień: funkcja `security definer` volatile (precedens w repo: `record_attempt_if_allowed`) albo nowy sekret `service_role` — a tego drugiego projekt świadomie nie ma i dołożenie go jest osobną decyzją, nie szczegółem planu. Druga rzecz do rozstrzygnięcia w planie, nie tutaj: `auth.users` niesie **dwa** różne pola o nazwie `role` — kolumnę bazodanową, po której PostgREST autoryzuje, i klucz w `raw_app_meta_data`. Pomylenie ich zepsułoby autoryzację całej aplikacji, nie tylko tego plastra.
-- **Status:** blocked
+- **Status:** ready
 
 ### S-11: Administrator blokuje i odblokowuje konto
 
@@ -484,9 +484,9 @@ w celu wylistowania kont.
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Co widzi zablokowany — odmowę przy logowaniu, czy sesję, która otwiera się normalnie i odmawia generowania? PRD `## Open Questions` #7. Odpowiedź decyduje, ile produktu widzi ktoś, kto stracił dostęp. — Owner: autor. Block: yes.
+  - ~~Co widzi zablokowany?~~ **ROZSTRZYGNIĘTE 2026-09-09: odmowa przy logowaniu.** PRD `## Open Questions` #7. Zablokowane konto nie dochodzi do sesji, więc nie widzi produktu — tylko komunikat o zawieszeniu dostępu. Podstawa: warstwa tożsamości ma już własny stan konta zawieszonego i odmawia dla niego uwierzytelnienia, więc produkt pożycza istniejący stan, a nie tworzy równoległego. Przyjęta konsekwencja: zablokowany traci też wgląd we własne generacje, które nie są usuwane i wracają po odblokowaniu. — Owner: autor. Block: —.
 - **Risk:** Pierwszy plaster kamienia dotykający ścieżki **logowania**, a nie tylko panelu, więc pomyłka odcina dostęp szerzej, niż zamierzono. Do zmierzenia w planie, nie do założenia: stan zablokowania trzyma dostawca auth we własnych kolumnach, które wypełnia sam — pisanie po nich z funkcji obchodzi jego logikę, a w repo nie ma dziś ani jednego przypadku, który by to sprawdzał.
-- **Status:** blocked
+- **Status:** proposed
 
 ### S-12: Administrator usuwa konto
 
@@ -497,9 +497,9 @@ w celu wylistowania kont.
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Czy usunięcie ma przed sobą stan odwracalny? PRD `## Open Questions` #8. Odpowiedź „tak" może **zlać ten plaster z `S-11`** — dlatego stoi po nim, a nie równolegle. — Owner: autor. Block: yes.
+  - ~~Czy usunięcie ma przed sobą stan odwracalny?~~ **ROZSTRZYGNIĘTE 2026-09-09: blokada JEST tym stanem; usunięcie nie ma etapu miękkiego.** PRD `## Open Questions` #8. Plastry nie zlewają się: produkt niesie dwa stany konta, nie trzy, a `S-12` zostaje po `S-11`, bo dziedziczy po nim ścieżkę zapisu, nie bo czeka na rozstrzygnięcie. — Owner: autor. Block: —.
 - **Risk:** Jedyna nieodwracalna operacja w całym produkcie. Wszystkie klucze obce do `auth.users` kasują kaskadowo, więc usunięcie konta niszczy jego generacje **i** zwalnia zużyty przez nie udział w dziennym sufcie aplikacji (FR-013) — po usunięciu sufit przestaje być zapisem realnego wydatku dnia, co dotyka wymagania z innego kamienia. Guardrail dopisany do PRD v3 wymaga ostrzeżenia przed wykonaniem, więc ten plaster ma kryterium, które porażka faktycznie zaczerwieni: ekran usuwający bez powiedzenia, co usuwa, łamie je nawet działając poprawnie.
-- **Status:** blocked
+- **Status:** proposed
 
 ## Dług procesowy — 2026-09-07
 
@@ -566,9 +566,9 @@ Co z tego wynika dla czytelnika:
 | S-08       | `annotate-generation`        | Własny tytuł zapisanej generacji                              | yes                   | Plan gotowy — `/10x-implement annotate-generation phase 1`                                                                   |
 | F-02       | `account-roles`              | Rola konta i serwerowe sprawdzenie dostępu                    | —                     | Dowiezione i wdrożone 2026-09-08                                                                                             |
 | S-09       | `admin-account-overview`     | Przegląd kont dla administratora — tylko liczby               | —                     | Dowiezione i wdrożone 2026-09-09; kamień `M-2` domknięty                                                                     |
-| S-10       | `admin-grant-role`           | Nadawanie i odbieranie roli administratora                    | no                    | Bramkowane przez PRD `## Open Questions` #9 (działanie na sobie, ostatnia rola)                                              |
-| S-11       | `admin-block-account`        | Blokowanie i odblokowanie konta                               | no                    | Bramkowane przez PRD #7 (co widzi zablokowany) i przez `S-10`                                                                |
-| S-12       | `admin-delete-account`       | Usunięcie konta z ostrzeżeniem o skutkach                     | no                    | Bramkowane przez PRD #8 (czy jest stan odwracalny) i przez `S-11`                                                            |
+| S-10       | `admin-grant-role`           | Nadawanie i odbieranie roli administratora                    | yes                   | Odblokowane 2026-09-09. Plan przez `/10x-plan admin-grant-role`                                                              |
+| S-11       | `admin-block-account`        | Blokowanie i odblokowanie konta                               | no                    | Pytanie #7 rozstrzygnięte; czeka wyłącznie na `S-10`                                                                         |
+| S-12       | `admin-delete-account`       | Usunięcie konta z ostrzeżeniem o skutkach                     | no                    | Pytanie #8 rozstrzygnięte; czeka wyłącznie na `S-11`                                                                         |
 
 ## Open Roadmap Questions
 
@@ -629,17 +629,23 @@ Co z tego wynika dla czytelnika:
     o różnych uprawnieniach to dokładnie to poszerzenie, którego prior „jeden użytkownik"
     zakazywał. — Owner: autor. Block: nie blokuje.
 
-11. **Co widzi zablokowany użytkownik?** PRD `## Open Questions` #7, dopisane z v3. — Owner: autor.
-    Block: `S-11`.
-12. **Czy usunięcie konta ma przed sobą stan odwracalny?** PRD `## Open Questions` #8. Odpowiedź „tak"
-    może zlać `S-12` z `S-11` w jeden plaster. — Owner: autor. Block: `S-12`.
-13. **Czy administrator może działać na własnym koncie i czy da się odebrać ostatnią rolę?**
-    PRD `## Open Questions` #9. — Owner: autor. Block: `S-10`.
+11. ~~**Co widzi zablokowany użytkownik?**~~ **ROZSTRZYGNIĘTE 2026-09-09: odmowa przy logowaniu.**
+    PRD `## Open Questions` #7. Nie bramkuje już `S-11`.
+12. ~~**Czy usunięcie konta ma przed sobą stan odwracalny?**~~ **ROZSTRZYGNIĘTE 2026-09-09: blokada
+    jest tym stanem, usunięcie nie ma etapu miękkiego.** PRD `## Open Questions` #8. Nie bramkuje
+    już `S-12`.
+13. ~~**Czy administrator może działać na własnym koncie i czy da się odebrać ostatnią rolę?**~~
+    **ROZSTRZYGNIĘTE 2026-09-09: tak na oba, bez podłogi.** PRD `## Open Questions` #9. Nie bramkuje
+    już `S-10`.
 
-> Te trzy bramkują **cały** kamień `M-3`: każdy jego plaster ma Status `blocked`, więc żaden ruch
-> planistyczny nie jest dziś dostępny. To nie jest zastój do obejścia — trzy decyzje produktowe
-> zostały świadomie **nie** podjęte przy pisaniu PRD v3, żeby nie zapisać jako wymagania czegoś,
-> czego nikt nie zdecydował.
+> Wszystkie trzy rozstrzygnięte 2026-09-09, w tej kolejności: najpierw #9 (autor odpowiedział
+> wprost), potem #7 i #8 (autor wybrał rekomendacje). `M-3` ma odtąd dostępny ruch planistyczny:
+> `S-10` jest `ready`, a `S-11` i `S-12` czekają wyłącznie na swoje zależności, nie na decyzje.
+>
+> Jedna rzecz w #13 jest warta zapamiętania przy planie `S-10`: decyzja **nie ma podłogi**, więc
+> odebranie ostatniej roli kończy administrację, a produkt nie ma jak jej przywrócić. Ostrzeżenie
+> wymagane przez FR-018 jest dodatkiem autora poprawki PRD, nie treścią decyzji, i jest tam
+> oznaczone jako takie.
 
 ## Parked
 
