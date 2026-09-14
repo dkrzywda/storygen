@@ -500,14 +500,14 @@ Wniosek wart zapisania: gdybym czytał tylko liczbę bezwzględną, zgłosiłbym
 
 #### Automated
 
-- [x] 4.1 Test jednostkowy maszyny stanów blokady
-- [x] 4.2 `npx astro build` przechodzi
-- [x] 4.3 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 4.1 Test jednostkowy maszyny stanów blokady — 4982810
+- [x] 4.2 `npx astro build` przechodzi — 4982810
+- [x] 4.3 ESLint i `npx tsc --noEmit` bez błędów — 4982810
 
 #### Manual
 
-- [x] 4.4 Zablokowanie drugiego konta odcina mu dostęp i pokazuje komunikat
-- [x] 4.5 Odblokowanie przywraca dostęp bez dodatkowych kroków
-- [x] 4.6 Zablokowanie siebie: ostrzeżenie, potwierdzenie, komunikat
-- [x] 4.7 Tabela mieści się bez poziomego przewijania
-- [x] 4.8 Zwykłe konto nie widzi sekcji ani przycisków
+- [x] 4.4 Zablokowanie drugiego konta odcina mu dostęp i pokazuje komunikat — 4982810
+- [x] 4.5 Odblokowanie przywraca dostęp bez dodatkowych kroków — 4982810
+- [x] 4.6 Zablokowanie siebie: ostrzeżenie, potwierdzenie, komunikat — 4982810
+- [x] 4.7 Tabela mieści się bez poziomego przewijania — 4982810
+- [x] 4.8 Zwykłe konto nie widzi sekcji ani przycisków — 4982810
