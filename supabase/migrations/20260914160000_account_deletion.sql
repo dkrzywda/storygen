@@ -157,6 +157,25 @@ begin
   --  ryzyko — bo tam skutkiem bylo zero adminow ZA ZGODA, dopuszczone przez PRD.
   --  Tutaj skutkiem jest nieodwracalne usuniecie BEZ zgody, wiec ta sama usterka
   --  wazy inaczej.
+  --
+  --  UWAGA DLA CZYTELNIKA: TO NIE JEST WZORZEC POZOSTALYCH DWOCH FUNKCJI.
+  --
+  --  `set_account_role` (`20260914120000:381-416`) i `set_account_blocked`
+  --  (`:250-263`) biora TEN SAM klucz blokady, ale sprawdzaja wolajacego
+  --  WYLACZNIE przed nia. Ta migracja dokladla przeslanke, ktorej wczesniej nie
+  --  bylo: wiersz wolajacego moze zostac TWARDO USUNIETY, gdy jego wlasne
+  --  zadanie czeka na blokade.
+  --
+  --  ZMIERZONE 2026-09-14, dwiema sesjami (ustalenie F1 przegladu `S-12`):
+  --  sesja A wola `delete_account(B)`, sesja B wola
+  --  `set_account_role(A,'user', p_confirm_last := true)` i przechodzi bramke,
+  --  gdy jeszcze istnieje. Po commicie A sesja B budzi sie, NIE sprawdza sie
+  --  ponownie i zwraca `ok`. Stan koncowy: konto B nie istnieje, rola A zdjeta,
+  --  czynnych adminow 3 -> 1. Przy dwoch administratorach bylo by zero.
+  --
+  --  Naprawa nalezy do OSOBNEJ zmiany: plan `S-12` zapisuje wprost „zadnej
+  --  zmiany w `set_account_role` ani `set_account_blocked`", a obie sa juz
+  --  wdrozone. Nie kopiuj stad tej bramki w przekonaniu, ze tamte ja maja.
   -- ==========================================================================
   if not exists (
     select 1
@@ -231,6 +250,14 @@ comment on function public.delete_account(uuid, boolean) is
 --
 --  Ta migracja NICZEGO NIE UPUSZCZA, wiec nie ma tu ryzyka utraty grantow,
 --  ktore przy `S-10` i `S-11` wymagalo osobnej uwagi.
+--
+--  TEN PLIK MUSI ZOSTAC WYKONANY W CALOSCI, JEDNYM WYWOLANIEM. Wklejony
+--  fragmentami zostawi funkcje BEZ koncowego `revoke`, czyli z domyslnymi
+--  grantami Supabase dla `anon` i `service_role` — i NIE RZUCI PRZY TYM BLEDU.
+--  Baner przeniesiony z `20260914120000:89-92`, bo nowy plik ma dokladnie te
+--  wlasnosc, a droga wdrozenia jest RECZNA: port 5432 jest odfiltrowany, wiec
+--  migracja idzie wklejeniem do edytora SQL dostawcy (ustalenie F8 przegladu
+--  `S-12`).
 -- ============================================================================
 
 revoke execute on function public.delete_account(uuid, boolean) from public, anon, service_role;

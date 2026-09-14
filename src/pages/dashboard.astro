@@ -281,23 +281,26 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                             {account.usedToday} z {account.ownLimit}
                           </td>
                           <td class="py-2 text-right">
-                            {/* DWA PRZYCISKI JEDEN POD DRUGIM, W JEDNEJ KOMORCE — nie obok
-                                siebie i nie w osobnej kolumnie. Szerokosc komorki rowna sie
-                                wtedy szerokosci SZERSZEGO z nich ("Odbierz rolę"), a nie ich
-                                sumie, wiec stan z 0 px zapasu nie pogarsza sie ani o piksel.
-                                Zmierzone po dolozeniu: patrz addendum fazy 4. */}
-                            <div class="flex flex-col items-end gap-1">
-                              <AccountActions
-                                client:load
-                                accountId={account.id}
-                                email={account.email}
-                                role={account.role}
-                                isSelf={account.isSelf}
-                                isLastAdmin={account.isLastAdmin}
-                                isBlocked={account.isBlocked}
-                                generations={account.generations}
-                              />
-                            </div>
+                            {/* TRZY PRZYCISKI JEDEN POD DRUGIM, W JEDNEJ KOMORCE — nie obok
+                                siebie i nie w osobnych kolumnach. Szerokosc komorki rowna sie
+                                wtedy szerokosci NAJSZERSZEGO z nich ("Odbierz rolę"), a nie
+                                ich sumie, wiec stan z 0 px zapasu nie pogarsza sie ani
+                                o piksel. Zmierzone po dolozeniu trzeciego: addendum fazy 4.
+
+                                UKLAD STOI W WYSPIE, NIE TUTAJ. Wczesniej te same klasy
+                                `flex flex-col items-end gap-1` byly w obu plikach naraz
+                                i jedna decyzja miala dwa miejsca do rozjechania sie
+                                (ustalenie F6 przegladu `S-12`). */}
+                            <AccountActions
+                              client:load
+                              accountId={account.id}
+                              email={account.email}
+                              role={account.role}
+                              isSelf={account.isSelf}
+                              isLastAdmin={account.isLastAdmin}
+                              isBlocked={account.isBlocked}
+                              generations={account.generations}
+                            />
                           </td>
                         </tr>
                       ))}

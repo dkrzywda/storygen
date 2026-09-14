@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
 import { jsonError, jsonOk } from "@/lib/api-response";
 import { logApiError, toApiErrorCode } from "@/lib/api-errors";
-import { validate } from "@/lib/validation";
+import { FORM_FIELD_KEY, validate } from "@/lib/validation";
 import { accountPatchSchema } from "@/lib/account-blocked-patch";
 import { deleteAccount, mapAccountActionCode, setAccountBlocked, setAccountRole } from "@/lib/admin-accounts";
 import { readDeleteParams } from "@/lib/account-delete-params";
@@ -139,7 +139,12 @@ export const DELETE: APIRoute = async (context) => {
   // Zgoda jedzie w adresie — patrz uzasadnienie w `@/lib/account-delete-params`.
   const params = readDeleteParams(context.url);
   if (!params.ok) {
-    return jsonError("VALIDATION_FAILED", { confirmDestroy: params.message });
+    // KLUCZ CALEGO ZADANIA, nie pola formularza — zgoda jedzie w adresie, wiec
+    // na ekranie nie ma pola, przy ktorym dalo by sie ten komunikat postawic.
+    // Kazdy inny blad walidacji calego zadania w repo uzywa tego samego klucza
+    // (`:59` w tym pliku, `generations/[id].ts:31`); wlasny klucz sprawial, ze
+    // komunikat nie mial jak trafic na ekran (ustalenie F5 przegladu `S-12`).
+    return jsonError("VALIDATION_FAILED", { [FORM_FIELD_KEY]: params.message });
   }
 
   const supabase = createClient(context.request.headers, context.cookies);

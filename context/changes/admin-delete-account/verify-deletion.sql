@@ -88,6 +88,15 @@ priv as (
   from meta m
 )
 select
+  -- TOZSAMOSC KLASTRA JAKO PIERWSZA KOLUMNA, PRZED ADRESEM.
+  --
+  -- `host(inet_server_addr())` przez pooler Supabase zwraca adres POOLERA,
+  -- wspolny dla wszystkich projektow w regionie — dwa projekty w `eu-west-1`
+  -- wypisalyby ten sam ciag, czyli dokladnie klasa awarii, dla ktorej regula
+  -- „Weryfikacja bez tozsamosci srodowiska nie jest dowodem" powstala.
+  -- `system_identifier` jest unikalny i staly per klaster (ustalenie F7
+  -- przegladu `S-12`). Adres zostaje jako druga kolumna, bo jest czytelny.
+  (select system_identifier from pg_control_system()) as klaster,
   coalesce(host(inet_server_addr()), 'socket lokalny') as serwer,
   (select count(*) from auth.users where deleted_at is null) as konta,
   (select public.active_admin_count()) as adminow_uzytecznych,

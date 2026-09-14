@@ -80,7 +80,14 @@ export type AccountActionCode =
   // kazdy — `delete_account` nigdy nie odda `LAST_ADMIN_NEEDS_CONFIRM`, bo ta
   // galaz jest w niej nieosiagalna (patrz naglowek `20260914160000`).
   | "SELF_DELETE_FORBIDDEN"
-  | "DESTROY_CONFIRM_REQUIRED";
+  | "DESTROY_CONFIRM_REQUIRED"
+  // NIE JEST KODEM Z BAZY — zaden `return query` go nie zwraca. Znaczy „funkcja
+  // `returns table` oddala ZERO wierszy", czyli rozjazd kontraktu miedzy baza
+  // a aplikacja. Celowo NIE MA go w `mapAccountActionCode`: ma wpasc w `default`
+  // i wyjsc jako `INTERNAL`, zeby endpoint go zalogowal. Dopisanie mu tam
+  // przypadku uciszyloby jedyna diagnostyke, dla ktorej powstal (ustalenie F2
+  // przegladu `S-12`).
+  | "NO_ROW";
 
 /**
  * Mapuje kod z bazy na kod kontraktu API (F-01).
@@ -237,9 +244,14 @@ export async function deleteAccount(
   // funkcja zwraca dokladnie jeden. Pusta tablica znaczy, ze baza i aplikacja
   // rozjechaly sie kontraktem; `INTERNAL` przez `mapAccountActionCode` jest
   // wtedy uczciwszy niz udawanie sukcesu.
+  //
+  // Pierwsza wersja zwracala tu `FORBIDDEN`, ktore mapuje sie na `NOT_FOUND`
+  // — czyli 404 nieodroznialne od zwyklego braku konta, z pominieciem galezi
+  // logujacej w `[id].ts`. Komentarz obiecywal `INTERNAL`, a kod go nie dawal:
+  // sprawdzenie niezdolne zaczerwienic awarii, dla ktorej powstalo.
   const row = data.at(0);
   if (!row) {
-    return { code: "FORBIDDEN", destroyedGenerations: 0 };
+    return { code: "NO_ROW", destroyedGenerations: 0 };
   }
 
   // Zawezenie zostawiamy `mapAccountActionCode`, ktore jest fail-closed —

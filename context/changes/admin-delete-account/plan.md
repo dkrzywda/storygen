@@ -450,6 +450,24 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 **Kryterium 4.5 (`astro build`) zostaje NIEODHACZONE — środowiskowo, jak 3.2.** Ten sam `Authentication error [code: 10000]`, ta sama diagnoza (`git stash` dowiódł, że pada również przed tymi zmianami), to samo odblokowanie: `npx wrangler login` na konto gmail.
 
+## Addendum 2026-09-14 — triaż przeglądu implementacji
+
+**Przegląd całości: `reviews/impl-review.md` — 0 krytycznych, 3 ostrzeżenia, 5 obserwacji, werdykt NEEDS ATTENTION.** Sześć ustaleń naprawionych od razu, dwa odłożone do osobnej zmiany. Tu notuję wyłącznie to, co zmieniło plan albo prostuje wcześniejsze addendum.
+
+**PROSTUJĘ ADDENDUM FAZY 4.** Napisałem tam, że przelotność stanu końcowego przy usunięciu jest „dokładnie tak samo, jak przy roli i blokadzie". To była fałszywa równoważność i uzasadniała zachowanie, którego nie da się uzasadnić: przy roli i blokadzie stan końcowy nie niesie niczego, czego nie pokaże przeładowana tabela, a przy usunięciu niesie **jedyną liczbę, dla której baza w ogóle liczy przed usunięciem** — ile tekstów faktycznie zniknęło. `plan.md:42` obiecuje, że ekran to powie; z `reload()` w następnej linii komunikat żył jedną klatkę, więc administrator widział wyłącznie liczbę **przewidywaną** z ostrzeżenia, czyli ze snapshotu przeglądu. Obietnica planu nie była spełniona, a addendum ją zagadało.
+
+**Rozstrzygnięte: usunięcie nie przeładowuje.** Gałąź `deleted` rysuje przycisk „Odśwież panel" i mówi wprost, że reszta tabeli jest nieaktualna — tym samym zdaniem, którego używają `demoted` i `blockedSelf`. Zmierzone po zmianie: **0 nawigacji**, komunikat `Usunięto konto wraz z 5 zapisanymi tekstami.` stoi na ekranie po 3 sekundach, konto usunięte, `generacji osieroconych: 0`, tabela 1 wyspa/wiersz, 0 px zapasu, bez przewijania poziomego.
+
+**Zmierzony wyścig MIĘDZY funkcjami — ustalenie F1, poważniejsze niż reszta.** `delete_account` powtarza bramkę wołającego po wzięciu blokady doradczej (addendum fazy 1), ale `set_account_role` i `set_account_blocked` dzielą ten sam klucz i sprawdzają wołającego **wyłącznie przed** nią. Ten plaster dokłada przesłankę, której wcześniej nie było: wiersz wołającego może zostać **twardo usunięty**, gdy jego żądanie czeka na blokadę.
+
+Zmierzone dwiema sesjami: A woła `delete_account(B)`, B woła `set_account_role(A,'user', p_confirm_last := true)` i przechodzi bramkę, gdy jeszcze istnieje. Po commicie A sesja B budzi się, nie sprawdza się ponownie i zwraca `ok`. Stan końcowy: konto B nie istnieje, rola A zdjęta, czynnych administratorów **3 → 1**. Przy dwóch administratorach byłoby zero — bez niczyjej zgody, zapisem wykonanym przez konto, którego już nie ma.
+
+**Naprawa świadomie NIE wchodzi tutaj.** Sekcja `## What We're NOT Doing` zapisuje „żadnej zmiany w `set_account_role` ani `set_account_blocked`", a obie są już wdrożone na produkcji. Asymetria jest opisana w nagłówku `20260914160000` ostrzeżeniem dla czytelnika — żeby powtórzona bramka nie została wzięta za wzorzec wszystkich trzech funkcji — a naprawa idzie osobną zmianą razem z ustaleniem F4 (licznik generacji brany z osobnego snapshotu może zaniżyć to, co zniszczyła kaskada).
+
+**Naprawione od razu:** `NO_ROW` zamiast `FORBIDDEN` w gałęzi pustego wyniku, żeby rozjazd kontraktu trafiał do logu jako `INTERNAL` zamiast udawać 404 (komentarz obiecywał to, czego kod nie robił); martwy eksport `DELETE_PARAMS_FORM_KEY` usunięty, a błąd walidacji kluczowany przez `FORM_FIELD_KEY` jak w całym repo; komentarz komórki mówiący „dwa przyciski" przy trzech; zdublowany `flex flex-col` w dwóch plikach naraz; `system_identifier` jako pierwsza kolumna tożsamości w skrypcie kontrolnym (adres poolera jest wspólny dla regionu, więc nie różnicował projektów); baner o częściowym wklejeniu przeniesiony z sąsiedniej migracji, bo droga wdrożenia jest ręczna.
+
+**Po triażu:** `npm test` 397/397 kodem 0, `npx tsc --noEmit` 0, ESLint 0, skrypt kontrolny nadal `OK`.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.

@@ -26,9 +26,6 @@ import { z } from "zod";
  * uzasadnienie w naglowku migracji `20260914160000`.
  */
 
-/** Klucz bledu dotyczacego calego zadania, nie pojedynczego pola. */
-const FORM_KEY = "_";
-
 /**
  * Zgoda przychodzi z ADRESU, czyli zawsze jako tekst — `z.boolean()` odrzucilby
  * kazda wartosc. Przyjmujemy WYLACZNIE `"true"` i `"false"`, a nie „cokolwiek
@@ -71,5 +68,3 @@ export function readDeleteParams(url: URL): { ok: true; data: AccountDeleteParam
 
   return { ok: true, data: parsed.data };
 }
-
-export { FORM_KEY as DELETE_PARAMS_FORM_KEY };

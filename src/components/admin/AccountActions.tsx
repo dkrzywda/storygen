@@ -257,10 +257,21 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
         // koncowy potrafi powiedziec uczciwie. To ta sama zasada, ktora
         // `readApiError` stosuje do komunikatow bledu.
         setZniszczone(odczytajLiczbe(await response.json().catch(() => null)));
-        // Stan koncowy PRZED przeladowaniem — gdy przeladowanie nie dojdzie,
-        // ekran mowi prawde zamiast wisiec na „Zapisuje…".
         setStatus("deleted");
-        window.location.reload();
+        // TU NIE MA PRZELADOWANIA, W ODROZNIENIU OD ROLI I BLOKADY — ustalenie
+        // F3 przegladu `S-12`.
+        //
+        // Przy tamtych dwoch stan koncowy nie niesie niczego, czego nie pokaze
+        // przeladowana tabela, wiec `reload()` zaraz po nim nic nie gubi. Tutaj
+        // niesie JEDYNA liczbe, dla ktorej baza w ogole liczy przed usunieciem
+        // (`20260914160000:194-197`): ile tekstow faktycznie zniknelo. Mierzone
+        // `MutationObserver`-em — z `reload()` w nastepnej linii ten komunikat
+        // zyl jedna klatke, wiec administrator widzial wylacznie liczbe
+        // PRZEWIDYWANA z ostrzezenia, czyli ze snapshotu przegladu.
+        //
+        // Odswiezenie zostaje w rekach uzytkownika: galaz `deleted` rysuje
+        // przycisk „Odswiez panel" i mowi wprost, ze reszta tabeli jest juz
+        // nieaktualna.
         return;
       }
 
@@ -352,7 +363,8 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
             ? "Usunięto konto"
             : zniszczone === 0
               ? "Usunięto konto. Nie miało zapisanych tekstów."
-              : `Usunięto konto wraz z ${String(zniszczone)} zapisanymi tekstami.`}
+              : `Usunięto konto wraz z ${String(zniszczone)} zapisanymi tekstami.`}{" "}
+          {resztaTabeli}
         </p>
         {odswiez}
       </div>
