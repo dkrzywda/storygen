@@ -1,28 +1,41 @@
--- KROK 1 — WDROZENIE S-12 NA PRODUKCJE.
+-- KROK 1 — WDROZENIE S-12 NA PRODUKCJE (wersja 2).
 --
--- WKLEJ DOPIERO, GDY KROK 0 POWIEDZIAL "OK — mozna wklejac krok 1".
--- Jesli powiedzial "STOP: brak active_admin_count()", NIE WKLEJAJ: migracja
--- utworzy sie BEZ BLEDU, bo plpgsql nie sprawdza ciala funkcji przy tworzeniu,
--- a delete_account wywali sie dopiero przy PIERWSZYM klknieciu administratora,
--- komunikatem 42883. Najpierw S-11.
+-- DLACZEGO WERSJA 2. Pierwsza probe wdrozenia edytor SQL dostawcy zaraportowal
+-- jako sukces, a w bazie nie zostalo NIC: ani funkcji, ani wpisu w rejestrze
+-- (zmierzone 2026-09-14 przez diagnoza.sql — s12_w_rejestrze i jest_usuwanie
+-- oba false, na tym samym serwerze, na ktorym S-11 stoi poprawnie).
+--
+-- Najbardziej prawdopodobny mechanizm: wykonal sie FRAGMENT zawierajacy "begin;"
+-- i "create function", ale bez koncowego "commit;". Transakcja zostaje otwarta,
+-- sesja sie konczy, wszystko sie wycofuje — a "create function" po drodze
+-- raportuje dokladnie "Success. No rows returned". Ten sam objaw dal wczesniej
+-- blad przy "pg_control_system()", ktory edytor zglosil jako "LINE 1" dla linii
+-- szescdziesiatej, czyli wykonywal ZAZNACZENIE, nie caly plik.
+--
+-- CO SIE PRZEZ TO ZMIENILO:
+--
+-- 1. NIE MA JUZ JAWNEJ TRANSAKCJI. Ta migracja niczego nie upuszcza, wiec nie
+--    ma stanu posredniego, ktory bylby gorszy od stanu sprzed wdrozenia —
+--    inaczej niz przy S-11, ktore zaczynalo sie od "drop function". Jedyne
+--    ryzyko czesciowego wykonania to funkcja BEZ koncowych "revoke", czyli
+--    z domyslnymi grantami dla anon i service_role. To ryzyko przejmuje punkt 2.
+--
+-- 2. SKRYPT KONCZY SIE WERDYKTEM, NIE COMMITEM. Edytor pokazuje wynik OSTATNIEJ
+--    instrukcji, wiec dotad wypisywal "Success. No rows returned" — komunikat,
+--    ktory nie odroznia sukcesu od niczego. Teraz ostatnia instrukcja jest
+--    SELECT, ktory mowi, czy funkcja powstala i czy granty sa wlasciwe.
+--
+--    TO NIE ZASTEPUJE KROKU 2. Sprawdzenie w tej samej sesji potwierdza tylko
+--    to, co widzi ta sesja — a migracja S-09 zniknela z produkcji przy commicie
+--    na miejscu i werdykcie OK. Krok 2 nadal idzie OSOBNO, W NOWEJ SESJI.
+--    Ten werdykt ma wylapac co innego: ze nie wykonalo sie NIC.
+--
+-- ZANIM URUCHOMISZ: kliknij w pole edytora, Ctrl+A, dopiero potem Run. Jesli
+-- z poprzedniego wklejenia zostalo zaznaczenie, edytor wykona tylko je.
 --
 -- TRESC MIGRACJI PONIZEJ JEST WSTAWIONA PROGRAMOWO z pliku
 -- supabase/migrations/20260914160000_account_deletion.sql — nie przepisana
--- recznie. Wiernosc co do znaku jest wiec faktem, a nie deklaracja w naglowku.
---
--- CALOSC W JEDNEJ TRANSAKCJI. Ta migracja NICZEGO NIE UPUSZCZA, wiec porazka
--- w polowie nie moze zostawic produktu bez przegladu kont — inaczej niz przy
--- S-11, ktore zaczynalo sie od drop function. Transakcja jest tu mimo to, zeby
--- wpis do rejestru nie przezyl porazki samej funkcji.
---
--- JEDNO WKLEJENIE, JEDNO URUCHOMIENIE. Wklejony fragmentami zostawi funkcje BEZ
--- koncowych revoke, czyli z domyslnymi grantami Supabase dla anon i
--- service_role — i NIE RZUCI PRZY TYM BLEDU.
---
--- PO NIM: kontrola idzie OSOBNYM WKLEJENIEM, W NOWEJ SESJI (2-kontrola.sql).
--- Sprawdzenie w tej samej sesji potwierdza tylko to, co widzi ta sesja.
-
-begin;
+-- recznie, wiec wiernosc co do znaku jest faktem, a nie deklaracja.
 
 -- Usuwanie konta przez administratora (S-12, FR-017).
 --
@@ -304,4 +317,37 @@ insert into supabase_migrations.schema_migrations (version, name)
 values ('20260914160000', 'account_deletion')
 on conflict (version) do nothing;
 
-commit;
+-- ============================================================================
+--  WERDYKT TEJ SESJI — zeby ekran powiedzial cokolwiek poza "Success".
+--  Czyta to samo, co krok 2, ale w tej samej sesji, wiec NIE jest dowodem
+--  trwalosci. Sluzy do odroznienia "wykonalo sie" od "nie wykonalo sie nic".
+-- ============================================================================
+
+select
+  coalesce(host(inet_server_addr())::text, 'socket lokalny')           as serwer,
+  (to_regprocedure('public.delete_account(uuid,boolean)') is not null) as jest_usuwanie,
+  exists(select 1 from supabase_migrations.schema_migrations
+          where version = '20260914160000')                            as s12_w_rejestrze,
+  coalesce(has_function_privilege('anon',
+    to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), true)           as da_anon,
+  coalesce(has_function_privilege('service_role',
+    to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), true)           as da_srv,
+  coalesce(has_function_privilege('authenticated',
+    to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), false)          as da_auth,
+  case
+    when to_regprocedure('public.delete_account(uuid,boolean)') is null
+      then 'BLAD: funkcja nie powstala — nic sie nie wykonalo'
+    when coalesce(has_function_privilege('anon',
+           to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), true)
+      then 'BLAD: anon ma prawo wykonania — revoke nie wykonal sie, wklejenie bylo czesciowe'
+    when coalesce(has_function_privilege('service_role',
+           to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), true)
+      then 'BLAD: service_role ma prawo wykonania — revoke nie wykonal sie'
+    when not coalesce(has_function_privilege('authenticated',
+           to_regprocedure('public.delete_account(uuid,boolean)'), 'execute'), false)
+      then 'BLAD: authenticated NIE ma prawa wykonania — grant nie wykonal sie'
+    when not exists(select 1 from supabase_migrations.schema_migrations
+                     where version = '20260914160000')
+      then 'BLAD: funkcja jest, ale wersja nie zabukowana w rejestrze'
+    else 'WYGLADA DOBRZE — teraz krok 2 w NOWEJ sesji'
+  end                                                                  as werdykt_tej_sesji;
