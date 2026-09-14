@@ -90,8 +90,14 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 409,
     // Komunikat nazywa SKUTEK, nie mechanizm. Administrator ma podjąć decyzję,
     // a nie dowiedzieć się, że funkcja zwróciła kod.
+    // KOMUNIKAT NAZYWA SKUTEK, NIE CZASOWNIK — ustalenie F4 przegladu S-11.
+    // Wczesniej brzmial "Po jej ZDJECIU…", bo kod nalezal wylacznie do zmiany roli.
+    // Od S-11 ten sam kod zwraca takze `set_account_blocked`, wiec administrator
+    // BLOKUJACY ostatniego admina zobaczylby zdanie o zdejmowaniu roli — bez zadnego
+    // bledu, tylko z nieprawda na ekranie. Jeden kod na jeden SKUTEK jest tanszy niz
+    // dwa kody na dwa czasowniki: skutek jest ten sam i to on wymaga zgody.
     message:
-      "To ostatnia rola administratora. Po jej zdjęciu administracja przestanie być dostępna z poziomu aplikacji. Potwierdź, jeśli chcesz to zrobić.",
+      "To ostatni czynny administrator. Po tej operacji administracja przestanie być dostępna z poziomu aplikacji. Potwierdź, jeśli chcesz to zrobić.",
   },
   INTERNAL: {
     status: 500,

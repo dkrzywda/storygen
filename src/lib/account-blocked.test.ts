@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isBlocked } from "@/lib/account-blocked";
+import { blockGateDecision, isBlocked } from "@/lib/account-blocked";
 
 // Jeden punkt odniesienia dla wszystkich przypadkow. Zegar jest WSTRZYKIWANY,
 // wiec zaden przypadek nie zalezy od tego, kiedy uruchomiono zestaw.
@@ -75,5 +75,68 @@ describe("isBlocked", () => {
   it("domyslny zegar to `teraz` — wywolanie bez drugiego argumentu dziala", () => {
     expect(isBlocked({ banned_until: "2126-09-14T12:00:00.000Z" })).toBe(true);
     expect(isBlocked({ banned_until: "2020-01-01T00:00:00.000Z" })).toBe(false);
+  });
+});
+
+describe("blockGateDecision", () => {
+  const ZABLOKOWANY = { banned_until: "2126-09-14T12:00:00.000Z" };
+  const AKTYWNY = { banned_until: null };
+
+  describe("konto niezablokowane przechodzi wszedzie", () => {
+    it.each(["/", "/generate", "/generations", "/dashboard", "/api/generate", "/auth/signin"])("%s", (sciezka) => {
+      expect(blockGateDecision(sciezka, AKTYWNY, TERAZ)).toBe("pass");
+    });
+
+    it("brak sesji tez przechodzi — tym zajmuje sie osobne sprawdzenie tras chronionych", () => {
+      expect(blockGateDecision("/dashboard", null, TERAZ)).toBe("pass");
+    });
+  });
+
+  describe("zablokowany: strony przekierowanie, API kontrakt bledu", () => {
+    it.each(["/", "/generate", "/generations", "/dashboard", "/cokolwiek-nowego"])("%s → redirect", (sciezka) => {
+      expect(blockGateDecision(sciezka, ZABLOKOWANY, TERAZ)).toBe("redirect");
+    });
+
+    // DWA KSZTALTY, JEDEN KONTRAKT BLEDU. Przekierowanie w odpowiedzi na `fetch()`
+    // byloby dla wyspy HTML-em ze statusem 200 i uzytkownik zobaczylby komunikat
+    // domyslny zamiast informacji o zawieszeniu dostepu.
+    it.each(["/api/generate", "/api/generations/abc", "/api/accounts/abc"])("%s → json", (sciezka) => {
+      expect(blockGateDecision(sciezka, ZABLOKOWANY, TERAZ)).toBe("json");
+    });
+
+    // Zasieg SZERSZY niz lista tras chronionych: trasa, ktorej dzis nie ma,
+    // ma byc domyslnie zamknieta, a nie domyslnie otwarta.
+    it("trasa spoza listy chronionych tez jest objeta", () => {
+      expect(blockGateDecision("/jakas/przyszla/trasa", ZABLOKOWANY, TERAZ)).toBe("redirect");
+    });
+  });
+
+  describe("wyjatki sa WARUNKIEM DZIALANIA, nie ulatwieniem", () => {
+    // Bez tego bramka przekierowywalaby na strone, ktora sama przekierowuje —
+    // petla, w ktorej komunikat nigdy sie nie pokazuje.
+    it.each(["/auth/signin", "/auth/signup", "/auth/confirm-email"])("%s nie wpada w petle", (sciezka) => {
+      expect(blockGateDecision(sciezka, ZABLOKOWANY, TERAZ)).toBe("pass");
+    });
+
+    // Zablokowany musi moc zakonczyc wlasna sesje. Odcieciem tego uwiezilibysmy
+    // go w niej, a nie zablokowali.
+    it("wylogowanie zostaje dostepne", () => {
+      expect(blockGateDecision("/api/auth/signout", ZABLOKOWANY, TERAZ)).toBe("pass");
+    });
+  });
+
+  describe("koncowy ukosnik w wyjatku jest znaczacy", () => {
+    // TO JEST PRZYPADEK ROZNICUJACY. Wyjatek zapisany jako "/auth" zamiast "/auth/"
+    // otworzylby te sciezki zablokowanemu — i zaden inny test by tego nie zlapal.
+    it.each(["/authx", "/authorize", "/api/authorize", "/api/authx/token"])(
+      "%s NIE jest wyjete spod bramki",
+      (sciezka) => {
+        expect(blockGateDecision(sciezka, ZABLOKOWANY, TERAZ)).not.toBe("pass");
+      },
+    );
+  });
+
+  it("data w PRZESZLOSCI nie uruchamia bramki", () => {
+    expect(blockGateDecision("/dashboard", { banned_until: "2026-09-13T12:00:00.000Z" }, TERAZ)).toBe("pass");
   });
 });

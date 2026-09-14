@@ -44,17 +44,29 @@ meta as (
     (select p.provolatile from pg_catalog.pg_proc p where p.oid = (select ac from fn)) as ac_tryb,
     -- `prosecdef` i `proconfig` — dwie wlasnosci, na ktorych stoi caly hardening
     -- (ustalenie F6 przegladu S-10).
+    --
+    -- POROWNANIE DOKLADNE, NIE `like '%search_path=%'` — ustalenie F1 przegladu S-11.
+    -- Poprzednia wersja czerwienila sie wylacznie przy CALKOWITYM braku `set search_path`.
+    -- Zmierzone na funkcji probnej: `set search_path = public` daje element
+    -- `search_path=public`, wiec kontrola przez `LIKE` mowila `true` — a to jest
+    -- dokladnie ten stan, przed ktorym `search_path = ''` broni w `security definer`.
+    -- Sprawdzenie bylo niewrazliwe na awarie, ktora ma wykrywac.
+    --
+    -- WARTOSC POROWNYWANA JEST ZMIERZONA, NIE ZGADNIETA: Postgres CYTUJE pusty
+    -- lancuch, wiec element brzmi `search_path=""`, a nie `search_path=`. Pierwsza
+    -- proba tej poprawki porownywala z `search_path=` i zaczerwienila CZYSTY stan —
+    -- co bylo szczescie w nieszczesciu, bo blad w kontroli ujawnil sie od razu.
     (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select ov from fn)) as ov_def,
     (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_def,
     (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select sb from fn)) as sb_def,
     (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select ac from fn)) as ac_def,
-    (select coalesce(p.proconfig::text like '%search_path=%', false)
+    (select coalesce(p.proconfig @> array['search_path=""'], false)
        from pg_catalog.pg_proc p where p.oid = (select ov from fn)) as ov_path,
-    (select coalesce(p.proconfig::text like '%search_path=%', false)
+    (select coalesce(p.proconfig @> array['search_path=""'], false)
        from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_path,
-    (select coalesce(p.proconfig::text like '%search_path=%', false)
+    (select coalesce(p.proconfig @> array['search_path=""'], false)
        from pg_catalog.pg_proc p where p.oid = (select sb from fn)) as sb_path,
-    (select coalesce(p.proconfig::text like '%search_path=%', false)
+    (select coalesce(p.proconfig @> array['search_path=""'], false)
        from pg_catalog.pg_proc p where p.oid = (select ac from fn)) as ac_path
 ),
 priv as (
@@ -113,7 +125,7 @@ select
     when not m.ov_def or not m.sr_def or not m.sb_def or not m.ac_def
       then 'BLAD: ktoras funkcja nie jest security definer'
     when not m.ov_path or not m.sr_path or not m.sb_path or not m.ac_path
-      then 'BLAD: ktoras funkcja bez set search_path'
+      then 'BLAD: ktoras funkcja bez set search_path = (pusty)'
     when p.ov_anon or p.sr_anon or p.sb_anon or p.ac_anon
       then 'BLAD: anon ma prawo wykonania'
     when p.ov_srv or p.sr_srv or p.sb_srv or p.ac_srv

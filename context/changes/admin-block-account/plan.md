@@ -358,6 +358,24 @@ Log serwera potwierdza ścieżkę mapowania: `{ scope: 'auth/signin', code: 'ACC
 
 **Przy okazji trafiona pułapka z `CLAUDE.md`:** dev server wywalił się na `Invalid hook call` / `useState` z `null` — objaw nieświeżego cache'u Vite. `rm -rf node_modules/.vite` i restart, zgodnie z zapisaną regułą. Nie miało związku ze zmianą.
 
+## Addendum 2026-09-14 — triaż przeglądu faz 1–2
+
+Przegląd: `context/changes/admin-block-account/reviews/impl-review-phase-1-2.md` — 10 znalezisk, 0 krytycznych. Naprawione cztery, sześć świadomie pominiętych z zapisanym powodem.
+
+**Wzorzec wart nazwania: cztery z sześciu ostrzeżeń dotyczyły jakości DOWODU, nie jakości kodu.** Bramki dostępu okazały się szczelne, granice zakresu dotrzymane, a nieszczelne były sprawdzenia, które miały tego pilnować. To ta sama klasa, co kryteria niewyrażalne przez zestaw — tyle że o poziom wyżej.
+
+**F1 — skrypt kontrolny przepuszczał niepusty `search_path`.** `like '%search_path=%'` czerwieniło się wyłącznie przy całkowitym braku dyrektywy, więc funkcja z `set search_path = public` przechodziła na zielono — a to dokładnie ten stan, przed którym `''` broni w `security definer`. Naprawione porównaniem dokładnym. **Pierwsza próba poprawki była błędna**: porównywałem z `search_path=`, zgadując postać zamiast ją zmierzyć, i zaczerwieniła czysty stan. Postgres **cytuje** pusty łańcuch — element brzmi `search_path=""`. Błąd ujawnił się natychmiast, bo kontrola ma teraz dowód czułości w obie strony.
+
+**F2 — odtworzone funkcje zgubiły uzasadnienia, w tym pomiar.** `drop` + `create` na `accounts_overview()` skasowało cztery komentarze przy kolumnach, cały blok `BRAMKA` z pomiarem z 2026-09-08 („claimy zamarzają w chwili wystawienia"), uzasadnienie `deleted_at` wołającego i dwa zdania z `comment on function`; z nagłówka `set_account_role` wypadły dwa kolejne — przy nagłówku deklarującym „reszta przeniesiona **bez zmian**". Zmierzone: pomiar istniał już tylko w migracjach **nadpisanych**, czyli w plikach, które niczego nie definiują. Wszystko przywrócone, a nieprawdziwe zdanie urealnione. **To jest naruszenie reguły, którą ten sam plik cytuje** — napisanej tego samego dnia.
+
+**F4 — komunikat ostatniego administratora mówił o czasowniku, nie o skutku.** `set_account_blocked` zwraca ten sam kod co `set_account_role`, a komunikat brzmiał „Po jej **zdjęciu**…". Faza 3 zmapowałaby go tą samą drogą i administrator **blokujący** ostatniego admina zobaczyłby zdanie o zdejmowaniu roli — bez błędu, tylko z nieprawdą na ekranie. Przeredagowane na skutek. Jeden kod na jeden skutek jest tańszy niż dwa kody na dwa czasowniki: skutek jest ten sam i to on wymaga zgody.
+
+**F6 — kod na ścieżce każdego żądania nie miał ani jednego testu.** Decyzja bramki wyciągnięta z middleware do funkcji czystej `blockGateDecision(pathname, account, now)`; middleware wykonuje już tylko jej werdykt. 25 nowych przypadków, w tym różnicujący na **końcowy ukośnik** w wyjątku — bez niego zapis `"/auth"` zamiast `"/auth/"` otworzyłby zablokowanemu `/authx` i `/api/authorize`, a żaden inny test by tego nie złapał. Mutacja czerwieni dokładnie te cztery. To ten sam zabieg, który plan stosuje w fazie 4 do maszyny stanów wyspy — tyle że kryterium 2.3 jest teraz wyrażalne bez Dockera.
+
+**Pominięte świadomie:** F3 (brak potwierdzenia przy blokowaniu siebie — rozróżnienie zostaje, domknięcie przy fazie 4), F5 (skrypt pomiarowy bez tożsamości środowiska), F7, F8, F9, F10. Powody przy każdym wpisie w raporcie.
+
+**Domknięte pomiarem otwarte pytanie przeglądu:** zablokowane konto **nie odświeży tokenu** — `400`, `{"error_code":"user_banned","msg":"Invalid Refresh Token: User Banned"}`. Okno dostępu bezpośredniego do PostgREST jest więc ograniczone do życia tokenu (≤60 min), a nie nieskończone. To była jedyna niewiadoma mogąca podnieść wagę F7.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -383,17 +401,17 @@ Log serwera potwierdza ścieżkę mapowania: `{ scope: 'auth/signin', code: 'ACC
 
 #### Automated
 
-- [x] 2.1 Test jednostkowy `isBlocked` dla czterech klas wejścia
-- [x] 2.2 Test jednostkowy: `user_banned` mapuje się na nowy kod, nie na INTERNAL
-- [x] 2.3 Test integracyjny: żywy token nie przechodzi po zablokowaniu
-- [x] 2.4 `npm test` kodem wyjścia 0
-- [x] 2.5 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 2.1 Test jednostkowy `isBlocked` dla czterech klas wejścia — ca46c7c
+- [x] 2.2 Test jednostkowy: `user_banned` mapuje się na nowy kod, nie na INTERNAL — ca46c7c
+- [x] 2.3 Test integracyjny: żywy token nie przechodzi po zablokowaniu — ca46c7c
+- [x] 2.4 `npm test` kodem wyjścia 0 — ca46c7c
+- [x] 2.5 `npx tsc --noEmit` i ESLint bez błędów — ca46c7c
 
 #### Manual
 
-- [x] 2.6 Zablokowanie przy otwartej sesji wypycha przy następnym żądaniu
-- [x] 2.7 Próba logowania zablokowanego: komunikat o zawieszeniu
-- [x] 2.8 Brak pętli przekierowań na ścieżce auth
+- [x] 2.6 Zablokowanie przy otwartej sesji wypycha przy następnym żądaniu — ca46c7c
+- [x] 2.7 Próba logowania zablokowanego: komunikat o zawieszeniu — ca46c7c
+- [x] 2.8 Brak pętli przekierowań na ścieżce auth — ca46c7c
 
 ### Phase 3: Kontrakt — endpoint i moduł
 

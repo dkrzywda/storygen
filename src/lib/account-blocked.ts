@@ -54,6 +54,62 @@ export interface BlockableAccount {
  * @param account konto z sesji; `null`/`undefined` znaczy "brak sesji", nie "zablokowane"
  * @param now wstrzykiwalny czas — test nie moze zalezec od zegara maszyny
  */
+/**
+ * Sciezki, ktorych bramka blokady NIE dotyczy.
+ *
+ * TO NIE JEST ULATWIENIE, TYLKO WARUNEK DZIALANIA. Bramka przekierowuje na
+ * `/auth/signin`; bez wylaczenia z niej samej sciezki `/auth/*` powstalaby petla
+ * przekierowan i zablokowany NIGDY nie zobaczylby komunikatu, dla ktorego to
+ * wszystko powstalo.
+ *
+ * `/api/auth/` jest tu z drugiego powodu: zablokowany musi moc sie WYLOGOWAC.
+ * Wylogowanie to `POST /api/auth/signout`, a odcinanie komus mozliwosci zakonczenia
+ * wlasnej sesji byloby uwiezieniem go w niej, nie zablokowaniem. Logowaniu ta furtka
+ * nie szkodzi — zablokowanemu i tak odmawia dostawca.
+ *
+ * KONCOWY UKOSNIK JEST ZNACZACY. Bez niego `/authx` albo `/api/authorize` wpadlyby
+ * pod wyjatek jako prefiks. Pilnuje tego osobny przypadek testowy.
+ */
+const BLOCK_GATE_EXEMPT = ["/auth/", "/api/auth/"];
+
+/**
+ * Co bramka ma zrobic z tym zadaniem.
+ *
+ * `pass` — przepusc dalej. `redirect` — na strone logowania z kodem w adresie.
+ * `json` — odpowiedz kontraktem bledu, bo to wolanie z wyspy, nie nawigacja.
+ */
+export type BlockGateDecision = "pass" | "redirect" | "json";
+
+/**
+ * Decyzja bramki jako FUNKCJA CZYSTA — ustalenie F6 przegladu S-11.
+ *
+ * Wyciagnieta z `src/middleware.ts`, bo tam nie dalo sie jej przetestowac: kryterium
+ * planu wymagalo testu integracyjnego, ktorego zestaw nie potrafi wyrazic, wiec kod
+ * stojacy na sciezce KAZDEGO zadania nie mial ani jednego testu. Tutaj ma — bez
+ * Dockera, bez sesji i bez klucza sekretnego. To ten sam zabieg, co `planRoleAction`
+ * w `@/lib/account-role-action` dla wyspy zmiany roli.
+ *
+ * DWA KSZTALTY ODPOWIEDZI, JEDEN KONTRAKT BLEDU — regula z CLAUDE.md. Przekierowanie
+ * w odpowiedzi na `fetch()` z wyspy byloby dla niej HTML-em ze statusem 200:
+ * `readApiError` nie znalazlby tam zadnego kodu, a uzytkownik zobaczylby komunikat
+ * domyslny zamiast informacji o zawieszeniu dostepu.
+ */
+export function blockGateDecision(
+  pathname: string,
+  account: BlockableAccount | null | undefined,
+  now: Date = new Date(),
+): BlockGateDecision {
+  if (BLOCK_GATE_EXEMPT.some((prefix) => pathname.startsWith(prefix))) {
+    return "pass";
+  }
+
+  if (!isBlocked(account, now)) {
+    return "pass";
+  }
+
+  return pathname.startsWith("/api/") ? "json" : "redirect";
+}
+
 export function isBlocked(account: BlockableAccount | null | undefined, now: Date = new Date()): boolean {
   if (!account) {
     return false;

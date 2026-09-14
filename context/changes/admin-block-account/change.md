@@ -1,7 +1,7 @@
 ---
 change_id: admin-block-account
 title: Admin blokuje i odblokowuje konto
-status: implementing
+status: impl_reviewed
 created: 2026-09-14
 updated: 2026-09-14
 archived_at: null

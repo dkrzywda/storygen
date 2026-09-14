@@ -101,9 +101,20 @@ returns table (
   used_today integer,
   own_limit integer,
   row_limit integer,
+  -- IDENTYFIKATOR CELU. Bez niego nie ma czym zaadresowac konta w `set_account_role`
+  -- ani w `set_account_blocked`. Adres e-mail celowo NIE jest selektorem: jest zmienny,
+  -- jest PII, a PRD rozdziela adres od roszczenia o uprawnienia.
   id uuid,
+  -- `coalesce` na 'user', bo konto bez klucza w `raw_app_meta_data` jest zwyklym
+  -- uzytkownikiem — tak samo, jak `isAdmin()` traktuje brak klucza jako `false`.
   role text,
+  -- Wlasne konto administratora. Dzialanie na sobie jest DOZWOLONE (PRD v4, OQ9),
+  -- ale interfejs musi wiedziec, ze klika w siebie, zeby uczciwie o tym powiedziec.
   is_self boolean,
+  -- LICZONE W BAZIE, NIE W WIDOKU — ta sama zasada, ktora ustalenie F3 przegladu
+  -- S-09 wymusilo dla `row_limit`: liczba, na ktorej stoi komunikat, musi przyjsc
+  -- z tego samego odczytu co dane. Kopia w widoku uciszalaby ostrzezenie przy
+  -- kazdej zmianie w SQL-u, BEZ ZADNEGO BLEDU.
   is_last_admin boolean,
   -- STAN BLOKADY. Porownanie z `now()`, nie sprawdzenie `is not null` — patrz
   -- ostrzezenie w naglowku. Konto z `banned_until` w przeszlosci jest aktywne.
@@ -165,10 +176,23 @@ as $function$
     -- ponizej, tymi SAMYMI predykatami — ustalenie F1 przegladu S-10 i
     -- `lessons.md` § "Funkcja uprzywilejowana filtruje stan konta wolajacego".
     u.deleted_at is null
+    -- ==========================================================================
+    --  BRAMKA. Rola czytana Z BAZY dla `auth.uid()`, NIE z tokenu.
+    --
+    --  Zmierzone 2026-09-08: `auth.jwt() #>> '{app_metadata,role}'` zwraca NULL
+    --  dla tokenu wystawionego PRZED nadaniem roli, bo claimy zamarzaja w chwili
+    --  wystawienia. Ta bramka dziala dla sesji dowolnego wieku.
+    --
+    --  ZWROT ZERA WIERSZY, NIE WYJATKU (FR-015): pusty zbior jest nieodroznialny
+    --  od "brak kont", wiec nie ujawnia, ze przeglad istnieje.
+    -- ==========================================================================
     and exists (
       select 1
         from auth.users me
        where me.id = auth.uid()
+         -- `deleted_at` WOLAJACEGO — ustalenie F1 przegladu S-10. Bez tego konto
+         -- administratora miekko usuniete, ale z niewygaslym tokenem, nadal przechodzi
+         -- bramke. Tokeny zyja po `deleted_at`, wiec okno jest realne, nie teoretyczne.
          and me.deleted_at is null
          -- STAN ZABLOKOWANIA WOLAJACEGO — wymog zapisany w `lessons.md` przy S-10:
          -- "deleted_at, a po S-11 takze stan zablokowania". Bez tego zablokowany
@@ -182,10 +206,12 @@ $function$;
 
 comment on function public.accounts_overview() is
   'Przeglad kont dla administratora (FR-014). Zwraca WYLACZNIE liczby i metadane konta, '
-  'nigdy tresci generacji. Od S-11 niesie takze is_blocked, liczone przez porownanie '
-  'banned_until z now() — nie przez sprawdzenie obecnosci wartosci, bo data w przeszlosci '
-  'oznacza konto AKTYWNE. Bramka roli jest w srodku funkcji i czyta auth.users dla '
-  'auth.uid(), nie token. Konto bez roli admin dostaje zero wierszy, nie blad (FR-015).';
+  'nigdy tresci generacji — to utrzymuje NFR o izolacji kont nienaruszony. Od S-11 niesie '
+  'takze is_blocked, liczone przez porownanie banned_until z now() — nie przez sprawdzenie '
+  'obecnosci wartosci, bo data w przeszlosci oznacza konto AKTYWNE. Bramka roli jest w srodku '
+  'funkcji i czyta auth.users dla auth.uid(), nie token: claimy zamarzaja w chwili wystawienia '
+  '(zmierzone 2026-09-08). Konto bez roli admin dostaje zero wierszy, nie blad (FR-015). '
+  'is_self, is_last_admin i row_limit licza sie w bazie, zeby interfejs nie trzymal ich kopii.';
 
 -- ============================================================================
 --  2. BLOKOWANIE I ODBLOKOWANIE KONTA
@@ -308,9 +334,22 @@ comment on function public.set_account_blocked(uuid, boolean, boolean) is
 --    * licznik adminow idzie przez `active_admin_count()`, czyli pomija konta
 --      zablokowane — i pyta o zgode tylko wtedy, gdy cel sam jest uzytecznym
 --      administratorem.
---  Reszta ciala i komentarzy jest przeniesiona bez zmian: nowa wersja jest odtad
---  kanoniczna, a uzasadnienie, ktorego w niej nie ma, przestalo istniec
+--  Poza nimi cialo i uzasadnienia sa przeniesione: nowa wersja jest odtad kanoniczna,
+--  a uzasadnienie, ktorego w niej nie ma, przestalo istniec w projekcie
 --  (`lessons.md` § "Funkcja uprzywilejowana filtruje stan konta wolajacego").
+--
+--  ZDANIE POWYZEJ BRZMIALO WCZESNIEJ "reszta ciala i komentarzy bez zmian" i BYLO
+--  NIEPRAWDZIWE — dwa uzasadnienia z naglowka faktycznie wypadly i wrocily dopiero
+--  po przegladzie (ustalenie F2 przegladu S-11). Oto one:
+--
+--  ZWRACA KOD, NIE BOOLEAN I NIE WYJATEK — wzorzec `record_attempt_if_allowed`
+--  (`20260907221925:80`). Wolajacy musi wiedziec, KTORA granica zadzialala: brak
+--  uprawnien to inna sytuacja niz brak potwierdzenia przy ostatniej roli, i endpoint
+--  mapuje je na rozne odpowiedzi. To samo dotyczy `set_account_blocked` powyzej.
+--
+--  VOLATILE, czyli BEZ `stable`. `stable` zabronilby zapisu — i to wlasnie ono
+--  czyni `accounts_overview()` read-only Z KONSTRUKCJI, a nie z ostroznosci.
+--  Obie funkcje zapisujace w tym pliku sa volatile z tego samego powodu.
 -- ============================================================================
 
 create or replace function public.set_account_role(
