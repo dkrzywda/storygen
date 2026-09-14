@@ -329,27 +329,27 @@ Rozważona i odrzucona alternatywa: test integracyjny z jednym krokiem `psql` na
 
 #### Automated
 
-- [x] 2.1 Test jednostkowy schematu żądania
-- [x] 2.2 Test jednostkowy mapowania pięciu kodów bazy na kody API
-- [ ] 2.3 Test integracyjny: nadana rola widoczna bez ponownego logowania
-- [x] 2.4 `npm test` kodem wyjścia 0
-- [x] 2.5 `npx tsc --noEmit` i ESLint na dotkniętych plikach bez błędów
+- [x] 2.1 Test jednostkowy schematu żądania — b21c470
+- [x] 2.2 Test jednostkowy mapowania pięciu kodów bazy na kody API — b21c470
+- [x] 2.3 Test integracyjny: nadana rola widoczna bez ponownego logowania
+- [x] 2.4 `npm test` kodem wyjścia 0 — b21c470
+- [x] 2.5 `npx tsc --noEmit` i ESLint na dotkniętych plikach bez błędów — b21c470
 
 #### Manual
 
-- [x] 2.6 `curl` zwykłym kontem na PATCH zwraca 404, nie 403
+- [x] 2.6 `curl` zwykłym kontem na PATCH zwraca 404, nie 403 — b21c470
 
 ### Phase 3: Interfejs — wyspa na wiersz
 
 #### Automated
 
-- [ ] 3.1 `npx astro build` przechodzi
-- [ ] 3.2 ESLint i `npx tsc --noEmit` na dotkniętych plikach bez błędów
-- [ ] 3.3 Test jednostkowy wyspy: dwuetapowe potwierdzenie przy `isLastAdmin`
+- [x] 3.1 `npx astro build` przechodzi
+- [x] 3.2 ESLint i `npx tsc --noEmit` na dotkniętych plikach bez błędów
+- [x] 3.3 Test jednostkowy wyspy: dwuetapowe potwierdzenie przy `isLastAdmin`
 
 #### Manual
 
-- [ ] 3.4 Nadanie roli drugiemu kontu widoczne bez ponownego logowania
-- [ ] 3.5 Zdjęcie roli sobie: ostrzeżenie, potwierdzenie, komunikat
-- [ ] 3.6 Rola przywrócona przez konsolę dostawcy
-- [ ] 3.7 Zwykłe konto nie widzi sekcji ani przycisków
+- [x] 3.4 Nadanie roli drugiemu kontu widoczne bez ponownego logowania
+- [x] 3.5 Zdjęcie roli sobie: ostrzeżenie, potwierdzenie, komunikat
+- [x] 3.6 Rola przywrócona przez konsolę dostawcy
+- [x] 3.7 Zwykłe konto nie widzi sekcji ani przycisków

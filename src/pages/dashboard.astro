@@ -9,6 +9,7 @@ import { dateFormat, resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/account-role";
 import { fetchAccountsOverview } from "@/lib/admin-accounts";
+import AccountRoleButton from "@/components/admin/AccountRoleButton";
 import type { AccountOverviewRow, GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
@@ -63,13 +64,21 @@ const showAdmin = isAdmin(Astro.locals.user);
  * nie-null — typ jest WEZSZY NIZ SCHEMAT. Dzis nieosiagalne, bo rejestracja jest tylko
  * e-mailem i haslem; osiagalne przy logowaniu anonimowym albo po numerze telefonu.
  */
-type AccountRowView = AccountOverviewRow & { registeredLabel: string };
+type AccountRowView = AccountOverviewRow & { registeredLabel: string; roleLabel: string };
 
 let accounts: AccountRowView[] | null = null;
 if (showAdmin && supabase) {
   try {
     const rows = await fetchAccountsOverview(supabase);
-    accounts = rows.map((row) => ({ ...row, registeredLabel: dateFormat.format(row.registeredAt) }));
+    // OBA etykiety liczone TU, w tym samym `try` co odczyt — nie w szablonie.
+    // `lessons.md` § "Degradacja odczytu nie chroni renderowania": `try/catch` przy
+    // odczycie chroni tylko odczyt, a formatowanie w szablonie rzucaloby POZA nim
+    // i wywracalo cala strone, lacznie z rankingiem i ulubionymi.
+    accounts = rows.map((row) => ({
+      ...row,
+      registeredLabel: dateFormat.format(row.registeredAt),
+      roleLabel: row.role === "admin" ? "administrator" : "użytkownik",
+    }));
   } catch (error) {
     logApiError("dashboard/accounts", "INTERNAL", error);
   }
@@ -215,19 +224,39 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                     <thead class="text-ink-subtle text-xs">
                       <tr>
                         <th class="py-1 pr-4 font-medium">Konto</th>
+                        <th class="py-1 pr-4 font-medium">Rola</th>
                         <th class="py-1 pr-4 font-medium">Rejestracja</th>
                         <th class="py-1 pr-4 text-right font-medium">Generacje</th>
-                        <th class="py-1 text-right font-medium">Dziś</th>
+                        <th class="py-1 pr-4 text-right font-medium">Dziś</th>
+                        <th class="py-1 text-right font-medium">
+                          <span class="sr-only">Zmiana roli</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody class="text-ink-muted">
                       {accounts.map((account) => (
                         <tr class="border-hairline border-t">
-                          <td class="text-ink py-2 pr-4 break-all">{account.email}</td>
+                          <td class="text-ink py-2 pr-4 break-all">
+                            {account.email}
+                            {/* Wlasne konto oznaczone, bo dzialanie na sobie jest DOZWOLONE
+                                (PRD v4, OQ9) i klikajacy musi wiedziec, ze klika w siebie. */}
+                            {account.isSelf && <span class="text-ink-subtle"> (to Ty)</span>}
+                          </td>
+                          <td class="py-2 pr-4 whitespace-nowrap">{account.roleLabel}</td>
                           <td class="py-2 pr-4 whitespace-nowrap">{account.registeredLabel}</td>
                           <td class="py-2 pr-4 text-right">{account.generations}</td>
-                          <td class="py-2 text-right whitespace-nowrap">
+                          <td class="py-2 pr-4 text-right whitespace-nowrap">
                             {account.usedToday} z {account.ownLimit}
+                          </td>
+                          <td class="py-2 text-right">
+                            <AccountRoleButton
+                              client:load
+                              accountId={account.id}
+                              email={account.email}
+                              role={account.role}
+                              isSelf={account.isSelf}
+                              isLastAdmin={account.isLastAdmin}
+                            />
                           </td>
                         </tr>
                       ))}
