@@ -36,7 +36,9 @@ interface Props extends BlockActionContext {
  *
  * Bez nich przycisk zostawalby na zawsze w „Zapisuje…", zablokowany, choc stan
  * w bazie jest juz zmieniony — czyli ekran klamalby w strone zachecajaca do
- * drugiej proby. Ustalenie F5 przegladu calosci `S-10`.
+ * drugiej proby. Ustalenie F4 przegladu calosci `S-10` ("Brak stanu koncowego
+ * przed `reload()`") — numer poprawiony po przegladzie faz 3-4; wczesniej stalo tu
+ * F5, ktore dotyczy czego innego.
  */
 type Status = "idle" | "confirming" | "sending" | "done" | "blockedSelf";
 
@@ -49,7 +51,8 @@ export default function AccountBlockButton({ accountId, email, isBlocked, isSelf
    * z renderowania mowila inaczej. Od tego momentu traktujemy wiersz tak samo.
    *
    * Wartosc wchodzi do KONTEKSTU maszyny stanow, a nie tylko do ciala zadania —
-   * ustalenie F1 przegladu `S-10`. Inaczej kolejne klikniecie pytaloby slabszym
+   * ustalenie F3 przegladu `S-10` ("`forceConfirmLast` przezywal «Anuluj» i blad").
+   * Inaczej kolejne klikniecie pytaloby slabszym
    * ostrzezeniem („blokujesz wlasne konto"), a wysylalo jawna zgode na zakonczenie
    * administracji — i „Anuluj" z poprzedniej proby przenosiloby sie po cichu
    * jako ta zgoda.
@@ -148,7 +151,17 @@ export default function AccountBlockButton({ accountId, email, isBlocked, isSelf
       <div role="alert" className="flex flex-col items-end gap-1">
         <p className="text-ink max-w-xs text-right text-xs">
           Twoje konto zostało zablokowane. Przy następnym żądaniu zostaniesz wylogowany, a odblokować Cię może tylko
-          inny administrator.
+          inny administrator.{" "}
+          {/* Ustalenie F2 przegladu faz 3-4, przeniesione z F5 przegladu calosci S-10:
+              wyspa zmienia TYLKO swoja komorke, wiec reszta tabeli — znacznik przy tym
+              wierszu i przyciski przy pozostalych — pokazuje jeszcze stan sprzed operacji.
+              Od teraz kazde klikniecie w tej tabeli trafia w bramke blokady i wraca
+              odmowa. Roznica wobec zdjecia roli jest na korzysc: tam odmowa mowila
+              mylace „Nie znaleziono takiej pozycji", tu mowi wprost o zawieszeniu
+              dostepu. To jednak nadal tabela, ktora przeczy stanowi konta. */}
+          <span className="text-ink-muted">
+            Reszta tej tabeli pokazuje jeszcze stan sprzed zmiany i żadna operacja w niej już nie zadziała.
+          </span>
         </p>
         <a
           href="/auth/signin"

@@ -3,7 +3,13 @@ import { mapAccountActionCode } from "@/lib/admin-accounts";
 import { API_ERRORS } from "@/lib/api-errors";
 
 /**
- * Mapowanie kodow z `public.set_account_role()` na kontrakt bledow F-01 (S-10).
+ * Mapowanie kodow z funkcji dzialajacych na koncie — `public.set_account_role()`
+ * (S-10) oraz `public.set_account_blocked()` (S-11) — na kontrakt bledow F-01.
+ *
+ * NAZWA OBEJMUJE OBIE FUNKCJE, bo zbior kodow jest wspolny i `mapAccountActionCode`
+ * zostala celowo przemianowana na operacyjnie neutralna (ustalenie F9 przegladu
+ * faz 3-4). Naglowek mowiacy o jednej z nich sugerowalby, ze druga ma wlasne
+ * mapowanie — a wtedy ktos dopisalby drugie.
  *
  * DWIE RZECZY, KTORE TEN PLIK MA PILNOWAC, i obie sa granicami bezpieczenstwa,
  * nie kosmetyka:

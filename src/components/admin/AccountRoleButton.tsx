@@ -33,7 +33,8 @@ interface Props extends RoleActionContext {
  *
  * Bez nich przycisk zostawalby na zawsze w "Zapisuje…", zablokowany, choc rola
  * w bazie jest juz zmieniona — czyli ekran klamalby w strone zachecajaca do
- * drugiej proby. Ustalenie F5 przegladu calosci; ten sam powod, dla ktorego
+ * drugiej proby. Ustalenie F4 przegladu calosci S-10 ("Brak stanu koncowego przed
+ * `reload()`"); ten sam powod, dla ktorego
  * `DeleteButton` ma stan `deleted` (tam: ustalenie F5 tamtego przegladu).
  */
 type Status = "idle" | "confirming" | "sending" | "done" | "demoted";
@@ -54,7 +55,8 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
    * odebral role temu drugiemu, a Ty w tym czasie potwierdzales slabsze ostrzezenie.
    *
    * Wartosc wchodzi do KONTEKSTU maszyny stanow, a nie tylko do ciala zadania
-   * (ustalenie F1). Inaczej kolejne klikniecie pytaloby slabszym ostrzeznieniem
+   * (ustalenie F3 przegladu calosci S-10: "`forceConfirmLast` przezywal «Anuluj»
+   * i blad"). Inaczej kolejne klikniecie pytaloby slabszym ostrzeznieniem
    * ("stracisz dostep"), a wysylalo jawna zgode na zakonczenie administracji —
    * i "Anuluj" z poprzedniej proby przenosiloby sie po cichu jako ta zgoda.
    */
@@ -160,7 +162,10 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
       <div role="alert" className="flex flex-col items-end gap-1">
         <p className="text-ink max-w-xs text-right text-xs">
           Rola administratora została zdjęta z Twojego konta.{" "}
-          {/* Ustalenie F4 przegladu calosci: wyspa zmienia TYLKO swoja komorke, wiec
+          {/* Ustalenie F5 przegladu calosci S-10 ("Po degradacji siebie reszta tabeli
+              przeczy stanowi") — numer poprawiony po przegladzie faz 3-4; wczesniej
+              stal tu F4, zamieniony miejscami z numerem w naglowku tego pliku.
+              Wyspa zmienia TYLKO swoja komorke, wiec
               kolumna "Rola" w tym wierszu i przyciski przy pozostalych wierszach nadal
               pokazuja stan sprzed operacji. Klikniecie ktoregokolwiek z nich trafi teraz
               w odmowe i pokaze "Nie znaleziono takiej pozycji" dla konta widocznego na

@@ -43,22 +43,40 @@ const ROLES = ["admin", "user"] as const satisfies readonly AccountRole[];
 /** Klucz bledu dotyczacego calego ciala, nie pojedynczego pola. */
 const FORM_KEY = "_";
 
-const bodySchema = z.object({
-  role: z.enum(ROLES, { error: "Rola musi być jedną z wartości: admin, user." }).optional(),
+const bodySchema = z.object(
+  {
+    role: z.enum(ROLES, { error: "Rola musi być jedną z wartości: admin, user." }).optional(),
 
-  blocked: z.boolean({ error: "Stan blokady musi być wartością logiczną." }).optional(),
+    blocked: z.boolean({ error: "Stan blokady musi być wartością logiczną." }).optional(),
 
-  /**
-   * Jawna zgoda na skutek dotyczacy OSTATNIEGO czynnego administratora — zdjecie
-   * jego roli albo jego zablokowanie.
-   *
-   * Opcjonalne w schemacie, ale endpoint wysyla do bazy zawsze wartosc jawna
-   * (ustalenie F4 przegladu S-10). Obie funkcje maja `default false`, wiec
-   * pominiecie argumentu byloby rownowazne odmowie; poleganie na tym byloby jednak
-   * poleganiem na domysle bazy zamiast na kontrakcie endpointu.
-   */
-  confirmLast: z.boolean({ error: "Potwierdzenie musi być wartością logiczną." }).optional(),
-});
+    /**
+     * Jawna zgoda na skutek dotyczacy OSTATNIEGO czynnego administratora — zdjecie
+     * jego roli albo jego zablokowanie.
+     *
+     * Opcjonalne w schemacie, ale endpoint wysyla do bazy zawsze wartosc jawna
+     * (ustalenie F4 przegladu S-10). Obie funkcje maja `default false`, wiec
+     * pominiecie argumentu byloby rownowazne odmowie; poleganie na tym byloby jednak
+     * poleganiem na domysle bazy zamiast na kontrakcie endpointu.
+     */
+    confirmLast: z.boolean({ error: "Potwierdzenie musi być wartością logiczną." }).optional(),
+  },
+  {
+    /**
+     * KOMUNIKAT DLA CALEGO CIALA, po polsku — ustalenie F1 przegladu faz 3-4.
+     *
+     * Bez niego Zod wstawial tu wlasny tekst WEWNETRZNY I ANGIELSKI. Zmierzone na
+     * pieciu wariantach: `null`, string, liczba, tablica i boolean dawaly
+     * „Invalid input: expected object, received …", a `[id].ts` wklada `fields`
+     * wprost do odpowiedzi. CLAUDE.md wymaga komunikatow pol po POLSKU, a NFR
+     * z PRD zabrania wynoszenia wewnetrznej tresci bledu na powierzchnie produktu.
+     *
+     * Dzis nic tego nie renderuje — komunikat ladowal pod kluczem `_`, a wyspy
+     * czytaja z `readApiError` tylko `{code, message}`. To jest jednak argument
+     * za tym, ze nikt by tego nie zauwazyl, a nie za tym, ze nie szkodzi.
+     */
+    error: "Treść żądania musi być obiektem.",
+  },
+);
 
 /**
  * Wynik walidacji jako UNIA ROZLACZNA, nie obiekt z dwoma opcjonalnymi polami.

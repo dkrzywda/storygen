@@ -130,12 +130,25 @@ describe("accountPatchSchema", () => {
       }
     });
 
-    it("odrzuca cialo, ktore nie jest obiektem", () => {
-      // Endpoint parsuje JSON sam, wiec tutaj moze przyjsc tablica albo liczba.
-      const result = validate(accountPatchSchema, ["admin"]);
+    // ASERCJA NA TRESC, NIE NA OBECNOSC — ustalenie F1 przegladu faz 3-4.
+    //
+    // Wczesniej stalo tu `toBeDefined()`, ktore przechodzilo TAKZE dla wewnetrznego
+    // komunikatu Zoda po angielsku („Invalid input: expected object, received …").
+    // Test nazywal sie tak, jakby pilnowal tego przypadku, a nie mogl sczerwieniec
+    // od jedynej awarii, ktora tu grozi. `lessons.md` § „Zielone czytaj z tego, co
+    // zmienilo by sie przy porazce".
+    it.each([
+      ["tablica", ["admin"]],
+      ["null", null],
+      ["string", "admin"],
+      ["liczba", 42],
+      ["boolean", true],
+    ])("odrzuca cialo bedace %s, komunikatem po polsku", (_opis, wejscie) => {
+      // Endpoint parsuje JSON sam, wiec tutaj moze przyjsc kazda z tych wartosci.
+      const result = validate(accountPatchSchema, wejscie);
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.fields[FORM_FIELD_KEY]).toBeDefined();
+        expect(result.fields[FORM_FIELD_KEY]).toBe("Treść żądania musi być obiektem.");
       }
     });
   });

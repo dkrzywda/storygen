@@ -7,7 +7,17 @@ import { accountPatchSchema } from "@/lib/account-blocked-patch";
 import { mapAccountActionCode, setAccountBlocked, setAccountRole } from "@/lib/admin-accounts";
 
 /**
- * Zmiana roli konta (FR-018, S-10).
+ * Działania administratora na koncie: zmiana roli (FR-018, S-10) oraz blokowanie
+ * i odblokowanie (FR-016, S-11).
+ *
+ * NAZWA OBEJMUJE OBIE OPERACJE — ustalenie F9 przegladu faz 3-4. Naglowek brzmial
+ * „Zmiana roli konta" jeszcze po tym, jak endpoint zaczal obslugiwac dwie rzeczy;
+ * to trzecie wystapienie tej samej klasy w tym plastrze, po komunikacie
+ * `LAST_ADMIN_CONFIRM_REQUIRED` i po naglowku kolumny w tabeli.
+ *
+ * Cialo niesie `role` ALBO `blocked`, nigdy oba — rozstrzyga to schemat
+ * w `@/lib/account-blocked-patch`, ktory oddaje unie rozlaczna, wiec galezie
+ * ponizej sa wyczerpujace z konstrukcji, a nie z dyscypliny.
  *
  * KOPIA WZORCA z `src/pages/api/generations/[id].ts` — ta sama kolejnosc bramek
  * i te same powody. Regex UUID jest tu powtorzony, a nie wyciagniety do wspolnego
