@@ -11,9 +11,9 @@ import { losesOwnAccess, planRoleAction, roleActionLabel, type RoleActionContext
  * a nie renderowanie, i bo repo nie ma infrastruktury do testowania komponentow.
  * Tutaj zostaje wylacznie stan interakcji i wywolanie sieci.
  *
- * Uklad dwoch krokow, przenoszenie focusu na "Anuluj" i przeladowanie po sukcesie
- * sa przepisane z `@/components/generations/DeleteButton` — razem z ustaleniami
- * trzech przegladow, ktore ten komponent uksztaltowaly.
+ * Uklad dwoch krokow, przenoszenie focusu na "Anuluj" i stan koncowy przed
+ * przeladowaniem sa przepisane z `@/components/generations/DeleteButton` — razem
+ * z ustaleniami przegladow, ktore tamten komponent uksztaltowaly.
  */
 
 interface Props extends RoleActionContext {
@@ -21,22 +21,44 @@ interface Props extends RoleActionContext {
   email: string;
 }
 
-type Status = "idle" | "confirming" | "sending" | "demoted";
+/**
+ * `done` i `demoted` to DWA ROZNE stany koncowe, oba istniejace dla przypadku,
+ * w ktorym przeladowanie NIE dojdzie (brak sieci, blad SSR, uspiona karta).
+ *
+ * Bez nich przycisk zostawalby na zawsze w "Zapisuje…", zablokowany, choc rola
+ * w bazie jest juz zmieniona — czyli ekran klamalby w strone zachecajaca do
+ * drugiej proby. Ustalenie F5 przegladu calosci; ten sam powod, dla ktorego
+ * `DeleteButton` ma stan `deleted` (tam: ustalenie F5 tamtego przegladu).
+ */
+type Status = "idle" | "confirming" | "sending" | "done" | "demoted";
 
 export default function AccountRoleButton({ accountId, email, role, isSelf, isLastAdmin }: Props) {
-  const context: RoleActionContext = { role, isSelf, isLastAdmin };
-
   const [status, setStatus] = useState<Status>("idle");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /**
-   * Flaga `isLastAdmin` przyszla z serwera przy renderowaniu strony i moze byc
-   * NIEAKTUALNA — ktos mogl w miedzyczasie zmienic role w drugiej karcie. Gdy baza
-   * odpowie `LAST_ADMIN_CONFIRM_REQUIRED` mimo `isLastAdmin === false`, pytamy
-   * i zapamietujemy, ze kolejne wyslanie ma niesc jawna zgode.
+   * Baza powiedziala, ze to JEST ostatnia rola, choc flaga z renderowania mowila
+   * inaczej. Od tego momentu traktujemy wiersz jak ostatnia role.
+   *
+   * KIEDY TO NAPRAWDE MOZE PASC — wezej, niz sugerowalby odruch (ustalenie F2).
+   * Wolajacy musi byc adminem, inaczej dostalby `FORBIDDEN`; jest wiec liczony
+   * w tych, ktorych baza sprawdza. Gdy cel jest KIMS INNYM i ma role, adminow jest
+   * co najmniej dwoch i `LAST_ADMIN_NEEDS_CONFIRM` paść NIE MOZE. Ta sciezka jest
+   * osiagalna wylacznie dla WLASNEGO wiersza: zaczales jako jeden z dwoch, ktos
+   * odebral role temu drugiemu, a Ty w tym czasie potwierdzales slabsze ostrzezenie.
+   *
+   * Wartosc wchodzi do KONTEKSTU maszyny stanow, a nie tylko do ciala zadania
+   * (ustalenie F1). Inaczej kolejne klikniecie pytaloby slabszym ostrzeznieniem
+   * ("stracisz dostep"), a wysylalo jawna zgode na zakonczenie administracji —
+   * i "Anuluj" z poprzedniej proby przenosiloby sie po cichu jako ta zgoda.
    */
-  const [forceConfirmLast, setForceConfirmLast] = useState(false);
+  const [knownLastAdmin, setKnownLastAdmin] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
+
+  // Kontekst decyzji ZAWSZE laczy to, co przyszlo z serwera, z tym, czego
+  // dowiedzielismy sie od bazy. Dzieki temu ostrzezenie i wysylana zgoda opisuja
+  // ten sam stan swiata.
+  const context: RoleActionContext = { role, isSelf, isLastAdmin: isLastAdmin || knownLastAdmin };
 
   // Focus na "Anuluj", nie na "Tak" — domyslny cel focusu ma byc bezpieczny.
   // Galezie renderuja rozlaczne drzewa przyciskow, wiec bez tego focus spada na `body`.
@@ -45,6 +67,21 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
       cancelRef.current?.focus();
     }
   }, [status]);
+
+  /**
+   * Powrot do spoczynku kasuje stan INTERAKCJI, ale NIE `knownLastAdmin`.
+   *
+   * To celowe i jest sednem naprawy F1: "ta rola jest ostatnia" to fakt o koncie,
+   * ktorego dowiedzielismy sie od bazy, a nie stan tej jednej proby. Skasowanie go
+   * przy "Anuluj" sprawiloby, ze kolejne klikniecie znowu pyta SLABSZYM ostrzeznieniem
+   * ("stracisz dostep") o operacje, ktora konczy administracje. Zapamietany, wchodzi
+   * do `context` powyzej, wiec ostrzezenie i wysylana zgoda opisuja to samo.
+   */
+  function reset() {
+    setStatus("idle");
+    setWarning(null);
+    setError(null);
+  }
 
   async function apply(confirmed: boolean) {
     const action = planRoleAction(context, confirmed);
@@ -63,10 +100,8 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
       const response = await fetch(`/api/accounts/${accountId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          role: action.targetRole,
-          confirmLast: action.confirmLast || forceConfirmLast,
-        }),
+        // Bez sklejania z osobna flaga — `context` juz ja niesie.
+        body: JSON.stringify({ role: action.targetRole, confirmLast: action.confirmLast }),
       });
 
       if (!response.ok) {
@@ -75,14 +110,18 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
         const { code, message } = await readApiError(response);
 
         if (code === "LAST_ADMIN_CONFIRM_REQUIRED") {
-          // Baza wie lepiej niz flaga sprzed renderowania. Pytamy teraz.
+          // Baza wie lepiej niz flaga sprzed renderowania. Zapamietujemy to W KONTEKSCIE
+          // i pytamy jej wlasnym komunikatem.
+          setKnownLastAdmin(true);
           setWarning(message);
-          setForceConfirmLast(true);
           setStatus("confirming");
           return;
         }
 
         setError(message);
+        // Ostrzezenie znika razem z powrotem do spoczynku — inaczej zostawaloby
+        // osierocone, opisujac probe, ktorej juz nie ma (ustalenie F7).
+        setWarning(null);
         setStatus("idle");
         return;
       }
@@ -95,6 +134,9 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
         return;
       }
 
+      // Stan koncowy USTAWIANY PRZED przeladowaniem, nie zamiast niego: gdy
+      // przeladowanie nie dojdzie, ekran mowi prawde zamiast wisiec na "Zapisuje…".
+      setStatus("done");
       // Tabela jest renderowana serwerowo, wiec wyspa nie zmieni cudzego wiersza
       // bez przeniesienia calego markupu do Reacta. Przeladowanie odswieza przy
       // okazji `is_last_admin`, ktore po kazdej zmianie moze byc inne w KAZDYM wierszu.
@@ -102,6 +144,7 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
     } catch {
       // Tu naprawde nie doszlo do serwera — dopiero teraz diagnoza sieciowa jest uczciwa.
       setError("Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.");
+      setWarning(null);
       setStatus("idle");
     }
   }
@@ -109,7 +152,34 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
   if (status === "demoted") {
     return (
       <div role="alert" className="flex flex-col items-end gap-1">
-        <p className="text-ink text-xs">Rola administratora została zdjęta z Twojego konta.</p>
+        <p className="text-ink max-w-xs text-right text-xs">
+          Rola administratora została zdjęta z Twojego konta.{" "}
+          {/* Ustalenie F4 przegladu calosci: wyspa zmienia TYLKO swoja komorke, wiec
+              kolumna "Rola" w tym wierszu i przyciski przy pozostalych wierszach nadal
+              pokazuja stan sprzed operacji. Klikniecie ktoregokolwiek z nich trafi teraz
+              w odmowe i pokaze "Nie znaleziono takiej pozycji" dla konta widocznego na
+              ekranie. Taniej powiedziec to wprost, niz gasic cudze wiersze z tej wyspy. */}
+          <span className="text-ink-muted">
+            Reszta tej tabeli pokazuje jeszcze stan sprzed zmiany i żadna operacja w niej już nie zadziała.
+          </span>
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="border-hairline bg-panel text-ink-muted hover:bg-app shrink-0 rounded-lg border px-2 py-1 text-xs transition-colors"
+        >
+          Odśwież panel
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "done") {
+    return (
+      <div role="status" className="flex flex-col items-end gap-1">
+        <p className="text-ink-subtle text-xs">Zmieniono rolę</p>
         <button
           type="button"
           onClick={() => {
@@ -152,11 +222,7 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
             ref={cancelRef}
             type="button"
             disabled={status === "sending"}
-            onClick={() => {
-              setStatus("idle");
-              setWarning(null);
-              setError(null);
-            }}
+            onClick={reset}
             className="text-ink-muted hover:text-ink text-xs transition-colors disabled:opacity-40"
           >
             Anuluj

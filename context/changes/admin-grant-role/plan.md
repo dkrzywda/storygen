@@ -305,6 +305,20 @@ Rozważona i odrzucona alternatywa: test integracyjny z jednym krokiem `psql` na
 
 **Regex UUID powtórzony, nie wyciągnięty.** Kopia z `generations/[id].ts`. Wyciągnięcie go do wspólnego modułu dotknęłoby pliku spoza zakresu tej fazy dla jednej stabilnej linii. Decyzja świadoma, zapisana w komentarzu przy samym regeksie.
 
+## Addendum 2026-09-14 — adaptacja fazy 3
+
+**Ten addendum powstał po fazie, nie w jej trakcie** — faza 3 zamknęła się bez niego, mimo że fazy 1 i 2 ustanowiły wzorzec zapisywania odstępstw. Braku dopatrzył się dopiero przegląd całości. Zapisane tak, a nie po cichu poprawione, bo to trzecie rozejście planu z implementacją w tym plastrze.
+
+**Doszedł plik, którego plan nie przewidywał:** `src/lib/account-role-action.ts` wraz z testem.
+
+Kryterium 3.3 i kontrakt fazy (`:219`) mówią „test jednostkowy **wyspy**". W tym repo nie da się go napisać — zmierzone: `vitest.config.ts:13` ma `environment: "node"`, `:14` ma `include: ["src/**/*.test.ts"]` bez `.tsx` (więc plik komponentu nie zostałby nawet wybrany), a `jsdom`, `happy-dom` i `@testing-library/react` nie występują ani w `package.json`, ani w `package-lock.json`. Żaden z trzynastu wcześniejszych plików testów jednostkowych nie renderuje komponentu.
+
+Zamiast dokładać dwie zależności i zmieniać konfigurację całego zestawu, decyzja klikniecia została **wyjęta do funkcji czystej**: czy pytać, czy wysyłać i z jakim potwierdzeniem. To jest rzecz, którą kryterium chciało zmierzyć; markup nią nie jest. Wyspa została cienka. **Tytuł pozycji 3.3 w `## Progress` mówi nadal „test jednostkowy wyspy" i jest w tym niedokładny** — tytułów nie zmieniam zgodnie z kontraktem Progress, więc sprostowanie żyje tutaj.
+
+**Potwierdzenie pyta szerzej, niż mówi kontrakt fazy.** `:203` mówi tylko o ostatniej roli; kryterium 3.5 (`:224`) i `## Desired End State` (`:25`) wymagają pytania także przy zdejmowaniu roli **sobie**. Plan przeczy tu sam sobie, a implementacja poszła za kryterium, bo bez tego 3.5 nie dałoby się zamknąć.
+
+**Te dwa pytania są różnej wagi i kod to teraz mówi wprost** (poprawione po przeglądzie całości): bariera „ostatnia rola" stoi **w bazie** — `set_account_role` odmawia bez `p_confirm_last`. Bariera „sobie" stoi **wyłącznie w widoku**: funkcja nie zna pojęcia własnego konta (`is_self` występuje w migracji raz, jako kolumna przeglądu; wewnątrz `set_account_role` zero razy), więc `PATCH` z `curl` ją omija. Jest to świadome — zasada z `:62` chroni przed działaniem **cudzym**, a tu chronimy klikającego przed nim samym, przy operacji odwracalnej przez innego administratora. Gdy innego nie ma, jest to już przypadek „ostatnia rola" i odmawia baza.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.

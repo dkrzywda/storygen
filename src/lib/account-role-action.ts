@@ -57,10 +57,25 @@ export function losesOwnAccess(context: RoleActionContext): boolean {
 /**
  * Czy klikniecie musi najpierw zapytac.
  *
- * DWA POWODY, OBA O NIEODWRACALNOSCI DLA KLIKAJACEGO, nie o wadze operacji:
- * zdejmujesz role SOBIE (stracisz dostep do tej sekcji) albo zdejmujesz OSTATNIA
- * (administracja przestanie byc dostepna z produktu i nie da sie jej przywrocic
- * zadnym ekranem — PRD v4, FR-018).
+ * DWA POWODY, I SA ONE ROZNEJ WAGI — wczesniej ten komentarz twierdzil, ze oba sa
+ * "o nieodwracalnosci dla klikajacego". To bylo NIEPRAWDA dla jednego z nich
+ * i zostalo poprawione po przegladzie calosci (2026-09-14).
+ *
+ * 1. OSTATNIA rola — bariera realna. Administracja przestanie byc dostepna
+ *    z produktu i zaden ekran jej nie przywroci (PRD v4, FR-018). Ta bariera stoi
+ *    W BAZIE: `set_account_role` odmawia bez `p_confirm_last`, wiec nie da sie jej
+ *    ominac wywolaniem RPC wprost. Pytanie tutaj jest tylko uprzejmoscia wobec
+ *    tamtej odmowy, nie jej zrodlem.
+ *
+ * 2. Zdjecie roli SOBIE — uprzejmosc, nie bariera. `set_account_role` NIE ZNA
+ *    pojecia wlasnego konta: przyjmuje `p_account`, `p_role`, `p_confirm_last`
+ *    i tyle. To pytanie omija wiec zwykly `PATCH` z `curl`, i jest to SWIADOME.
+ *    Zasada z planu ("Potwierdzenie jest parametrem funkcji, nie stanem
+ *    interfejsu") dotyczy ochrony przed CUDZYM dzialaniem; tutaj chronimy
+ *    klikajacego przed nim samym, a operacja jest odwracalna — inny administrator
+ *    role przywroci, a gdy innego nie ma, jest to juz przypadek 1 i wtedy baza
+ *    odmawia. Przenoszenie tego do bazy dolozyloby parametr bez zysku
+ *    bezpieczenstwa.
  *
  * NADANIE roli nigdy nie pyta: nikomu niczego nie odbiera i da sie je odklikac.
  */
