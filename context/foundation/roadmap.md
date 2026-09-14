@@ -3,7 +3,7 @@ project: "Storygen"
 version: 1
 status: draft
 created: 2026-09-03
-updated: 2026-09-09
+updated: 2026-09-14
 prd_version: 4
 main_goal: quality
 top_blocker: none
@@ -149,7 +149,7 @@ odziedziczą.
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
-| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | in-progress |
+| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | done |
 | S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | proposed |
 | S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | proposed |
 
@@ -473,7 +473,7 @@ w celu wylistowania kont.
 - **Unknowns:**
   - ~~Czy administrator może działać na własnym koncie i czy da się odebrać **ostatnią** rolę?~~ **ROZSTRZYGNIĘTE 2026-09-09: tak na oba, bez podłogi.** PRD `## Open Questions` #9. Konsekwencja przyjęta świadomie i zapisana w PRD: produkt ma dziś jedno konto z rolą, więc jej odebranie kończy administrację, a żaden ekran w produkcie jej nie przywróci — droga powrotna jest poza produktem, w konsoli dostawcy. FR-018 wymaga dodatkowo ostrzeżenia przed odebraniem ostatniej roli. — Owner: autor. Block: —.
 - **Risk:** Pierwszy zapis do `auth.users` z wnętrza aplikacji, więc ten plaster wybiera mechanizm za cały kamień: funkcja `security definer` volatile (precedens w repo: `record_attempt_if_allowed`) albo nowy sekret `service_role` — a tego drugiego projekt świadomie nie ma i dołożenie go jest osobną decyzją, nie szczegółem planu. Druga rzecz do rozstrzygnięcia w planie, nie tutaj: `auth.users` niesie **dwa** różne pola o nazwie `role` — kolumnę bazodanową, po której PostgREST autoryzuje, i klucz w `raw_app_meta_data`. Pomylenie ich zepsułoby autoryzację całej aplikacji, nie tylko tego plastra.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-11: Administrator blokuje i odblokowuje konto
 
@@ -691,3 +691,4 @@ Co z tego wynika dla czytelnika:
 - **S-07: wybrać format „opowiadanie" i dostać tekst z początkiem i końcem** — Zamknięte wstecznie 2026-09-08, BEZ folderu zmiany i bez planu, jak `S-02`. Jakość promptu dla tego formatu pozostaje niezmierzona. Lesson: context/foundation/lessons.md § „Nie pisz kodu, dopóki plaster nie ma planu".
 - **F-02: (foundation) konto niesie rolę, serwer potrafi na jej podstawie odmówić dostępu do trasy, a dwa istniejące konta mają role nadane** — Archived 2026-09-08 → `context/archive/2026-09-08-account-roles/`. Lesson: `context/foundation/lessons.md` § „Zielone czytaj z tego, co zmieniłoby się przy porażce".
 - **S-09: administrator widzi listę kont z datą rejestracji, liczbą generacji i zużyciem wobec dziennego limitu na konto; kto administratorem nie jest, dostaje odmowę, która nie ujawnia, czy przegląd w ogóle istnieje** — Archived 2026-09-09 → `context/archive/2026-09-08-admin-account-overview/`. Lesson: `context/foundation/lessons.md` § „Nowa funkcja uprzywilejowana kopiuje listę rol" oraz § „Degradacja odczytu nie chroni renderowania".
+- **S-10: nadać innemu kontu rolę administratora i odebrać ją, bez ręcznego SQL-a.** — Archived 2026-09-14 → `context/archive/2026-09-09-admin-grant-role/`. Lesson: `context/foundation/lessons.md` § „Funkcja uprzywilejowana filtruje stan konta wołającego, nie tylko celu".
