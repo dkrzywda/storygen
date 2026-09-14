@@ -507,18 +507,18 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 #### Automated
 
-- [x] 4.1 Test jednostkowy: usunięcie pyta zawsze, także bez generacji
+- [x] 4.1 Test jednostkowy: usunięcie pyta zawsze, także bez generacji — fa39099
 - [ ] 4.2 Test jednostkowy: przy ostatnim adminie wygrywa ostrzeżenie o administracji
-- [x] 4.3 Test jednostkowy: ostrzeżenie niesie liczbę generacji
-- [x] 4.4 `npm test` kodem wyjścia 0
+- [x] 4.3 Test jednostkowy: ostrzeżenie niesie liczbę generacji — fa39099
+- [x] 4.4 `npm test` kodem wyjścia 0 — fa39099
 - [ ] 4.5 `npx astro build` przechodzi
-- [x] 4.6 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 4.6 ESLint i `npx tsc --noEmit` bez błędów — fa39099
 
 #### Manual
 
-- [x] 4.7 Pytanie nazywa liczbę generacji, komunikat końcowy podaje liczbę z bazy
-- [x] 4.8 Usunięte konto znika z przeglądu, generacje z bazy
-- [x] 4.9 Żywa sesja usuniętego konta ląduje na logowaniu
-- [x] 4.10 Przy własnym wierszu nie ma przycisku usunięcia
-- [x] 4.11 Tabela mieści się bez poziomego przewijania
-- [x] 4.12 Zwykłe konto nie widzi sekcji ani przycisków
+- [x] 4.7 Pytanie nazywa liczbę generacji, komunikat końcowy podaje liczbę z bazy — fa39099
+- [x] 4.8 Usunięte konto znika z przeglądu, generacje z bazy — fa39099
+- [x] 4.9 Żywa sesja usuniętego konta ląduje na logowaniu — fa39099
+- [x] 4.10 Przy własnym wierszu nie ma przycisku usunięcia — fa39099
+- [x] 4.11 Tabela mieści się bez poziomego przewijania — fa39099
+- [x] 4.12 Zwykłe konto nie widzi sekcji ani przycisków — fa39099
