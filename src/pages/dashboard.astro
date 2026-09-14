@@ -10,6 +10,7 @@ import { logApiError } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/account-role";
 import { fetchAccountsOverview } from "@/lib/admin-accounts";
 import AccountRoleButton from "@/components/admin/AccountRoleButton";
+import AccountBlockButton from "@/components/admin/AccountBlockButton";
 import type { AccountOverviewRow, GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
@@ -243,7 +244,10 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                         <th class="py-1 pr-4 text-right font-medium">Generacje</th>
                         <th class="py-1 pr-4 text-right font-medium">Dziś</th>
                         <th class="py-1 text-right font-medium">
-                          <span class="sr-only">Zmiana roli</span>
+                          {/* Nazwa dla czytnika ekranu obejmuje OBIE akcje w tej kolumnie —
+                              od S-11 jest tu takze blokada, a naglowek mowiacy o samej roli
+                              opisywalby polowe zawartosci. */}
+                          <span class="sr-only">Działania na koncie</span>
                         </th>
                       </tr>
                     </thead>
@@ -264,6 +268,12 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                                 (PRD v4, OQ9) i klikajacy musi wiedziec, ze klika w siebie.
                                 Osobna linia, zeby nie poszerzac kolumny o kolejne slowo. */}
                             {account.isSelf && <span class="text-ink-subtle block text-xs">to Ty</span>}
+                            {/* STAN BLOKADY POD ADRESEM, NIE W NOWEJ KOLUMNIE — tabela ma
+                                zmierzone 0 px zapasu (S-10), wiec kolejna kolumna przywrocilaby
+                                poziome przewijanie. Tutaj nie kosztuje nic: adres jest
+                                `whitespace-nowrap` i i tak jest najszerszy w tej komorce,
+                                a "zablokowane" jest od niego krotsze. */}
+                            {account.isBlocked && <span class="text-danger block text-xs">zablokowane</span>}
                           </td>
                           <td class="py-2 pr-4 whitespace-nowrap">{account.roleLabel}</td>
                           <td class="py-2 pr-4 whitespace-nowrap">{account.registeredLabel}</td>
@@ -272,14 +282,29 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                             {account.usedToday} z {account.ownLimit}
                           </td>
                           <td class="py-2 text-right">
-                            <AccountRoleButton
-                              client:load
-                              accountId={account.id}
-                              email={account.email}
-                              role={account.role}
-                              isSelf={account.isSelf}
-                              isLastAdmin={account.isLastAdmin}
-                            />
+                            {/* DWA PRZYCISKI JEDEN POD DRUGIM, W JEDNEJ KOMORCE — nie obok
+                                siebie i nie w osobnej kolumnie. Szerokosc komorki rowna sie
+                                wtedy szerokosci SZERSZEGO z nich ("Odbierz rolę"), a nie ich
+                                sumie, wiec stan z 0 px zapasu nie pogarsza sie ani o piksel.
+                                Zmierzone po dolozeniu: patrz addendum fazy 4. */}
+                            <div class="flex flex-col items-end gap-1">
+                              <AccountRoleButton
+                                client:load
+                                accountId={account.id}
+                                email={account.email}
+                                role={account.role}
+                                isSelf={account.isSelf}
+                                isLastAdmin={account.isLastAdmin}
+                              />
+                              <AccountBlockButton
+                                client:load
+                                accountId={account.id}
+                                email={account.email}
+                                isBlocked={account.isBlocked}
+                                isSelf={account.isSelf}
+                                isLastAdmin={account.isLastAdmin}
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))}

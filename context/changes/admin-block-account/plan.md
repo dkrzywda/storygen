@@ -410,6 +410,42 @@ Przegląd: `context/changes/admin-block-account/reviews/impl-review-phase-1-2.md
 
 **Pełna pętla trzech faz:** administrator blokuje **siebie** z jawną zgodą → `200`, a **następne żądanie** ląduje na `/auth/signin?error=ACCOUNT_BLOCKED`. Faza 1 zapisała stan, faza 2 go wyegzekwowała, faza 3 dała drogę z aplikacji.
 
+## Addendum 2026-09-14 — adaptacja fazy 4
+
+**Blok `## Phase 4` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Zmierzone ryzyko fazy — 0 px zapasu — okazało się nietknięte, ale pierwszy pomiar mnie zmylił.** Po dołożeniu przycisku tabela potrzebowała **842 px przy 638 dostępnych** i przewijała się poziomo. Wyglądało to jak regres wprost z planu. Pomiar **różnicowy** — ukrycie samych wysp blokady i ponowne zmierzenie tej samej tabeli — pokazał co innego: **842 z przyciskiem i 842 bez niego, koszt 0 px**. Przepełnienie brało się w całości z **trzynastu zalegających kont testowych** o 58-znakowych adresach (`rls-e5fb9ef8-…@example.test`), które rozdęły kolumnę adresu do 423 px. Po ich usunięciu: **638 potrzeba, 638 dostępne, zero przewijania** — dokładnie stan sprzed fazy.
+
+Wniosek wart zapisania: gdybym czytał tylko liczbę bezwzględną, zgłosiłbym własny regres i zacząłbym zwężać przycisk, który nie kosztuje nic.
+
+**Dlaczego przycisk kosztuje 0 px:** oba przyciski stoją **jeden pod drugim w jednej komórce**, nie obok siebie i nie w osobnej kolumnie. Szerokość komórki równa się wtedy szerszemu z nich (`Odbierz rolę` — 89 px), a nie ich sumie; zmierzona komórka akcji ma 100 px, przycisk blokady 80 px.
+
+**Znacznik stanu poszedł pod adres**, obok istniejącego „to Ty" — kolejna kolumna przywróciłaby przewijanie. Tam nie kosztuje nic: adres jest `whitespace-nowrap` i i tak jest najszerszy w tej komórce.
+
+**Nagłówek kolumny akcji zmieniony z „Zmiana roli" na „Działania na koncie"** (tekst tylko dla czytnika ekranu). Kolumna trzyma teraz dwie akcje, a nazwa mówiąca o jednej opisywałaby połowę zawartości — ta sama klasa, co F4 przeglądu.
+
+**Wyspa jest powtórzeniem `AccountRoleButton`, nie wspólnym komponentem.** Oba przyciski mają własne kody, własne ostrzeżenia i własny stan końcowy; sklejenie ich dałoby komponent z dwoma trybami, którego każdą gałąź i tak trzeba czytać osobno. Przepisane razem z ustaleniami przeglądów, które tamten komponent ukształtowały (F1 i F5 przeglądu `S-10`).
+
+**Stan końcowy przy blokowaniu siebie NIE przeładowuje strony** — inaczej przeładowanie trafiłoby w bramkę z fazy 2 i wyrzuciło użytkownika na ekran logowania **bez słowa o tym, że sam to zrobił**. Ciche wypchnięcie wygląda identycznie jak awaria.
+
+**Weryfikacja ręczna — pięć kryteriów, wszystkie przez interfejs:**
+
+| Sprawdzenie                   | Wynik                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| blokada cudzego konta         | bez pytania → znacznik „zablokowane", przycisk na „Odblokuj"                                                  |
+| zablokowany traci dostęp      | logowanie odmówione: `400 user_banned`                                                                        |
+| odblokowanie                  | bez pytania, znacznik znika, konto wraca                                                                      |
+| blokada siebie (jedyny admin) | pyta **mocniejszym** ostrzeżeniem o administracji, nie o własnym koncie                                       |
+| focus w pytaniu               | na „Anuluj" — bezpieczny domyślny cel                                                                         |
+| „Anuluj" i ponowne kliknięcie | pyta **od nowa**; zgoda nie przenosi się po cichu                                                             |
+| po potwierdzeniu              | komunikat + link do logowania, **bez** przeładowania; następne żądanie → `/auth/signin?error=ACCOUNT_BLOCKED` |
+| tabela                        | **638 / 638, zero przewijania**                                                                               |
+| zwykłe konto                  | nie widzi ani sekcji, ani żadnego z przycisków                                                                |
+
+**Ograniczenie tej weryfikacji, zapisane wprost:** panel przeglądarki nie rysował się (okno w tle), więc kliknięcia szły przez `.click()` zamiast przez prawdziwe zdarzenia wskaźnika. Ścieżka `onClick → apply` jest ta sama i żaden element nie jest tu bramkowany gestem, ale to jest słabszy dowód niż klikanie i tak go traktuję.
+
+**Przy okazji spłacony dług:** usunięte trzynaście kont testowych narosłych po przebiegach zestawu integracyjnego. To one, a nie ta faza, wywoływały przewijanie tabeli.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -451,27 +487,27 @@ Przegląd: `context/changes/admin-block-account/reviews/impl-review-phase-1-2.md
 
 #### Automated
 
-- [x] 3.1 Test jednostkowy schematu: rozłączność `role` i `blocked`
-- [x] 3.2 Test jednostkowy mapowania czterech kodów bazy
-- [x] 3.3 `npm test` kodem wyjścia 0
-- [x] 3.4 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 3.1 Test jednostkowy schematu: rozłączność `role` i `blocked` — 267c20a
+- [x] 3.2 Test jednostkowy mapowania czterech kodów bazy — 267c20a
+- [x] 3.3 `npm test` kodem wyjścia 0 — 267c20a
+- [x] 3.4 `npx tsc --noEmit` i ESLint bez błędów — 267c20a
 
 #### Manual
 
-- [x] 3.5 `curl` zwykłym kontem na blokowanie zwraca 404, nie 403
+- [x] 3.5 `curl` zwykłym kontem na blokowanie zwraca 404, nie 403 — 267c20a
 
 ### Phase 4: Interfejs — przycisk i znacznik
 
 #### Automated
 
-- [ ] 4.1 Test jednostkowy maszyny stanów blokady
-- [ ] 4.2 `npx astro build` przechodzi
-- [ ] 4.3 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 4.1 Test jednostkowy maszyny stanów blokady
+- [x] 4.2 `npx astro build` przechodzi
+- [x] 4.3 ESLint i `npx tsc --noEmit` bez błędów
 
 #### Manual
 
-- [ ] 4.4 Zablokowanie drugiego konta odcina mu dostęp i pokazuje komunikat
-- [ ] 4.5 Odblokowanie przywraca dostęp bez dodatkowych kroków
-- [ ] 4.6 Zablokowanie siebie: ostrzeżenie, potwierdzenie, komunikat
-- [ ] 4.7 Tabela mieści się bez poziomego przewijania
-- [ ] 4.8 Zwykłe konto nie widzi sekcji ani przycisków
+- [x] 4.4 Zablokowanie drugiego konta odcina mu dostęp i pokazuje komunikat
+- [x] 4.5 Odblokowanie przywraca dostęp bez dodatkowych kroków
+- [x] 4.6 Zablokowanie siebie: ostrzeżenie, potwierdzenie, komunikat
+- [x] 4.7 Tabela mieści się bez poziomego przewijania
+- [x] 4.8 Zwykłe konto nie widzi sekcji ani przycisków
