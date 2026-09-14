@@ -150,7 +150,7 @@ odziedziczą.
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
 | S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | done |
-| S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | proposed |
+| S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | in-progress |
 | S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | proposed |
 
 ## Streams
@@ -486,7 +486,7 @@ w celu wylistowania kont.
 - **Unknowns:**
   - ~~Co widzi zablokowany?~~ **ROZSTRZYGNIĘTE 2026-09-09: odmowa przy logowaniu.** PRD `## Open Questions` #7. Zablokowane konto nie dochodzi do sesji, więc nie widzi produktu — tylko komunikat o zawieszeniu dostępu. Podstawa: warstwa tożsamości ma już własny stan konta zawieszonego i odmawia dla niego uwierzytelnienia, więc produkt pożycza istniejący stan, a nie tworzy równoległego. Przyjęta konsekwencja: zablokowany traci też wgląd we własne generacje, które nie są usuwane i wracają po odblokowaniu. — Owner: autor. Block: —.
 - **Risk:** Pierwszy plaster kamienia dotykający ścieżki **logowania**, a nie tylko panelu, więc pomyłka odcina dostęp szerzej, niż zamierzono. Do zmierzenia w planie, nie do założenia: stan zablokowania trzyma dostawca auth we własnych kolumnach, które wypełnia sam — pisanie po nich z funkcji obchodzi jego logikę, a w repo nie ma dziś ani jednego przypadku, który by to sprawdzał. **Ustalenie F10 przegladu S-10 (2026-09-14): ten plaster MUSI wziac ten sam klucz blokady doradczej `account_role_gate`, co `set_account_role`.** Klucz chroni LICZBE ADMINOW, nie tylko zmiane roli; policzenie adminow poza nim doprowadzi do zera adminow bez zadnej zgody.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-12: Administrator usuwa konto
 

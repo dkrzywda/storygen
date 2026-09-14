@@ -99,6 +99,7 @@ export type Database = {
           email: string;
           generations: number;
           id: string;
+          is_blocked: boolean;
           is_last_admin: boolean;
           is_self: boolean;
           own_limit: number;
@@ -108,9 +109,14 @@ export type Database = {
           used_today: number;
         }[];
       };
+      active_admin_count: { Args: never; Returns: number };
       daily_app_ceiling: { Args: never; Returns: number };
       daily_per_account: { Args: never; Returns: number };
       record_attempt_if_allowed: { Args: { p_format: string }; Returns: string };
+      set_account_blocked: {
+        Args: { p_account: string; p_blocked: boolean; p_confirm?: boolean };
+        Returns: string;
+      };
       set_account_role: {
         Args: { p_account: string; p_confirm_last?: boolean; p_role: string };
         Returns: string;
