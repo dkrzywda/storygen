@@ -376,6 +376,40 @@ Przegląd: `context/changes/admin-block-account/reviews/impl-review-phase-1-2.md
 
 **Domknięte pomiarem otwarte pytanie przeglądu:** zablokowane konto **nie odświeży tokenu** — `400`, `{"error_code":"user_banned","msg":"Invalid Refresh Token: User Banned"}`. Okno dostępu bezpośredniego do PostgREST jest więc ograniczone do życia tokenu (≤60 min), a nie nieskończone. To była jedyna niewiadoma mogąca podnieść wagę F7.
 
+## Addendum 2026-09-14 — adaptacja fazy 3
+
+**Blok `## Phase 3` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Schemat roli z `S-10` przestał istnieć — plan zakładał dołożenie drugiego obok niego.** Reguła „albo rola, albo blokada, nigdy oba" jest własnością **całego ciała**, a nie żadnego pojedynczego pola. Rozbita na dwa schematy musiałaby zostać dopowiedziana w handlerze — a walidacja mieszkająca w handlerze to dokładnie to, czemu `validate()` i Zod mają tu zapobiegać. `account-role-patch.ts` i jego test usunięte, zastąpione przez `account-blocked-patch.ts` z `accountPatchSchema`; wszystkie przypadki starego testu przeniesione.
+
+**Wynik walidacji jest UNIĄ ROZŁĄCZNĄ, nie obiektem z dwoma opcjonalnymi polami.** `{ kind: "role", … } | { kind: "blocked", … }` sprawia, że „oba naraz" i „żadne" są po walidacji **niewyrażalne z konstrukcji**, a nie z dyscypliny handlera — a dołożenie trzeciej operacji przy `S-12` będzie błędem kompilacji, nie cichą luką.
+
+**Gwarancja „`confirmLast` zawsze jawnie" przeniosła się z handlera do schematu.** Przy `S-10` endpoint dopisywał `?? false`, więc gwarancję dało się skasować edycją handlera i żaden test by się nie zaczerwienił. Teraz normalizuje ją transformacja schematu. Konsekwencja: zniknął przypadek testowy pilnujący, że `confirmLast` zostaje `undefined` — bo już nie zostaje, i to jest poprawa, nie utrata.
+
+**Rozróżnienie gałęzi idzie po OBECNOŚCI pola, nie po jego prawdziwości.** `blocked: false` to **odblokowanie**, czyli pełnoprawna operacja; gałąź po prawdziwości wrzuciłaby je do błędu „żadne pole nie podane". Pilnują tego dwa osobne przypadki, a mutacja (`if (blocked)` zamiast `if (blocked !== undefined)`) czerwieni dokładnie je.
+
+**`RoleChangeCode` → `AccountActionCode`, `mapRoleChangeCode` → `mapAccountActionCode` — zmiana nazw, której plan nie przewidywał.** Zbiór kodów jest od `S-11` wspólny dla obu operacji, a nazwa mówiąca o jednej z nich sugeruje czytelnikowi, że druga ma własny. To ta sama pomyłka, która przy komunikacie `LAST_ADMIN_CONFIRM_REQUIRED` dała zdanie o „zdjęciu roli" przy blokowaniu (F4 przeglądu). Zachowanie bez zmian.
+
+**Odpowiedź niesie tylko pole faktycznie zmienione** — `{ id, role }` albo `{ id, blocked }` — żeby interfejs nie zgadywał, która operacja przeszła. Log przy nieznanym kodzie nazywa właściwą funkcję.
+
+**Mutacje (poza planem):** brak sprawdzenia rozłączności czerwieni 1 z 14; gałąź po prawdziwości zamiast po obecności czerwieni 2 z 14.
+
+**Weryfikacja ręczna — dziewięć gałęzi przez prawdziwy endpoint, z sesją w przeglądarce:**
+
+| Żądanie                             | Wynik                             |
+| ----------------------------------- | --------------------------------- |
+| zwykłe konto blokuje kogoś          | **404**, nie 403 — kryterium fazy |
+| admin blokuje / odblokowuje         | 200 `{id, blocked}`               |
+| admin zmienia rolę (ścieżka `S-10`) | 200 `{id, role}` — nieuszkodzona  |
+| `role` i `blocked` naraz            | 400, komunikat całego formularza  |
+| puste ciało / samo `confirmLast`    | 400                               |
+| `blocked: "tak"`                    | 400, komunikat przy polu          |
+| nieistniejące konto / zły UUID      | 404                               |
+
+**Poprawka F4 sprawdzona end-to-end:** blokowanie ostatniego administratora **i** zdjęcie mu roli zwracają ten sam kod `409` i ten sam komunikat — „To ostatni czynny administrator. Po tej operacji…" — czyli zdanie prawdziwe dla obu. Przed poprawką blokowanie mówiłoby „Po jej zdjęciu".
+
+**Pełna pętla trzech faz:** administrator blokuje **siebie** z jawną zgodą → `200`, a **następne żądanie** ląduje na `/auth/signin?error=ACCOUNT_BLOCKED`. Faza 1 zapisała stan, faza 2 go wyegzekwowała, faza 3 dała drogę z aplikacji.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -417,14 +451,14 @@ Przegląd: `context/changes/admin-block-account/reviews/impl-review-phase-1-2.md
 
 #### Automated
 
-- [ ] 3.1 Test jednostkowy schematu: rozłączność `role` i `blocked`
-- [ ] 3.2 Test jednostkowy mapowania czterech kodów bazy
-- [ ] 3.3 `npm test` kodem wyjścia 0
-- [ ] 3.4 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 3.1 Test jednostkowy schematu: rozłączność `role` i `blocked`
+- [x] 3.2 Test jednostkowy mapowania czterech kodów bazy
+- [x] 3.3 `npm test` kodem wyjścia 0
+- [x] 3.4 `npx tsc --noEmit` i ESLint bez błędów
 
 #### Manual
 
-- [ ] 3.5 `curl` zwykłym kontem na blokowanie zwraca 404, nie 403
+- [x] 3.5 `curl` zwykłym kontem na blokowanie zwraca 404, nie 403
 
 ### Phase 4: Interfejs — przycisk i znacznik
 

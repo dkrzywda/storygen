@@ -104,6 +104,15 @@ export interface AccountOverviewRow {
    * zasada, ktora `rowLimit` ponizej stosuje do sufitu wierszy.
    */
   isLastAdmin: boolean;
+  /**
+   * Czy konto jest ZABLOKOWANE w tej chwili (S-11, FR-016).
+   *
+   * Liczone w bazie przez porownanie `banned_until` z `now()`, nie przez sprawdzenie
+   * obecnosci wartosci — konto z data w PRZESZLOSCI jest aktywne. Widok nie ma prawa
+   * liczyc tego sam, z tego samego powodu co `isLastAdmin`: kopia po stronie widoku
+   * rozjechalaby sie z baza bez zadnego bledu.
+   */
+  isBlocked: boolean;
   /** Liczba generacji ogolem na tym koncie. */
   generations: number;
   /** Zuzycie dzisiejsze wobec `ownLimit` — obie liczby przychodza z bazy. */

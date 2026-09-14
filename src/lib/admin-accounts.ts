@@ -46,6 +46,7 @@ export async function fetchAccountsOverview(supabase: Client): Promise<AccountOv
     role: row.role === "admin" ? "admin" : "user",
     isSelf: row.is_self,
     isLastAdmin: row.is_last_admin,
+    isBlocked: row.is_blocked,
     generations: row.generations,
     usedToday: row.used_today,
     ownLimit: row.own_limit,
@@ -54,14 +55,21 @@ export async function fetchAccountsOverview(supabase: Client): Promise<AccountOv
 }
 
 /**
- * Kody, ktore `public.set_account_role()` moze zwrocic.
+ * Kody, ktore moga zwrocic funkcje dzialajace na koncie: `set_account_role()`
+ * oraz — od S-11 — `set_account_blocked()`.
  *
- * Zwraca KOD, nie boolean i nie wyjatek — wzorzec `record_attempt_if_allowed`.
+ * Zwracaja KOD, nie boolean i nie wyjatek — wzorzec `record_attempt_if_allowed`.
  * Wolajacy musi wiedziec, KTORA granica zadzialala: brak uprawnien to inna
- * sytuacja niz brak potwierdzenia przy ostatniej roli, i endpoint mapuje je na
- * rozne odpowiedzi.
+ * sytuacja niz brak potwierdzenia przy ostatnim administratorze, i endpoint
+ * mapuje je na rozne odpowiedzi.
+ *
+ * NAZWA JEST OPERACYJNIE NEUTRALNA OD S-11 (dawniej `RoleChangeCode`). Zbior
+ * kodow jest wspolny dla obu operacji, a nazwa mowiaca o jednej z nich sugeruje
+ * czytelnikowi, ze druga ma wlasny — to ta sama pomylka, ktora przy komunikacie
+ * `LAST_ADMIN_CONFIRM_REQUIRED` dala zdanie o „zdjeciu roli" przy blokowaniu
+ * (ustalenie F4 przegladu S-11).
  */
-export type RoleChangeCode = "ok" | "FORBIDDEN" | "VALIDATION_FAILED" | "NOT_FOUND" | "LAST_ADMIN_NEEDS_CONFIRM";
+export type AccountActionCode = "ok" | "FORBIDDEN" | "VALIDATION_FAILED" | "NOT_FOUND" | "LAST_ADMIN_NEEDS_CONFIRM";
 
 /**
  * Mapuje kod z bazy na kod kontraktu API (F-01).
@@ -76,7 +84,7 @@ export type RoleChangeCode = "ok" | "FORBIDDEN" | "VALIDATION_FAILED" | "NOT_FOU
  * autorytetem, ale odpowiedz z sieci nie jest obietnica — nieznana wartosc znaczy
  * "nie wiem, co sie stalo", a to nie jest sukces.
  */
-export function mapRoleChangeCode(raw: string): ApiErrorCode | "ok" {
+export function mapAccountActionCode(raw: string): ApiErrorCode | "ok" {
   switch (raw) {
     case "ok":
       return "ok";
@@ -110,7 +118,7 @@ export async function setAccountRole(
   accountId: string,
   role: AccountRole,
   confirmLast: boolean,
-): Promise<RoleChangeCode> {
+): Promise<AccountActionCode> {
   const { data, error } = await supabase.rpc("set_account_role", {
     p_account: accountId,
     p_role: role,
@@ -122,6 +130,42 @@ export async function setAccountRole(
   }
 
   // `data` jest typowane jako `string`, ale przychodzi z sieci. Zawezenie zostawiamy
-  // `mapRoleChangeCode`, ktore jest fail-closed — tu nie udajemy, ze wiemy wiecej.
-  return data as RoleChangeCode;
+  // `mapAccountActionCode`, ktore jest fail-closed — tu nie udajemy, ze wiemy wiecej.
+  return data as AccountActionCode;
+}
+
+/**
+ * Blokuje albo odblokowuje konto (S-11, FR-016).
+ *
+ * **Rzuca** przy bledzie bazy — tak samo jak `setAccountRole`. Odmowa bramki
+ * bledem NIE jest: wraca jako kod `FORBIDDEN`, bo funkcja wykonala sie poprawnie
+ * i po prostu odmowila.
+ *
+ * `confirm` jest przekazywane ZAWSZE, nigdy pomijane — ten sam powod co przy
+ * `setAccountRole`: funkcja w bazie ma `default false`, ale poleganie na domysle
+ * bazy zamiast na kontrakcie wywolania jest cichym zalozeniem.
+ *
+ * ODBLOKOWANIE NIE PYTA NIGDY — decyduje o tym baza, nie ten modul. Tutaj nie ma
+ * ani jednej decyzji o tym, kiedy potrzebna jest zgoda, i nie moze byc: kopia tej
+ * reguly po stronie aplikacji rozjechalaby sie z baza bez zadnego bledu.
+ */
+export async function setAccountBlocked(
+  supabase: Client,
+  accountId: string,
+  blocked: boolean,
+  confirm: boolean,
+): Promise<AccountActionCode> {
+  const { data, error } = await supabase.rpc("set_account_blocked", {
+    p_account: accountId,
+    p_blocked: blocked,
+    p_confirm: confirm,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  // `data` jest typowane jako `string`, ale przychodzi z sieci. Zawezenie zostawiamy
+  // `mapAccountActionCode`, ktore jest fail-closed — tu nie udajemy, ze wiemy wiecej.
+  return data as AccountActionCode;
 }

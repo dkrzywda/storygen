@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase";
 import { jsonError, jsonOk } from "@/lib/api-response";
 import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
-import { accountRolePatchSchema } from "@/lib/account-role-patch";
-import { mapRoleChangeCode, setAccountRole } from "@/lib/admin-accounts";
+import { accountPatchSchema } from "@/lib/account-blocked-patch";
+import { mapAccountActionCode, setAccountBlocked, setAccountRole } from "@/lib/admin-accounts";
 
 /**
  * Zmiana roli konta (FR-018, S-10).
@@ -45,7 +45,7 @@ export const PATCH: APIRoute = async (context) => {
     return jsonError("VALIDATION_FAILED", { _: "Treść żądania musi być poprawnym JSON-em." });
   }
 
-  const parsed = validate(accountRolePatchSchema, body);
+  const parsed = validate(accountPatchSchema, body);
   if (!parsed.ok) {
     return jsonError("VALIDATION_FAILED", parsed.fields);
   }
@@ -55,29 +55,39 @@ export const PATCH: APIRoute = async (context) => {
     return jsonError("NOT_CONFIGURED");
   }
 
+  const zadanie = parsed.data;
+
   let raw: string;
   try {
-    // Trzeci argument przekazywany ZAWSZE — patrz `setAccountRole`.
-    raw = await setAccountRole(supabase, id, parsed.data.role, parsed.data.confirmLast ?? false);
+    // GALAZ WYBIERA UNIA ROZLACZNA ZE SCHEMATU, nie sprawdzenie obecnosci pola.
+    // "Oba naraz" i "zadne" sa niewyrazalne po walidacji, wiec nie ma ich tu czym
+    // obsluzyc — a dodanie trzeciej operacji bedzie bledem kompilacji, nie cicha
+    // luka. Ostatni argument przekazywany ZAWSZE w obu galeziach.
+    raw =
+      zadanie.kind === "role"
+        ? await setAccountRole(supabase, id, zadanie.role, zadanie.confirmLast)
+        : await setAccountBlocked(supabase, id, zadanie.blocked, zadanie.confirmLast);
   } catch (error) {
     const code = toApiErrorCode(error);
     logApiError("api/accounts/[id]", code, error);
     return jsonError(code);
   }
 
-  const mapped = mapRoleChangeCode(raw);
+  const mapped = mapAccountActionCode(raw);
 
   if (mapped === "ok") {
     // Endpoint mowi, CO zmienil, niezaleznie od tego, co z tym zrobi interfejs —
-    // ta sama zasada co przy usuwaniu generacji.
-    return jsonOk({ id, role: parsed.data.role });
+    // ta sama zasada co przy usuwaniu generacji. Odpowiedz niesie wylacznie pole
+    // faktycznie zmienione, zeby interfejs nie zgadywal, ktora operacja przeszla.
+    return jsonOk(zadanie.kind === "role" ? { id, role: zadanie.role } : { id, blocked: zadanie.blocked });
   }
 
   if (mapped === "INTERNAL") {
     // Kod spoza umowionego zbioru znaczy, ze baza i aplikacja rozjechaly sie
     // kontraktem. Uzytkownik dostaje komunikat domyslny, ale slad musi zostac,
     // bo inaczej ten rozjazd jest niewidoczny.
-    logApiError("api/accounts/[id]", "INTERNAL", { message: `nieznany kod z set_account_role: ${raw}` });
+    const funkcja = zadanie.kind === "role" ? "set_account_role" : "set_account_blocked";
+    logApiError("api/accounts/[id]", "INTERNAL", { message: `nieznany kod z ${funkcja}: ${raw}` });
   }
 
   return jsonError(mapped);
