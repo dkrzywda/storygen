@@ -112,6 +112,13 @@ export type Database = {
       active_admin_count: { Args: never; Returns: number };
       daily_app_ceiling: { Args: never; Returns: number };
       daily_per_account: { Args: never; Returns: number };
+      delete_account: {
+        Args: { p_account: string; p_confirm_destroy?: boolean };
+        Returns: {
+          code: string;
+          destroyed_generations: number;
+        }[];
+      };
       record_attempt_if_allowed: { Args: { p_format: string }; Returns: string };
       set_account_blocked: {
         Args: { p_account: string; p_blocked: boolean; p_confirm?: boolean };

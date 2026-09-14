@@ -151,7 +151,7 @@ odziedziczą.
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
 | S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | done |
 | S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | in-progress |
-| S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | proposed |
+| S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | in-progress |
 
 ## Streams
 
@@ -499,7 +499,7 @@ w celu wylistowania kont.
 - **Unknowns:**
   - ~~Czy usunięcie ma przed sobą stan odwracalny?~~ **ROZSTRZYGNIĘTE 2026-09-09: blokada JEST tym stanem; usunięcie nie ma etapu miękkiego.** PRD `## Open Questions` #8. Plastry nie zlewają się: produkt niesie dwa stany konta, nie trzy, a `S-12` zostaje po `S-11`, bo dziedziczy po nim ścieżkę zapisu, nie bo czeka na rozstrzygnięcie. — Owner: autor. Block: —.
 - **Risk:** Jedyna nieodwracalna operacja w całym produkcie. Wszystkie klucze obce do `auth.users` kasują kaskadowo, więc usunięcie konta niszczy jego generacje **i** zwalnia zużyty przez nie udział w dziennym sufcie aplikacji (FR-013) — po usunięciu sufit przestaje być zapisem realnego wydatku dnia, co dotyka wymagania z innego kamienia. Guardrail dopisany do PRD v3 wymaga ostrzeżenia przed wykonaniem, więc ten plaster ma kryterium, które porażka faktycznie zaczerwieni: ekran usuwający bez powiedzenia, co usuwa, łamie je nawet działając poprawnie. **Ustalenie F10 przegladu S-10 (2026-09-14): ten plaster MUSI wziac ten sam klucz blokady doradczej `account_role_gate`, co `set_account_role`.** Klucz chroni LICZBE ADMINOW, nie tylko zmiane roli; policzenie adminow poza nim doprowadzi do zera adminow bez zadnej zgody.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Dług procesowy — 2026-09-07
 
