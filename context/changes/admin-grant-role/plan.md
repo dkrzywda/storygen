@@ -291,6 +291,20 @@ Trzynaście przypadków, werdykt OK. Test mutacyjny: **zdjęcie bramki z funkcji
 
 **Skrypt kontrolny dostał trzy dowody czułości**, których plan nie wymagał: nadanie `anon` prawa zmiany roli, odebranie `authenticated` prawa przeglądu i przywrócenie starej sześciokolumnowej funkcji — każdy czerwieni inną gałąź werdyktu. Trzeci pokazał w działaniu zagrożenie, o które chodzi: odtworzona bez ponownego `revoke` funkcja miała `anon` i `service_role` z prawem wykonania.
 
+## Addendum 2026-09-14 — adaptacja fazy 2
+
+**Kryterium 2.3 przeniesione do fazy 3; zostaje `[ ]` i zamknie się razem z 3.4.**
+
+Powód: żeby nadać rolę przez klienta JS, wołający musi już być administratorem — a zbudowanie konta z rolą wymaga zapisu do `raw_app_meta_data`, na co klucz publishable prawa nie ma (`updateUser` pisze do `user_metadata`, i to jest celowe — `20260908124854:10`). To **ta sama ściana**, o którą rozbiło się kryterium 1.5 w fazie 1; napisałem 2.3 w tym samym planie i znowu nie sprawdziłem, czy zestaw potrafi to wyrazić. Ten sam błąd planowania drugi raz, zapisany, żeby nie był trzeci.
+
+Plan miał już ten sprawdzian w fazie 3 jako pozycję manualną **3.4** („Nadanie roli drugiemu kontu widoczne bez ponownego logowania"), więc 2.3 był jego duplikatem. Część bazodanowa jest już dowiedziona testem SQL z fazy 1: rola zostaje zapisana i odczytana. Niedowiedziona pozostaje wyłącznie część o **sesji w przeglądarce** — a tę da się zmierzyć tylko tam, gdzie istnieje druga żywa sesja, czyli w fazie 3.
+
+Rozważona i odrzucona alternatywa: test integracyjny z jednym krokiem `psql` nadającym rolę pierwszemu kontu. Mierzyłby dokładnie to, co kryterium mówi, ale `npm run test:integration` zaczęłoby wymagać Dockera i `psql`, a nie tylko działającej bazy.
+
+**Schemat Zoda nie leży obok endpointu.** `src/lib/account-role-patch.ts`, nie `src/pages/api/accounts/`, bo w Astro każdy `.ts` pod `src/pages/` staje się trasą — schemat obok handlera wystawiłby publiczny endpoint (`generation-patch.ts:6`).
+
+**Regex UUID powtórzony, nie wyciągnięty.** Kopia z `generations/[id].ts`. Wyciągnięcie go do wspólnego modułu dotknęłoby pliku spoza zakresu tej fazy dla jednej stabilnej linii. Decyzja świadoma, zapisana w komentarzu przy samym regeksie.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -315,15 +329,15 @@ Trzynaście przypadków, werdykt OK. Test mutacyjny: **zdjęcie bramki z funkcji
 
 #### Automated
 
-- [ ] 2.1 Test jednostkowy schematu żądania
-- [ ] 2.2 Test jednostkowy mapowania pięciu kodów bazy na kody API
+- [x] 2.1 Test jednostkowy schematu żądania
+- [x] 2.2 Test jednostkowy mapowania pięciu kodów bazy na kody API
 - [ ] 2.3 Test integracyjny: nadana rola widoczna bez ponownego logowania
-- [ ] 2.4 `npm test` kodem wyjścia 0
-- [ ] 2.5 `npx tsc --noEmit` i ESLint na dotkniętych plikach bez błędów
+- [x] 2.4 `npm test` kodem wyjścia 0
+- [x] 2.5 `npx tsc --noEmit` i ESLint na dotkniętych plikach bez błędów
 
 #### Manual
 
-- [ ] 2.6 `curl` zwykłym kontem na PATCH zwraca 404, nie 403
+- [x] 2.6 `curl` zwykłym kontem na PATCH zwraca 404, nie 403
 
 ### Phase 3: Interfejs — wyspa na wiersz
 

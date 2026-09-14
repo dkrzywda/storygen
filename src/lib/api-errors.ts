@@ -74,6 +74,16 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 429,
     message: "Aplikacja osiągnęła dzienny limit generacji dla wszystkich kont. Spróbuj ponownie po północy.",
   },
+  LAST_ADMIN_CONFIRM_REQUIRED: {
+    // 409, nie 400 i nie 403: żądanie jest poprawne i wykonalne, ale koliduje ze
+    // stanem, o którym wołający mógł nie wiedzieć — że to ostatnia rola. Powtórzone
+    // z jawnym potwierdzeniem przejdzie, bez żadnej zmiany po stronie konta.
+    status: 409,
+    // Komunikat nazywa SKUTEK, nie mechanizm. Administrator ma podjąć decyzję,
+    // a nie dowiedzieć się, że funkcja zwróciła kod.
+    message:
+      "To ostatnia rola administratora. Po jej zdjęciu administracja przestanie być dostępna z poziomu aplikacji. Potwierdź, jeśli chcesz to zrobić.",
+  },
   INTERNAL: {
     status: 500,
     message: "Coś poszło nie tak. Spróbuj ponownie za chwilę.",

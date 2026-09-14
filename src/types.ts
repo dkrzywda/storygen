@@ -32,6 +32,11 @@ export type ApiErrorCode =
   // ma wobec nich rozna moc sprawcza — wlasny limit odnowi sie jemu, sufit aplikacji nie.
   | "DAILY_LIMIT_REACHED"
   | "APP_LIMIT_REACHED"
+  // Odmowa zdjecia OSTATNIEJ roli administratora bez jawnego potwierdzenia (S-10,
+  // FR-018). Wlasny kod, a nie `VALIDATION_FAILED`, bo to nie jest bledne zadanie:
+  // jest poprawne i wykonalne, tylko wymaga potwierdzenia. Uzytkownik ma tu co
+  // zrobic — powtorzyc je swiadomie — i komunikat musi powiedziec, co sie stanie.
+  | "LAST_ADMIN_CONFIRM_REQUIRED"
   | "INTERNAL";
 
 /** Format generowanego tekstu. `story` wchodzi z `S-07`, ale kontrakt zna go od poczatku. */
@@ -66,8 +71,33 @@ export type AccountRole = "user" | "admin";
  * `resetsAt` w `UsageToday`.
  */
 export interface AccountOverviewRow {
+  /**
+   * Identyfikator konta — cel operacji z `S-10`.
+   *
+   * Adres e-mail celowo NIE jest selektorem: jest zmienny, jest danymi osobowymi,
+   * a PRD rozdziela adres od roszczenia o uprawnienia. Ten identyfikator jest
+   * stabilny i nie niesie zadnej tresci.
+   */
+  id: string;
   email: string;
   registeredAt: Date;
+  /** Aktualna rola konta. Konto bez klucza w `app_metadata` jest `user` — tak samo, jak widzi to `isAdmin`. */
+  role: AccountRole;
+  /**
+   * Czy to wiersz konta, ktore wlasnie oglada przeglad.
+   *
+   * Dzialanie na sobie jest DOZWOLONE (PRD v4, `## Open Questions` #9), ale interfejs
+   * musi wiedziec, ze klika w siebie — inaczej nie powie uczciwie, co sie zaraz stanie.
+   */
+  isSelf: boolean;
+  /**
+   * Czy zdjecie roli z tego konta zabraloby OSTATNIA role administratora.
+   *
+   * Liczone W BAZIE, tym samym odczytem co reszta wiersza — kopia po stronie widoku
+   * uciszalaby ostrzezenie przy kazdej zmianie w SQL-u, bez zadnego bledu. To ta sama
+   * zasada, ktora `rowLimit` ponizej stosuje do sufitu wierszy.
+   */
+  isLastAdmin: boolean;
   /** Liczba generacji ogolem na tym koncie. */
   generations: number;
   /** Zuzycie dzisiejsze wobec `ownLimit` — obie liczby przychodza z bazy. */
