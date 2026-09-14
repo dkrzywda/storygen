@@ -383,6 +383,32 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 **Przy okazji spłacony dług:** usunięte dziesięć kont narosłych po przebiegach zestawu integracyjnego. To one przy `S-11` rozdęły tabelę i kazały mi podejrzewać własny regres.
 
+## Addendum 2026-09-14 — adaptacja fazy 3
+
+**Blok `## Phase 3` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Kryterium „zachowanie identyczne" jest spełnione dla każdej operacji z osobna, ale JEDNA rzecz zmienia się z założenia** i trzeba to powiedzieć wprost, zamiast chować pod słowem „identyczne": **operacje nie mogą się już przeplatać**. W trakcie potwierdzania jednej druga jest niedostępna — wcześniej obie były klikalne naraz i właśnie stąd brał się wyścig, który ten refaktor miał zamknąć. Zmierzone: przy pytaniu o blokadę przycisk roli znika, a „Anuluj" przywraca oba.
+
+**Maszyny stanów NIE zostały scalone** — `account-role-action.ts` i `account-block-action.ts` są nietknięte. Dowód, że logika się nie przeniosła: `npm test` pokazuje **365 testów przed i po**, bez jednej zmiany w plikach testowych.
+
+**Zmierzone zbicie hydracji:** cztery wiersze, **cztery wyspy zamiast ośmiu** — jedna na wiersz. Przy suficie 200 wierszy to 200 zamiast 400, a po fazie 4 będzie 200 zamiast 600. To domyka F10 przeglądu `S-10` w kierunku, o który tamto ustalenie prosiło, **bez** zmiany dyrektywy hydracji.
+
+**Ciało żądania powstaje w tej samej gałęzi co decyzja.** Pierwsza wersja liczyła akcję raz, a potem odgadywała jej kształt przez `"targetRole" in action` — czyli sprawdzeniem, które typ już raz rozstrzygnął. Przepisane, zanim weszło do commitu.
+
+**Weryfikacja ręczna:**
+
+| Sprawdzenie                                        | Wynik                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| ostrzeżenie przy blokowaniu siebie                 | identyczne co do słowa, gałąź słabsza (dwóch adminów)        |
+| focus w pytaniu                                    | na „Anuluj"                                                  |
+| „Anuluj"                                           | wraca do spoczynku, **oba** przyciski z powrotem             |
+| blokada cudzego konta                              | bez pytania → znacznik „zablokowane", przycisk na „Odblokuj" |
+| zmiana roli **na tym samym koncie, tą samą wyspą** | przechodzi, kolumna „Rola" i przycisk przestawione           |
+| wysp na wiersz                                     | **1** (było 2)                                               |
+| tabela                                             | 638 / 638, zero przewijania                                  |
+
+**Kryterium 3.2 (`astro build`) zostaje NIEODHACZONE — środowiskowo, nie przez tę zmianę.** Build pada na `Authentication error [code: 10000]` przy Cloudflare API, bo sięga po zdalny binding `AI`. Sprawdzone wcześniej przez `git stash`, że pada identycznie na commicie sprzed tych zmian. Wymaga `npx wrangler login` na konto gmail; do tego czasu kryterium jest **zablokowane**, nie niespełnione.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -411,30 +437,30 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 #### Automated
 
-- [x] 2.1 Test jednostkowy schematu parametrów zapytania
-- [x] 2.2 Test jednostkowy mapowania dwóch nowych kodów
-- [x] 2.3 `npm test` kodem wyjścia 0
-- [x] 2.4 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 2.1 Test jednostkowy schematu parametrów zapytania — c107395
+- [x] 2.2 Test jednostkowy mapowania dwóch nowych kodów — c107395
+- [x] 2.3 `npm test` kodem wyjścia 0 — c107395
+- [x] 2.4 `npx tsc --noEmit` i ESLint bez błędów — c107395
 
 #### Manual
 
-- [x] 2.5 `DELETE` zwykłym kontem zwraca 404, nie 403
-- [x] 2.6 `DELETE` bez `Origin` zwraca 403 CSRF — pułapka Astro potwierdzona
+- [x] 2.5 `DELETE` zwykłym kontem zwraca 404, nie 403 — c107395
+- [x] 2.6 `DELETE` bez `Origin` zwraca 403 CSRF — pułapka Astro potwierdzona — c107395
 
 ### Phase 3: Scalenie wiersza w jedną wyspę
 
 #### Automated
 
-- [ ] 3.1 `npm test` kodem wyjścia 0
+- [x] 3.1 `npm test` kodem wyjścia 0
 - [ ] 3.2 `npx astro build` przechodzi
-- [ ] 3.3 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 3.3 ESLint i `npx tsc --noEmit` bez błędów
 
 #### Manual
 
-- [ ] 3.4 Zmiana roli zachowuje się identycznie jak przed refaktorem
-- [ ] 3.5 Blokowanie i odblokowanie zachowuje się identycznie
-- [ ] 3.6 Jeden korzeń hydracji na wiersz zamiast dwóch — zmierzone
-- [ ] 3.7 Tabela mieści się bez poziomego przewijania
+- [x] 3.4 Zmiana roli zachowuje się identycznie jak przed refaktorem
+- [x] 3.5 Blokowanie i odblokowanie zachowuje się identycznie
+- [x] 3.6 Jeden korzeń hydracji na wiersz zamiast dwóch — zmierzone
+- [x] 3.7 Tabela mieści się bez poziomego przewijania
 
 ### Phase 4: Interfejs — przycisk usunięcia
 

@@ -9,8 +9,7 @@ import { accountDateFormat, resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/account-role";
 import { fetchAccountsOverview } from "@/lib/admin-accounts";
-import AccountRoleButton from "@/components/admin/AccountRoleButton";
-import AccountBlockButton from "@/components/admin/AccountBlockButton";
+import AccountActions from "@/components/admin/AccountActions";
 import type { AccountOverviewRow, GenerationFormat } from "@/types";
 
 // Trasa jest w PROTECTED_ROUTES, wiec middleware odsyla anonimow do logowania.
@@ -288,21 +287,14 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                                 sumie, wiec stan z 0 px zapasu nie pogarsza sie ani o piksel.
                                 Zmierzone po dolozeniu: patrz addendum fazy 4. */}
                             <div class="flex flex-col items-end gap-1">
-                              <AccountRoleButton
+                              <AccountActions
                                 client:load
                                 accountId={account.id}
                                 email={account.email}
                                 role={account.role}
                                 isSelf={account.isSelf}
                                 isLastAdmin={account.isLastAdmin}
-                              />
-                              <AccountBlockButton
-                                client:load
-                                accountId={account.id}
-                                email={account.email}
                                 isBlocked={account.isBlocked}
-                                isSelf={account.isSelf}
-                                isLastAdmin={account.isLastAdmin}
                               />
                             </div>
                           </td>
