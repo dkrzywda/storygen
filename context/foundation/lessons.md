@@ -166,3 +166,47 @@
   uzasadniające**: nowa wersja jest odtąd kanoniczna, a uzasadnienie, które w niej nie
   istnieje, przestało istnieć w projekcie.
 - **Applies to**: plan, implement, impl-review
+
+## Skrypt wdrożeniowy kończy się werdyktem, nie commitem
+
+- **Context**: Każdy skrypt SQL wklejany ręcznie do edytora dostawcy
+  (Supabase SQL Editor) — czyli każde wdrożenie migracji w tym repo, bo port 5432
+  jest odfiltrowany i `supabase db push` nie przechodzi.
+- **Problem**: 2026-09-14, wdrożenie `S-12`. Skrypt owinięty w jawne
+  `begin; … commit;` zwrócił `Success. No rows returned` — **dokładnie ten sam
+  komunikat, co udany `create function`** — a w bazie nie zostało ani funkcji, ani
+  wpisu w rejestrze. Zmierzone osobnym odczytem: `s12_w_rejestrze: false`,
+  `jest_usuwanie: false`, przy `jest_licznik: true`, czyli na tym samym serwerze,
+  na którym poprzednia migracja stała poprawnie. Transakcja nigdy się nie
+  zatwierdziła, a ekran nie odróżnił tego od sukcesu — kosztowało to pełny cykl
+  wdrożenia i diagnozy. Sygnał był wcześniej i został zlekceważony: ten sam edytor
+  zgłosił błąd składni w „LINE 1" dla linii, która w pliku jest sześćdziesiąta,
+  czyli nie wykonywał całego pliku tak, jak się wydawało.
+- **Rule**: Skrypt wdrożeniowy wklejany do edytora SQL musi kończyć się `SELECT`-em
+  zwracającym werdykt o stanie po zmianie — nigdy `commit`-em. Nie owijaj go
+  w jawne `begin`/`commit`, chyba że migracja upuszcza obiekty i stan pośredni
+  byłby gorszy od stanu sprzed wdrożenia.
+- **Applies to**: plan, implement, impl-review
+
+## Sprawdzenie katalogu pyta przez to_regprocedure, nie przez sygnaturę tekstową
+
+- **Context**: Każdy skrypt kontrolny w `supabase/migrations/` i
+  `context/changes/**/deploy/`, który sprawdza istnienie obiektu albo jego
+  uprawnienia — `has_function_privilege`, `has_table_privilege` i pokrewne.
+- **Problem**: 2026-09-14, werdykt kroku wdrożeniowego `S-12`.
+  `has_function_privilege('anon', 'public.delete_account(uuid,boolean)', 'execute')`
+  z sygnaturą **tekstową** rzuca `ERROR: function … does not exist`, gdy funkcji nie
+  ma — więc `coalesce(…, true)` nigdy nie dostaje szansy. Werdykt wywaliłby się
+  dokładnie w przypadku, który miał zaraportować („funkcja nie powstała"),
+  zamieniając czytelną diagnozę w błąd edytora. Zmierzone na obu wariantach:
+  `to_regprocedure('public.nie_ma(uuid,boolean)')` zwraca `NULL`,
+  a `has_function_privilege(rola, NULL, 'execute')` też `NULL`, więc `coalesce`
+  działa. To ta sama klasa, co „Zielone czytaj z tego, co zmieniłoby się przy
+  porażce", ale ostrzejsza: sprawdzenie nie tylko nie czerwieni się przy awarii —
+  ono się o nią wywraca.
+- **Rule**: W sprawdzeniach uprawnień podawaj obiekt przez `to_regprocedure(…)` lub
+  `to_regclass(…)`, nigdy przez sygnaturę tekstową — tekstowa rzuca błędem dla
+  nieistniejącego obiektu, a to jest właśnie stan, który sprawdzenie ma wykryć. Po
+  napisaniu werdyktu uruchom go z podmienioną nazwą obiektu i potwierdź, że
+  **czerwieni się**, zamiast się wywracać.
+- **Applies to**: plan, implement, impl-review
