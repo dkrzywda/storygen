@@ -56,7 +56,7 @@ export async function fetchAccountsOverview(supabase: Client): Promise<AccountOv
 
 /**
  * Kody, ktore moga zwrocic funkcje dzialajace na koncie: `set_account_role()`
- * oraz — od S-11 — `set_account_blocked()`.
+ * (S-10), `set_account_blocked()` (S-11) oraz `delete_account()` (S-12).
  *
  * Zwracaja KOD, nie boolean i nie wyjatek — wzorzec `record_attempt_if_allowed`.
  * Wolajacy musi wiedziec, KTORA granica zadzialala: brak uprawnien to inna
@@ -69,7 +69,18 @@ export async function fetchAccountsOverview(supabase: Client): Promise<AccountOv
  * `LAST_ADMIN_CONFIRM_REQUIRED` dala zdanie o „zdjeciu roli" przy blokowaniu
  * (ustalenie F4 przegladu S-11).
  */
-export type AccountActionCode = "ok" | "FORBIDDEN" | "VALIDATION_FAILED" | "NOT_FOUND" | "LAST_ADMIN_NEEDS_CONFIRM";
+export type AccountActionCode =
+  | "ok"
+  | "FORBIDDEN"
+  | "VALIDATION_FAILED"
+  | "NOT_FOUND"
+  | "LAST_ADMIN_NEEDS_CONFIRM"
+  // Dwa kody wylacznie z `delete_account()` (S-12). Zbior jest wspolny dla
+  // wszystkich trzech funkcji dzialajacych na koncie, ale nie kazda zwraca
+  // kazdy — `delete_account` nigdy nie odda `LAST_ADMIN_NEEDS_CONFIRM`, bo ta
+  // galaz jest w niej nieosiagalna (patrz naglowek `20260914160000`).
+  | "SELF_DELETE_FORBIDDEN"
+  | "DESTROY_CONFIRM_REQUIRED";
 
 /**
  * Mapuje kod z bazy na kod kontraktu API (F-01).
@@ -96,6 +107,15 @@ export function mapAccountActionCode(raw: string): ApiErrorCode | "ok" {
       return "VALIDATION_FAILED";
     case "LAST_ADMIN_NEEDS_CONFIRM":
       return "LAST_ADMIN_CONFIRM_REQUIRED";
+    // Te dwa NIE sa mapowane na `NOT_FOUND` jak `FORBIDDEN`, i to jest celowe.
+    // Tam ukrywamy istnienie operacji przed kims, kto nie ma do niej prawa;
+    // tutaj wolajacy JEST administratorem i pyta o wlasne konto albo o wlasna
+    // zgode — nie ma czego przed nim ukrywac, a wyciszenie tych kodow zamienilo
+    // by uczciwa odmowe w mylace "nie znaleziono".
+    case "SELF_DELETE_FORBIDDEN":
+      return "SELF_DELETE_FORBIDDEN";
+    case "DESTROY_CONFIRM_REQUIRED":
+      return "DESTROY_CONFIRM_REQUIRED";
     default:
       return "INTERNAL";
   }
@@ -168,4 +188,61 @@ export async function setAccountBlocked(
   // `data` jest typowane jako `string`, ale przychodzi z sieci. Zawezenie zostawiamy
   // `mapAccountActionCode`, ktore jest fail-closed — tu nie udajemy, ze wiemy wiecej.
   return data as AccountActionCode;
+}
+
+/**
+ * Wynik usuniecia konta (S-12, FR-017).
+ *
+ * Liczba wraca RAZEM z kodem, bo ekran ma powiedziec, co sie STALO, a nie co
+ * przewidywal. Liczba z przegladu bywa nieaktualna — konto moglo generowac
+ * miedzy odczytem tabeli a klikinieciem. Przy kazdej odmowie jest zerem.
+ */
+export interface AccountDeletion {
+  code: AccountActionCode;
+  destroyedGenerations: number;
+}
+
+/**
+ * Usuwa konto wraz z jego generacjami (S-12, FR-017).
+ *
+ * **Rzuca** przy bledzie bazy — tak samo jak `setAccountRole` i `setAccountBlocked`.
+ * Odmowa bramki bledem NIE jest: wraca jako kod, bo funkcja wykonala sie
+ * poprawnie i po prostu odmowila.
+ *
+ * `confirmDestroy` przekazywane ZAWSZE jawnie. Funkcja w bazie ma `default false`,
+ * wiec pominiecie argumentu byloby rownowazne odmowie — ale poleganie na domysle
+ * bazy zamiast na kontrakcie wywolania jest dokladnie tym cichym zalozeniem,
+ * ktore ustalenie F4 przegladu `S-10` kazalo wyeliminowac.
+ *
+ * NIE MA TU PARAMETRU ZGODY NA OSTATNIEGO ADMINISTRATORA. Ta galaz jest
+ * w `delete_account` nieosiagalna: wolajacy musi byc czynnym administratorem,
+ * wiec jest liczony, a celem nie moze byc on sam — licznik ma wiec zawsze co
+ * najmniej dwa. Pelne uzasadnienie w naglowku `20260914160000`.
+ */
+export async function deleteAccount(
+  supabase: Client,
+  accountId: string,
+  confirmDestroy: boolean,
+): Promise<AccountDeletion> {
+  const { data, error } = await supabase.rpc("delete_account", {
+    p_account: accountId,
+    p_confirm_destroy: confirmDestroy,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  // `returns table` oddaje TABLICE wierszy, nie pojedynczy wiersz — nawet gdy
+  // funkcja zwraca dokladnie jeden. Pusta tablica znaczy, ze baza i aplikacja
+  // rozjechaly sie kontraktem; `INTERNAL` przez `mapAccountActionCode` jest
+  // wtedy uczciwszy niz udawanie sukcesu.
+  const row = data.at(0);
+  if (!row) {
+    return { code: "FORBIDDEN", destroyedGenerations: 0 };
+  }
+
+  // Zawezenie zostawiamy `mapAccountActionCode`, ktore jest fail-closed —
+  // tu nie udajemy, ze wiemy wiecej, niz przyszlo z sieci.
+  return { code: row.code as AccountActionCode, destroyedGenerations: row.destroyed_generations };
 }

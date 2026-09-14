@@ -342,6 +342,47 @@ Naprawione przez **powtórzenie bramki wołającego po wzięciu blokady**. Dopie
 
 **Mutacje, wynik:** bez bramki roli czerwieni 9 z 21; bez zakazu usuwania siebie 9 z 21; bez zgody na zniszczenie 6 z 21. Czysty przebieg 21/21, **z dwoma kontami lokalnymi w bazie**.
 
+## Addendum 2026-09-14 — adaptacja fazy 2
+
+**Blok `## Phase 2` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Jeden parametr zgody, nie dwa — konsekwencja fazy 1.** Plan zapisał `?confirmDestroy=true&confirmLast=true`. `p_confirm_last` przestał istnieć, bo gałąź ostatniego administratora jest w `delete_account` nieosiągalna. Parametr, którego baza nie zna, byłby obietnicą bez pokrycia.
+
+**Zgoda przyjmuje WYŁĄCZNIE `"true"` albo `"false"`, nie „cokolwiek niepuste znaczy tak".** Parametr przychodzi z adresu, więc zawsze jest tekstem. Gdyby liczyła się sama obecność wartości, literówka w adresie zamieniłaby się w zgodę na operację, której nikt nie cofnie — pilnuje tego przypadek różnicujący z dziewięcioma wartościami (`1`, `yes`, `tak`, `TRUE`, `on`, …), z których **żadna** nie przechodzi.
+
+**Brak parametru to błąd walidacji, nie ciche `false`.** Żądanie usunięcia bez słowa o zgodzie jest niepełne, a nie odmowne — użytkownik dostaje komunikat o tym, czego brakuje, zamiast odmowy bez wyjaśnienia. Baza i tak odmówi bez `p_confirm_destroy`, więc to druga warstwa, nie jedyna.
+
+**Dwa nowe kody NIE są wyciszane do `NOT_FOUND`, w odróżnieniu od `FORBIDDEN`** — i to jest świadome rozróżnienie, nie niekonsekwencja. `FORBIDDEN` ukrywamy, bo pyta o nie ktoś bez uprawnień i sama odpowiedź zdradziłaby istnienie operacji (FR-015). `SELF_DELETE_FORBIDDEN` i `DESTROY_CONFIRM_REQUIRED` zwraca się **administratorowi**, który pyta o własne konto albo o własną zgodę — nie ma czego przed nim ukrywać, a wyciszenie zamieniłoby uczciwą odmowę w mylące „nie znaleziono".
+
+**Statusy różne dla dwóch nowych kodów, a nie oba `409`.** `SELF_DELETE_FORBIDDEN` daje **403**: żądanie jest odrzucane **na stałe**, powtórzenie niczego nie da, a `409` sugerowałoby „spróbuj inaczej". `DESTROY_CONFIRM_REQUIRED` daje **409**, jak `LAST_ADMIN_CONFIRM_REQUIRED` — żądanie jest poprawne i wykonalne, tylko koliduje ze stanem, o którym wołający mógł nie wiedzieć.
+
+**Nagłówki plików poprawione od razu, nie po przeglądzie.** Przy `S-11` ta sama klasa („nazwa opisuje połowę zawartości") wyszła trzy razy i za każdym razem dopiero w przeglądzie. Tu nagłówki `[id].ts` i `AccountActionCode` wymieniają wszystkie trzy operacje od pierwszego commitu.
+
+**Pułapka CSRF potwierdzona pomiarem**, a nie przyjęta z planu `S-06` na słowo:
+
+| Żądanie                            | Wynik                                                                                              |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DELETE` **bez** `Origin`          | **403**, zwykły tekst „Cross-site DELETE form submissions are forbidden" — **nie** kontrakt błędów |
+| `DELETE` **z** `Origin`, bez sesji | **401** `UNAUTHORIZED`, poprawny JSON                                                              |
+
+To rozstrzyga, że tamto 403 **nie jest bramką uprawnień**, choć tak wygląda — a pomylenie jednego z drugim dałoby fałszywe poczucie, że endpoint jest chroniony.
+
+**Weryfikacja ręczna — siedem gałęzi przez prawdziwy endpoint, z sesją w przeglądarce:**
+
+| Żądanie                                 | Wynik                                     |
+| --------------------------------------- | ----------------------------------------- |
+| zwykłe konto usuwa                      | **404**, nie 403 — kryterium fazy         |
+| brak parametru zgody                    | 400, komunikat przy polu                  |
+| `confirmDestroy=tak`                    | 400, komunikat mówiący, co jest dozwolone |
+| `confirmDestroy=false`                  | 409 `DESTROY_CONFIRM_REQUIRED`            |
+| admin usuwa **siebie**                  | **403** `SELF_DELETE_FORBIDDEN`           |
+| nieistniejące konto / zły UUID          | 404                                       |
+| admin usuwa cudze konto z 4 generacjami | 200, `destroyedGenerations: 4`            |
+
+Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazie, a zwrócona liczba równa się dokładnie temu, co konto miało.
+
+**Przy okazji spłacony dług:** usunięte dziesięć kont narosłych po przebiegach zestawu integracyjnego. To one przy `S-11` rozdęły tabelę i kazały mi podejrzewać własny regres.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -350,35 +391,35 @@ Naprawione przez **powtórzenie bramki wołającego po wzięciu blokady**. Dopie
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czystej bazie
-- [x] 1.2 Skrypt kontrolny: werdykt OK dla wszystkich pięciu funkcji
-- [x] 1.3 Test SQL: konto bez roli nie usunie nikogo, stan celu nietknięty
-- [x] 1.4 Test SQL: usunięcie siebie odmawia nawet z obiema zgodami
-- [x] 1.5 Test SQL: brak `p_confirm_destroy` odmawia administratorowi
+- [x] 1.1 Migracja stosuje się na czystej bazie — ce1942e
+- [x] 1.2 Skrypt kontrolny: werdykt OK dla wszystkich pięciu funkcji — ce1942e
+- [x] 1.3 Test SQL: konto bez roli nie usunie nikogo, stan celu nietknięty — ce1942e
+- [x] 1.4 Test SQL: usunięcie siebie odmawia nawet z obiema zgodami — ce1942e
+- [x] 1.5 Test SQL: brak `p_confirm_destroy` odmawia administratorowi — ce1942e
 - [ ] 1.6 Test SQL: ostatni czynny administrator bez zgody odmawia, ze zgodą przechodzi
-- [x] 1.7 Test SQL: zwrócona liczba równa liczbie generacji sprzed usunięcia
-- [x] 1.8 Typy zregenerowane; diff wyłącznie nowa funkcja
-- [x] 1.9 `npm run test:integration` kodem wyjścia 0
-- [x] 1.10 `npx tsc --noEmit` bez błędów
+- [x] 1.7 Test SQL: zwrócona liczba równa liczbie generacji sprzed usunięcia — ce1942e
+- [x] 1.8 Typy zregenerowane; diff wyłącznie nowa funkcja — ce1942e
+- [x] 1.9 `npm run test:integration` kodem wyjścia 0 — ce1942e
+- [x] 1.10 `npx tsc --noEmit` bez błędów — ce1942e
 
 #### Manual
 
-- [x] 1.11 Zdjęcie każdej z trzech bramek czerwieni odpowiadające przypadki
-- [x] 1.12 Wyścig: dwaj administratorzy usuwający się nawzajem nie kończą zerem
+- [x] 1.11 Zdjęcie każdej z trzech bramek czerwieni odpowiadające przypadki — ce1942e
+- [x] 1.12 Wyścig: dwaj administratorzy usuwający się nawzajem nie kończą zerem — ce1942e
 
 ### Phase 2: Kontrakt — endpoint, moduł, typy
 
 #### Automated
 
-- [ ] 2.1 Test jednostkowy schematu parametrów zapytania
-- [ ] 2.2 Test jednostkowy mapowania dwóch nowych kodów
-- [ ] 2.3 `npm test` kodem wyjścia 0
-- [ ] 2.4 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 2.1 Test jednostkowy schematu parametrów zapytania
+- [x] 2.2 Test jednostkowy mapowania dwóch nowych kodów
+- [x] 2.3 `npm test` kodem wyjścia 0
+- [x] 2.4 `npx tsc --noEmit` i ESLint bez błędów
 
 #### Manual
 
-- [ ] 2.5 `DELETE` zwykłym kontem zwraca 404, nie 403
-- [ ] 2.6 `DELETE` bez `Origin` zwraca 403 CSRF — pułapka Astro potwierdzona
+- [x] 2.5 `DELETE` zwykłym kontem zwraca 404, nie 403
+- [x] 2.6 `DELETE` bez `Origin` zwraca 403 CSRF — pułapka Astro potwierdzona
 
 ### Phase 3: Scalenie wiersza w jedną wyspę
 

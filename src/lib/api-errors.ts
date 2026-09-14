@@ -41,6 +41,24 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 401,
     message: "Ta operacja wymaga zalogowania.",
   },
+  SELF_DELETE_FORBIDDEN: {
+    // 403, nie 409. Zadanie nie koliduje z przejsciowym stanem, ktory da sie
+    // zmienic — jest odrzucane NA STALE i powtorzenie niczego nie da. Kod 409
+    // sugerowalby "sprobuj jeszcze raz, inaczej", co byloby nieprawda.
+    //
+    // Brak tu obawy o ujawnienie czegokolwiek, ktora kaze mapowac `FORBIDDEN`
+    // na 404: wolajacy pyta o WLASNE konto, wiec odpowiedz nie mowi mu nic,
+    // czego by nie wiedzial.
+    status: 403,
+    message: "Nie możesz usunąć własnego konta. Poproś innego administratora.",
+  },
+  DESTROY_CONFIRM_REQUIRED: {
+    // 409, jak `LAST_ADMIN_CONFIRM_REQUIRED`: zadanie jest poprawne i wykonalne,
+    // ale koliduje ze stanem, o ktorym wolajacy moze nie wiedziec — ze operacja
+    // zniszczy dane. Powtorzone z jawna zgoda przejdzie.
+    status: 409,
+    message: "Usunięcie konta niszczy jego zapisane teksty i jest nieodwracalne. Potwierdź, jeśli chcesz to zrobić.",
+  },
   ACCOUNT_BLOCKED: {
     // 403, nie 401. Dane logowania sa poprawne i powtorzenie proby niczego nie
     // zmieni — to odmowa wobec wlasciwych danych, a nie brak uwierzytelnienia.

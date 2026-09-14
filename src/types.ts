@@ -43,6 +43,17 @@ export type ApiErrorCode =
   // ze dostep ZAWIESZONO — pokazanie mu ogolnej awarii jest naruszeniem wymogu,
   // nie niedoskonaloscia komunikatu.
   | "ACCOUNT_BLOCKED"
+  // Proba usuniecia WLASNEGO konta (S-12, FR-017). Wlasny kod, bo to jedyna
+  // operacja w produkcie, ktorej administratorowi odmawia sie NA STALE — nie da
+  // sie jej powtorzyc "poprawnie". Kazde inne dzialanie na sobie jest dozwolone,
+  // bo odwracalne; usuniecia nie odwroci nikt, wiec bariera stoi w bazie.
+  | "SELF_DELETE_FORBIDDEN"
+  // Zadanie usuniecia bez jawnej zgody na zniszczenie (S-12, FR-017). Nie jest
+  // to bledne zadanie: jest poprawne i wykonalne, tylko wymaga zgody — jak
+  // `LAST_ADMIN_CONFIRM_REQUIRED`. Istnieje po to, zeby guardrail PRD ("nic nie
+  // niszczy generacji bez uprzedzenia") byl wlasnoscia BAZY, nie interfejsu:
+  // wywolanie RPC wprost tez go nie ominie.
+  | "DESTROY_CONFIRM_REQUIRED"
   | "INTERNAL";
 
 /** Format generowanego tekstu. `story` wchodzi z `S-07`, ale kontrakt zna go od poczatku. */

@@ -66,3 +66,27 @@ describe("mapAccountActionCode", () => {
     }
   });
 });
+
+describe("mapAccountActionCode — kody z usuwania konta (S-12)", () => {
+  // TE DWA NIE SA WYCISZANE DO `NOT_FOUND`, w odroznieniu od `FORBIDDEN`.
+  // Tam ukrywamy istnienie operacji przed kims bez uprawnien; tutaj wolajacy
+  // JEST administratorem i pyta o wlasne konto albo o wlasna zgode — wyciszenie
+  // zamienilo by uczciwa odmowe w mylace "nie znaleziono".
+  it("odmowa usuniecia siebie zachowuje wlasny kod", () => {
+    expect(mapAccountActionCode("SELF_DELETE_FORBIDDEN")).toBe("SELF_DELETE_FORBIDDEN");
+  });
+
+  it("brak zgody na zniszczenie zachowuje wlasny kod", () => {
+    expect(mapAccountActionCode("DESTROY_CONFIRM_REQUIRED")).toBe("DESTROY_CONFIRM_REQUIRED");
+  });
+
+  it("odmowa usuniecia siebie NIE jest wyciszana do NOT_FOUND", () => {
+    expect(mapAccountActionCode("SELF_DELETE_FORBIDDEN")).not.toBe("NOT_FOUND");
+  });
+
+  // `FORBIDDEN` z tej samej funkcji nadal JEST wyciszane — granica przebiega
+  // miedzy "nie masz prawa tu zagladac" a "masz prawo, ale nie tak".
+  it("FORBIDDEN z usuwania nadal wychodzi jako NOT_FOUND", () => {
+    expect(mapAccountActionCode("FORBIDDEN")).toBe("NOT_FOUND");
+  });
+});

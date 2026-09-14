@@ -4,13 +4,17 @@ import { jsonError, jsonOk } from "@/lib/api-response";
 import { logApiError, toApiErrorCode } from "@/lib/api-errors";
 import { validate } from "@/lib/validation";
 import { accountPatchSchema } from "@/lib/account-blocked-patch";
-import { mapAccountActionCode, setAccountBlocked, setAccountRole } from "@/lib/admin-accounts";
+import { deleteAccount, mapAccountActionCode, setAccountBlocked, setAccountRole } from "@/lib/admin-accounts";
+import { readDeleteParams } from "@/lib/account-delete-params";
 
 /**
- * Działania administratora na koncie: zmiana roli (FR-018, S-10) oraz blokowanie
- * i odblokowanie (FR-016, S-11).
+ * Działania administratora na koncie: zmiana roli (FR-018, S-10), blokowanie
+ * i odblokowanie (FR-016, S-11) oraz usunięcie (FR-017, S-12).
  *
- * NAZWA OBEJMUJE OBIE OPERACJE — ustalenie F9 przegladu faz 3-4. Naglowek brzmial
+ * DWIE METODY, NIE JEDNA. `PATCH` zmienia pole konta; `DELETE` niszczy zasob.
+ * Trzecia galaz w `PATCH` nazywalaby zniszczenie zmiana pola.
+ *
+ * NAZWA OBEJMUJE WSZYSTKIE OPERACJE — ustalenie F9 przegladu faz 3-4. Naglowek brzmial
  * „Zmiana roli konta" jeszcze po tym, jak endpoint zaczal obslugiwac dwie rzeczy;
  * to trzecie wystapienie tej samej klasy w tym plastrze, po komunikacie
  * `LAST_ADMIN_CONFIRM_REQUIRED` i po naglowku kolumny w tabeli.
@@ -98,6 +102,71 @@ export const PATCH: APIRoute = async (context) => {
     // bo inaczej ten rozjazd jest niewidoczny.
     const funkcja = zadanie.kind === "role" ? "set_account_role" : "set_account_blocked";
     logApiError("api/accounts/[id]", "INTERNAL", { message: `nieznany kod z ${funkcja}: ${raw}` });
+  }
+
+  return jsonError(mapped);
+};
+
+/**
+ * Usuniecie konta (FR-017, S-12). JEDYNA NIEODWRACALNA operacja w produkcie.
+ *
+ * OSOBNA METODA, nie trzecia galaz `PATCH`. `PATCH` znaczy „zmien pole", a to
+ * jest zniszczenie zasobu — nazwa klamalaby o skutku. Ta sama metoda i ta sama
+ * kolejnosc bramek co w `src/pages/api/generations/[id].ts`.
+ *
+ * PULAPKA, KTORA DOTYCZY KAZDEGO `DELETE` W TYM REPO (zapisana przy `S-06`):
+ * Astro odrzuca `DELETE` bez naglowka `Origin` PRZED middleware, zwracajac 403
+ * CSRF — a nie kod z kontraktu bledow. `curl -X DELETE` bez naglowkow dostanie
+ * wiec 403, ktore NIE jest bramka uprawnien, choc tak wyglada. Wywolanie
+ * z przegladarki naglowek niesie samo.
+ */
+export const DELETE: APIRoute = async (context) => {
+  // `context.locals.user` jest rozwiazywany przez middleware na kazdym zadaniu
+  // i jest `null` takze przy niedostepnym Supabase.
+  //
+  // TEN HANDLER NIE SPRAWDZA `isAdmin` — z tego samego powodu co `PATCH`:
+  // bramka mieszka w srodku `delete_account()` i czyta role Z BAZY dla
+  // `auth.uid()`. Drugie sprawdzenie tutaj daloby dwa zrodla prawdy.
+  if (!context.locals.user) {
+    return jsonError("UNAUTHORIZED");
+  }
+
+  const id = context.params.id;
+  if (!id || !UUID_PATTERN.test(id)) {
+    return jsonError("NOT_FOUND");
+  }
+
+  // Zgoda jedzie w adresie — patrz uzasadnienie w `@/lib/account-delete-params`.
+  const params = readDeleteParams(context.url);
+  if (!params.ok) {
+    return jsonError("VALIDATION_FAILED", { confirmDestroy: params.message });
+  }
+
+  const supabase = createClient(context.request.headers, context.cookies);
+  if (!supabase) {
+    return jsonError("NOT_CONFIGURED");
+  }
+
+  let wynik: Awaited<ReturnType<typeof deleteAccount>>;
+  try {
+    // Argument zgody przekazywany ZAWSZE jawnie — patrz `deleteAccount`.
+    wynik = await deleteAccount(supabase, id, params.data.confirmDestroy);
+  } catch (error) {
+    const code = toApiErrorCode(error);
+    logApiError("api/accounts/[id]", code, error);
+    return jsonError(code);
+  }
+
+  const mapped = mapAccountActionCode(wynik.code);
+
+  if (mapped === "ok") {
+    // Endpoint mowi, CO zniszczyl — liczba pochodzi z tej samej transakcji, co
+    // usuniecie, wiec jest faktem, a nie przewidywaniem sprzed klikniecia.
+    return jsonOk({ id, destroyedGenerations: wynik.destroyedGenerations });
+  }
+
+  if (mapped === "INTERNAL") {
+    logApiError("api/accounts/[id]", "INTERNAL", { message: `nieznany kod z delete_account: ${wynik.code}` });
   }
 
   return jsonError(mapped);
