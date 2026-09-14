@@ -6,6 +6,19 @@
 -- odziedzicza `S-11` (blokowanie) i `S-12` (usuwanie), wiec jest decyzja calego
 -- kamienia `M-3`, nie tego jednego plastra.
 --
+-- TEN PLIK MUSI ZOSTAC WYKONANY W CALOSCI, JEDNYM WYWOLANIEM — ustalenie F5
+-- przegladu S-10. Nie ma tu jawnego `begin`/`commit`, bo `supabase db push` i `db
+-- reset` opakowuja plik migracji w transakcje same, a edytor SQL dostawcy wysyla
+-- caly skrypt jako jedno zapytanie proste, co Postgres wykonuje jako transakcje
+-- niejawna. ZADNE z tych dwoch zachowan nie jest sprawdzane przez repo, wiec
+-- zapisuje je tutaj jako wymog, a nie jako zaloze.
+--
+-- Ryzyko materializuje sie przy wklejeniu skryptu FRAGMENTAMI — np. po bledzie.
+-- Wtedy `accounts_overview()` zostaje usuniete bez nastepcy albo, grozniej,
+-- utworzone BEZ koncowego bloku `revoke` — czyli z domyslnymi grantami Supabase
+-- dla `anon` i `service_role`. Ten drugi przypadek NIE RZUCA BLEDU; wylapie go
+-- dopiero `verify-grant-role.sql`.
+--
 -- UWAGA NA ZBIEZNOSC NAZW — powtarzam ostrzezenie z `20260908124854:36`, bo tutaj
 -- kosztuje wiecej: `auth.users` ma TAKZE wlasna KOLUMNE `role` (`character varying`,
 -- domyslnie `authenticated`), ktorej PostgREST uzywa jako roli BAZODANOWEJ z tokenu.
@@ -107,11 +120,20 @@ as $function$
   --  od "brak kont", wiec nie ujawnia, ze przeglad istnieje.
   -- ==========================================================================
   where
+    -- KONTA USUNIETE MIEKKO POZA PRZEGLADEM — ustalenie F6 przegladu S-09, 2026-09-09.
+    -- Ten filtr dotyczy kont LISTOWANYCH (`u`). Stan WOLAJACEGO sprawdza bramka ponizej,
+    -- na osobnym aliasie `me`, i sprawdza go tymi SAMYMI predykatami — patrz ustalenie F1
+    -- przegladu S-10 (2026-09-14) i `lessons.md` § "Funkcja uprzywilejowana filtruje stan
+    -- konta wolajacego, nie tylko celu".
     u.deleted_at is null
     and exists (
       select 1
         from auth.users me
        where me.id = auth.uid()
+         -- `deleted_at` WOLAJACEGO — ustalenie F1 przegladu S-10. Bez tego konto
+         -- administratora miekko usuniete, ale z niewygaslym tokenem, nadal przechodzi
+         -- bramke. Tokeny zyja po `deleted_at`, wiec okno jest realne, nie teoretyczne.
+         and me.deleted_at is null
          and me.raw_app_meta_data->>'role' = 'admin'
     )
   order by u.created_at desc
@@ -155,10 +177,17 @@ begin
   -- BRAMKA PIERWSZA I BEZWARUNKOWA. Przed walidacja wejscia, przed odczytem celu:
   -- konto bez roli nie ma dowiedziec sie niczego, w tym tego, czy `p_account`
   -- istnieje. Endpoint mapuje ten kod na 404, nie 403 (FR-015).
+  --
+  -- `me.deleted_at is null` — ustalenie F1 przegladu S-10 (2026-09-14). Stan WOLAJACEGO
+  -- jest filtrowany tymi samymi predykatami co cel (`:184`) i co konta listowane w
+  -- przegladzie. Bez tego konto administratora miekko usuniete, ale z niewygaslym
+  -- tokenem, nadaje role `admin` dowolnemu kontu — czyli odtwarza sobie dostep trwale.
+  -- Przy `S-11` dojdzie tu warunek na stan zablokowania, z tego samego powodu.
   if not exists (
     select 1
       from auth.users me
      where me.id = auth.uid()
+       and me.deleted_at is null
        and me.raw_app_meta_data->>'role' = 'admin'
   ) then
     return 'FORBIDDEN';
@@ -170,7 +199,20 @@ begin
     return 'VALIDATION_FAILED';
   end if;
 
-  -- BLOKADA DORADCZA SERIALIZUJE ODCZYT LICZBY ADMINOW Z ZAPISEM. Bez niej dwaj
+  -- BLOKADA DORADCZA SERIALIZUJE ODCZYT LICZBY ADMINOW Z ZAPISEM.
+  --
+  -- CZEGO ONA *NIE* GWARANTUJE — ustalenie F10 przegladu S-10: nie chroni
+  -- niezmiennika "istnieje co najmniej jeden admin", bo PRD v4 (OQ9) stan zera
+  -- adminow DOPUSZCZA. Gwarantuje trafnosc OSTRZEZENIA — ze `LAST_ADMIN_NEEDS_CONFIRM`
+  -- pada dokladnie wtedy, gdy rola faktycznie jest ostatnia.
+  --
+  -- `S-11` I `S-12` MUSZA WZIAC TEN SAM KLUCZ. Usuniecie konta (`S-12`) doprowadzi
+  -- do zera adminow BEZ zadnej zgody, jesli policzy adminow poza ta blokada. Nazwa
+  -- klucza jest wezsza niz jego zakres i to jest swiadome: klucz chroni LICZBE
+  -- ADMINOW, nie tylko zmiane roli.
+  --
+  -- Blokada brana jest PO bramce roli, wiec konto bez uprawnien nie zablokuje
+  -- niczego. Bez niej dwaj
   -- administratorzy zdejmujacy sobie role rownolegle przy READ COMMITTED obaj
   -- zobacza dwoch adminow, obaj przejda kontrole "to nie ostatnia" i zostanie
   -- zero. Zwalnia sie z koncem transakcji, czyli z koncem tego wywolania; przy
@@ -216,7 +258,12 @@ begin
   update auth.users
      set raw_app_meta_data =
            coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', p_role)
-   where id = p_account;
+   where id = p_account
+  -- `deleted_at is null` POWTORZONY TU CELOWO — ustalenie F7 przegladu S-10.
+  -- Dzis jest zbedny, bo `select ... into` powyzej wyszedlby przez `NOT_FOUND`.
+  -- Ale bez niego ochrona zapisu lezy w INNEJ instrukcji niz zapis: zdjecie filtru
+  -- z tamtego `select`-a przy `S-11` cicho otworzyloby zapis do kont usunietych.
+     and deleted_at is null;
 
   return 'ok';
 end;

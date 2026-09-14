@@ -28,9 +28,16 @@ import { beforeAll, describe, expect, it } from "vitest";
  *    przypadkow; zdjecie bramki z funkcji czerwieni szesc z nich (zmierzone
  *    2026-09-09). Ten plik zostaje przy tym, co potrafi wyrazic klient JS.
  * 2. **Braku pol z trescia.** Dla konta bez roli wynik jest PUSTY, wiec nie ma czego
- *    obejrzec. Gwarancja jest STRUKTURALNA, nie testowa: funkcja zwraca piec kolumn
- *    (`email, registered_at, generations, used_today, own_limit`) i nie ma wsrod nich
- *    zadnej z `topic`, `title` ani `content`. Zmierzone w fazie 1 przez `proargnames`.
+ *    obejrzec. Gwarancja jest STRUKTURALNA, nie testowa: funkcja zwraca DZIESIEC kolumn
+ *    (`email, registered_at, generations, used_today, own_limit, row_limit, id, role,
+ *    is_self, is_last_admin`) i nie ma wsrod nich zadnej z `topic`, `title` ani
+ *    `content` — same liczby i metadane konta, zgodnie z granica zapisana przy FR-014.
+ *
+ *    ZAKTUALIZOWANE 2026-09-14 (ustalenie F8 przegladu S-10). Wczesniej ten akapit
+ *    mowil o PIECIU kolumnach i wymienial je z czasow S-09, choc migracja S-10
+ *    podniosla liczbe do dziesieciu. To jedyne miejsce w repo, gdzie zapisano dowod,
+ *    ze przeglad nie wystawia tresci generacji — a aktualizacja czesciowa jest tu
+ *    gorsza od braku, bo czytelnik widzi swiezo dotkniety blok i ufa calosci.
  */
 
 /*
@@ -132,10 +139,14 @@ describe("granica przegladu kont (R-09)", () => {
   });
 
   it("anon nie wykona zmiany roli", async () => {
-    // `drop function` w migracji S-10 skasowal granty przegladu, a nowa funkcja
-    // dostaje domyslne granty Supabase dla `anon`, `authenticated` i `service_role`.
-    // Zmierzone 2026-09-09: odtworzenie funkcji BEZ ponownego `revoke` zostawia
-    // `anon` prawo wykonania — i nie rzuca zadnego bledu.
+    // `set_account_role` jest funkcja NOWA i wlasnie dlatego dostaje domyslne granty
+    // Supabase dla `anon`, `authenticated` i `service_role` — bez jawnego `revoke`
+    // niezalogowany zmienilby role dowolnemu kontu.
+    //
+    // POPRAWIONE 2026-09-14 (ustalenie F9 przegladu S-10): komentarz mowil wczesniej
+    // o `drop function` kasujacym granty PRZEGLADU, a ten test wola zmiane roli, ktora
+    // nigdy nie byla dropowana. Powod byl wiec opisem sasiedniej sciezki — ta sama
+    // klasa pomylki, ktora `lessons.md` nazywa "zmierzono mutacje innej funkcji".
     const anon = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
     const { data, error } = await anon.rpc("set_account_role", {
       p_account: "11111111-1111-1111-1111-111111111111",

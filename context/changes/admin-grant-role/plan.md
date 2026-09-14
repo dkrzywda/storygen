@@ -287,6 +287,8 @@ Trzynaście przypadków, werdykt OK. Test mutacyjny: **zdjęcie bramki z funkcji
 
 **Kryterium 1.4 dostało mocniejszy przypadek, niż plan zapisał.** Zamiast „konto bez roli dostaje `FORBIDDEN`" test w Vitest składa **eskalację uprawnień**: konto bez roli nadaje rolę **samemu sobie**. To jedyne wywołanie, które takie konto potrafi złożyć w całości bez cudzych danych, i najgroźniejsze. Sprawdzany jest skutek, nie tylko zwrot — po odmowie `getUser()` (czytający `app_metadata` z bazy) nie widzi roli, a przegląd kont nadal oddaje pustkę.
 
+**Sygnatura ma `p_confirm_last boolean default false`, czego plan nie zapisał** (ustalenie F4 przeglądu). Skutek jest realny, choć drobny: PostgREST wystawia przez to także **dwuargumentowy** wariant wywołania — `database.types.ts` odzwierciedla to jako `p_confirm_last?: boolean` — którego kontrakt fazy 2 nie przewidywał. Bramki ostatniej roli to nie osłabia, bo brak argumentu jest równoważny `false`, czyli stronie odmawiającej; `coalesce(p_confirm_last, false)` domyka dodatkowo jawnie podany `NULL`. Wartość domyślna zostaje, a decyzja jest tutaj zapisana zamiast milczeć — faza 2 ma wysyłać trzeci argument zawsze, żeby kontrakt endpointu był jednoznaczny niezależnie od tego, co dopuszcza baza.
+
 **Skrypt kontrolny dostał trzy dowody czułości**, których plan nie wymagał: nadanie `anon` prawa zmiany roli, odebranie `authenticated` prawa przeglądu i przywrócenie starej sześciokolumnowej funkcji — każdy czerwieni inną gałąź werdyktu. Trzeci pokazał w działaniu zagrożenie, o które chodzi: odtworzona bez ponownego `revoke` funkcja miała `anon` i `service_role` z prawem wykonania.
 
 ## Progress
@@ -297,17 +299,17 @@ Trzynaście przypadków, werdykt OK. Test mutacyjny: **zdjęcie bramki z funkcji
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czystej bazie (`npx supabase db reset`)
-- [x] 1.2 Typy zregenerowane; diff dotyczy wyłącznie dwóch funkcji
-- [x] 1.3 Skrypt kontrolny: werdykt OK, `anon_moze = f`, `service_moze = f`, `auth_moze = t` dla obu funkcji
-- [x] 1.4 Test integracyjny: konto bez roli dostaje FORBIDDEN i nie zmienia roli celu
-- [x] 1.5 Test integracyjny: ostatnia rola bez potwierdzenia odmawia, z potwierdzeniem przechodzi
-- [x] 1.6 `npm run test:integration` kończy się kodem wyjścia 0
-- [x] 1.7 `npx tsc --noEmit` bez błędów
+- [x] 1.1 Migracja stosuje się na czystej bazie (`npx supabase db reset`) — 8072c03
+- [x] 1.2 Typy zregenerowane; diff dotyczy wyłącznie dwóch funkcji — 8072c03
+- [x] 1.3 Skrypt kontrolny: werdykt OK, `anon_moze = f`, `service_moze = f`, `auth_moze = t` dla obu funkcji — 8072c03
+- [x] 1.4 Test integracyjny: konto bez roli dostaje FORBIDDEN i nie zmienia roli celu — 8072c03
+- [x] 1.5 Test integracyjny: ostatnia rola bez potwierdzenia odmawia, z potwierdzeniem przechodzi — 8072c03
+- [x] 1.6 `npm run test:integration` kończy się kodem wyjścia 0 — 8072c03
+- [x] 1.7 `npx tsc --noEmit` bez błędów — 8072c03
 
 #### Manual
 
-- [x] 1.8 Zdjęcie bramki z funkcji czerwieni test nieuprawnionego dostępu
+- [x] 1.8 Zdjęcie bramki z funkcji czerwieni test nieuprawnionego dostępu — 8072c03
 
 ### Phase 2: Kontrakt — endpoint, typy, moduł biblioteki
 

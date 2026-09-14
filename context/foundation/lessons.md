@@ -143,3 +143,26 @@
   z `auth.*` odpowiadają schematowi: sprawdź `is_nullable`, zanim potraktujesz kolumnę
   jako pewną.
 - **Applies to**: plan, implement, impl-review
+
+## Funkcja uprzywilejowana filtruje stan konta wołającego, nie tylko celu
+
+- **Context**: Każda funkcja `security definer` w `supabase/migrations/`, która bramkuje
+  dostęp warunkiem na `auth.uid()`. Dotyczy zarówno odczytu, jak i zapisu — i szczególnie
+  momentu, w którym istniejąca funkcja jest odtwarzana przez `drop` + `create`.
+- **Problem**: 2026-09-14, przegląd fazy 1 plastra `S-10`. Migracja
+  `20260909121500_account_role_management.sql` filtruje `deleted_at` w **czterech**
+  miejscach — licznik adminów (`:78`), lista kont (`:110`), cel zapisu (`:184`), licznik
+  przy ostatniej roli (`:201`) — ale **nie dla wołającego** (`:113`, `:160`). GoTrue przy
+  miękkim usunięciu ustawia `deleted_at`, a wydane tokeny żyją do wygaśnięcia, więc konto
+  administratora „usunięte" nadal nadaje rolę `admin` dowolnemu kontu i odtwarza sobie
+  dostęp trwale. Przy `S-09` ta sama asymetria kosztowała tylko odczyt liczb; po dołożeniu
+  zapisu do `auth.users` jej waga wzrosła, a nikt jej nie przewartościował. Drugie ostrze:
+  komentarz z `20260909072831:83`, który tłumaczył asymetrię jako świadomą, **nie został
+  przeniesiony** do nowej wersji — więc kanoniczna definicja funkcji nie ma już śladu
+  decyzji i czytelnik nie odróżni jej od przeoczenia.
+- **Rule**: Bramka czytająca `auth.uid()` musi sprawdzać stan konta wołającego tymi samymi
+  predykatami, którymi filtrujesz cele — `deleted_at`, a po `S-11` także stan zablokowania.
+  Gdy `drop` + `create` odtwarza istniejącą funkcję, **przenieś także komentarze
+  uzasadniające**: nowa wersja jest odtąd kanoniczna, a uzasadnienie, które w niej nie
+  istnieje, przestało istnieć w projekcie.
+- **Applies to**: plan, implement, impl-review

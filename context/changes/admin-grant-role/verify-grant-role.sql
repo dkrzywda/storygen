@@ -32,7 +32,18 @@ meta as (
     -- Tryb: 's' = stable, 'v' = volatile. Przeglad MUSI byc stable (read-only
     -- z konstrukcji), a zmiana roli MUSI byc volatile — `stable` zabronilby zapisu.
     (select p.provolatile from pg_catalog.pg_proc p where p.oid = (select ov from fn)) as ov_tryb,
-    (select p.provolatile from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_tryb
+    (select p.provolatile from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_tryb,
+    -- `prosecdef` i `proconfig` — ustalenie F6 przegladu S-10. To sa DWIE wlasnosci,
+    -- na ktorych stoi caly hardening, i do tej pory skrypt ich NIE sprawdzal. Na
+    -- produkcji, gdzie migracja idzie recznie przez edytor dostawcy i ten skrypt jest
+    -- jedyna bramka, funkcja wklejona bez `security definer` albo bez
+    -- `set search_path = ''` dostawala werdykt OK.
+    (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select ov from fn)) as ov_definer,
+    (select p.prosecdef from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_definer,
+    (select coalesce(p.proconfig::text like '%search_path=%', false)
+       from pg_catalog.pg_proc p where p.oid = (select ov from fn)) as ov_path,
+    (select coalesce(p.proconfig::text like '%search_path=%', false)
+       from pg_catalog.pg_proc p where p.oid = (select sr from fn)) as sr_path
 ),
 priv as (
   select
@@ -57,6 +68,7 @@ select
   m.ov_tryb                                            as przeglad_tryb,
   (m.sr is not null)                                   as zmiana_roli_istnieje,
   m.sr_tryb                                            as zmiana_roli_tryb,
+  m.ov_definer, m.sr_definer, m.ov_path, m.sr_path,
   p.ov_anon, p.ov_service, p.ov_auth,
   p.sr_anon, p.sr_service, p.sr_auth,
   case
@@ -65,6 +77,10 @@ select
     when m.ov_kolumn <> 10           then 'BLAD: przeglad zwraca ' || m.ov_kolumn::text || ' kolumn, oczekiwano 10'
     when m.ov_tryb  <> 's'           then 'BLAD: przeglad nie jest stable (tryb ' || m.ov_tryb::text || ')'
     when m.sr_tryb  <> 'v'           then 'BLAD: zmiana roli nie jest volatile (tryb ' || m.sr_tryb::text || ')'
+    when not m.ov_definer            then 'BLAD: przeglad nie jest security definer'
+    when not m.sr_definer            then 'BLAD: zmiana roli nie jest security definer'
+    when not m.ov_path               then 'BLAD: przeglad bez set search_path'
+    when not m.sr_path               then 'BLAD: zmiana roli bez set search_path'
     when p.ov_anon                   then 'BLAD: anon ma prawo wykonania przegladu'
     when p.ov_service                then 'BLAD: service_role ma prawo wykonania przegladu'
     when not p.ov_auth               then 'BLAD: authenticated NIE ma prawa wykonania przegladu'
