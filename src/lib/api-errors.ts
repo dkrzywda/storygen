@@ -41,6 +41,15 @@ export const API_ERRORS: Record<ApiErrorCode, ApiErrorSpec> = {
     status: 401,
     message: "Ta operacja wymaga zalogowania.",
   },
+  ACCOUNT_BLOCKED: {
+    // 403, nie 401. Dane logowania sa poprawne i powtorzenie proby niczego nie
+    // zmieni — to odmowa wobec wlasciwych danych, a nie brak uwierzytelnienia.
+    status: 403,
+    // BEZ ODSYLANIA DO KONTAKTU. Produkt nie ma zadnego kanalu kontaktu, a
+    // `## Non-Goals` wyklucza zglaszanie naduzyc — komunikat nie ma obiecywac
+    // drogi odwolawczej, ktorej nie ma. Mowi, co sie stalo, i tyle.
+    message: "Dostęp do tego konta został zawieszony.",
+  },
   NOT_FOUND: {
     // Ten sam kod dla "nie istnieje" i dla "nie należy do Ciebie" — celowo.
     // Rozróżnienie potwierdzałoby istnienie cudzego rekordu, a wyliczanie
@@ -179,6 +188,11 @@ const PROVIDER_CODE_MAP: Record<string, ApiErrorCode> = {
   email_not_confirmed: "EMAIL_NOT_CONFIRMED",
   user_already_exists: "EMAIL_ALREADY_REGISTERED",
   email_exists: "EMAIL_ALREADY_REGISTERED",
+  // Zmierzone 2026-09-14 bezposrednim wywolaniem `POST /auth/v1/token` dla konta
+  // z `banned_until` w przyszlosci: `400`, `{"code":400,"error_code":"user_banned",
+  // "msg":"User is banned"}`. Bez tego wpisu status 400 nie jest >= 500, tekst nie
+  // pasuje do zadnego wzorca i odmowa schodzila do `INTERNAL`.
+  user_banned: "ACCOUNT_BLOCKED",
 };
 
 /** Fallback po tresci — dostawca nie zawsze podaje `code`. Kolejnosc ma znaczenie. */
@@ -187,6 +201,9 @@ const PROVIDER_MESSAGE_MAP: [needle: string, code: ApiErrorCode][] = [
   ["email not confirmed", "EMAIL_NOT_CONFIRMED"],
   ["already registered", "EMAIL_ALREADY_REGISTERED"],
   ["user already exists", "EMAIL_ALREADY_REGISTERED"],
+  // Wariant tekstowy dla `user_banned` — dostawca nie zawsze podaje `error_code`,
+  // a to jedyna warstwa, ktora wtedy zostaje.
+  ["user is banned", "ACCOUNT_BLOCKED"],
 ];
 
 /**

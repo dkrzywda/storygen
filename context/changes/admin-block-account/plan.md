@@ -319,6 +319,45 @@ Po wycofaniu transakcji wraca 30/30.
 
 **Obie mutacje leżą w repo jako skrypty, nie jako wynik w tym pliku** — `context/changes/admin-block-account/mutations/`. Plan ich nie przewidywał; przy `S-10` test mutacyjny był raportem, któremu trzeba było uwierzyć, a wynik raportu nie jest tym samym co możliwość jego powtórzenia. Każdy skrypt otwiera transakcję i nie domyka jej — zamyka ją `rollback` na końcu testu, więc mutacja nigdy nie zostaje w bazie.
 
+## Addendum 2026-09-14 — adaptacja fazy 2
+
+**Blok `## Phase 2` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Kryterium 2.3 nie jest przez ten zestaw wyrażalne — i to jest czwarty raz ten sam błąd planowania.** „Test integracyjny: żywy token nie przechodzi po zablokowaniu" wymaga **zablokowania konta**, czyli zapisu do `auth.users.banned_until`. Klucz publishable takiego prawa nie ma, a klucza `service_role` odrzuca strażnik w każdym zestawie integracyjnym — i musi odrzucać, bo omija RLS i unieważniłby każdy inny zestaw w repo. Kryterium powstało z tego, co chciałem udowodnić, a nie z tego, czym repo potrafi dowodzić. Dokładnie tak samo było przy `S-09` (1.5), `S-10` (1.5, 2.3, 3.3) i przy fazie 1 tego plastra.
+
+**Pomiar przeniesiony, nie porzucony:** `context/changes/admin-block-account/measure-session-window.sh`. Zakłada konto, bierze żywy token, czyta nim dane, blokuje konto SQL-em, czyta **tym samym tokenem** ponownie i sprząta po sobie. Zmierzone:
+
+|                                      | przed blokadą | po blokadzie             |
+| ------------------------------------ | ------------- | ------------------------ |
+| `rpc/usage_today` żywym tokenem      | 200           | **200**                  |
+| nowe logowanie                       | —             | **odmowa `user_banned`** |
+| `banned_until` w `GET /auth/v1/user` | —             | **obecne**               |
+
+Okno tokenu liczone **z samego tokenu** (`exp - iat`): **60 minut**. To jest cała teza fazy 2 w jednej tabeli — dostawca zamyka drzwi, ale nie wyrzuca tego, kto jest w środku.
+
+**Plan przeczył sam sobie co do zachowania `isBlocked` przy wejściu nieoczekiwanym.** `Contract` mówi „fail-closed", a kryterium sukcesu wprost przeciwnie: „`null` i wejścia nieoczekiwane dają `false`". Rozstrzygnięte **na korzyść kryterium**, bo koszty są niesymetryczne: fałszywe `true` wypycha zdrowe konto z **każdego** żądania i nie da się tego obejść z wnętrza produktu, a fałszywe `false` zostawia zablokowanemu co najwyżej godzinę sesji — czyli stan sprzed tego plastra — przy czym logowania i tak odmawia dostawca, który czyta kolumnę, nie tę funkcję. Bramka jest **drugą** warstwą i nie ma prawa być groźniejsza od problemu, który rozwiązuje. Uzasadnienie stoi też w samym module, nie tylko tutaj.
+
+**Bramka odpowiada na `/api/*` JSON-em, nie przekierowaniem — czego plan nie zapisał.** Plan mówił tylko „wszystkie trasy poza `/auth/*`". Przekierowanie w odpowiedzi na `fetch()` z wyspy byłoby dla niej HTML-em ze statusem 200: `readApiError` nie znalazłby tam żadnego kodu i użytkownik zobaczyłby komunikat domyślny zamiast informacji o zawieszeniu. To reguła „jeden kontrakt błędu, dwa kształty odpowiedzi" z `CLAUDE.md`. Zmierzone: `DELETE /api/generations/…` zwraca **403** z ciałem `{"error":{"code":"ACCOUNT_BLOCKED",…}}`.
+
+**Wyłączenie objęło także `/api/auth/`, nie tylko `/auth/`.** Powód jest inny niż przy stronach: zablokowany musi móc się **wylogować**. Odcięcie mu `POST /api/auth/signout` byłoby uwięzieniem go w sesji, a nie zablokowaniem. Zmierzone: ciasteczka 2976 → 0.
+
+**Doszedł plik, którego plan nie przewidywał:** `src/lib/account-blocked.integration.test.ts`. Test jednostkowy karmi `isBlocked` atrapą, więc dowodzi tylko zgodności z wyobrażeniem autora o odpowiedzi GoTrue. Że stan blokady przyjeżdża jako pole `banned_until` na obiekcie `User` — to może potwierdzić wyłącznie prawdziwy serwer. Ten sam wzorzec, co `account-role.integration.test.ts` dla `isAdmin`.
+
+**Weryfikacja ręczna przeprowadzona end-to-end w przeglądarce** (2.6–2.8), z pomiarem bazowym przed blokadą:
+
+| Krok                                        | Wynik                                                    |
+| ------------------------------------------- | -------------------------------------------------------- |
+| `/generations` i `/dashboard` przed blokadą | 200 / 200                                                |
+| `/generations` po blokadzie, ta sama sesja  | → `/auth/signin?error=ACCOUNT_BLOCKED`                   |
+| komunikat na stronie logowania              | „Dostęp do tego konta został zawieszony."                |
+| próba zalogowania zablokowanego             | ten sam komunikat, **nie** „Coś poszło nie tak"          |
+| wylogowanie zablokowanego                   | działa, ciasteczka 2976 → 0                              |
+| odblokowanie                                | dostęp wraca bez dodatkowego kroku, `/generations` → 200 |
+
+Log serwera potwierdza ścieżkę mapowania: `{ scope: 'auth/signin', code: 'ACCOUNT_BLOCKED', providerCode: 'user_banned', providerStatus: 400 }`.
+
+**Przy okazji trafiona pułapka z `CLAUDE.md`:** dev server wywalił się na `Invalid hook call` / `useState` z `null` — objaw nieświeżego cache'u Vite. `rm -rf node_modules/.vite` i restart, zgodnie z zapisaną regułą. Nie miało związku ze zmianą.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -327,34 +366,34 @@ Po wycofaniu transakcji wraca 30/30.
 
 #### Automated
 
-- [x] 1.1 Migracja stosuje się na czystej bazie
-- [x] 1.2 Typy zregenerowane; diff wyłącznie nowa funkcja i nowa kolumna
-- [x] 1.3 Skrypt kontrolny: werdykt OK dla wszystkich trzech funkcji
-- [x] 1.4 Test SQL: konto bez roli nie zablokuje nikogo, stan celu nietknięty
-- [x] 1.5 Test SQL: `is_blocked` false dla daty przeszłej, true dla przyszłej
-- [x] 1.6 Test SQL: ostatni administrator bez zgody odmawia, ze zgodą przechodzi
-- [x] 1.7 `npm run test:integration` kodem wyjścia 0
-- [x] 1.8 `npx tsc --noEmit` bez błędów
+- [x] 1.1 Migracja stosuje się na czystej bazie — 21f66ce
+- [x] 1.2 Typy zregenerowane; diff wyłącznie nowa funkcja i nowa kolumna — 21f66ce
+- [x] 1.3 Skrypt kontrolny: werdykt OK dla wszystkich trzech funkcji — 21f66ce
+- [x] 1.4 Test SQL: konto bez roli nie zablokuje nikogo, stan celu nietknięty — 21f66ce
+- [x] 1.5 Test SQL: `is_blocked` false dla daty przeszłej, true dla przyszłej — 21f66ce
+- [x] 1.6 Test SQL: ostatni administrator bez zgody odmawia, ze zgodą przechodzi — 21f66ce
+- [x] 1.7 `npm run test:integration` kodem wyjścia 0 — 21f66ce
+- [x] 1.8 `npx tsc --noEmit` bez błędów — 21f66ce
 
 #### Manual
 
-- [x] 1.9 Zdjęcie bramki czerwieni testy nieuprawnionego dostępu
+- [x] 1.9 Zdjęcie bramki czerwieni testy nieuprawnionego dostępu — 21f66ce
 
 ### Phase 2: Zablokowany użytkownik — komunikat i bramka
 
 #### Automated
 
-- [ ] 2.1 Test jednostkowy `isBlocked` dla czterech klas wejścia
-- [ ] 2.2 Test jednostkowy: `user_banned` mapuje się na nowy kod, nie na INTERNAL
-- [ ] 2.3 Test integracyjny: żywy token nie przechodzi po zablokowaniu
-- [ ] 2.4 `npm test` kodem wyjścia 0
-- [ ] 2.5 `npx tsc --noEmit` i ESLint bez błędów
+- [x] 2.1 Test jednostkowy `isBlocked` dla czterech klas wejścia
+- [x] 2.2 Test jednostkowy: `user_banned` mapuje się na nowy kod, nie na INTERNAL
+- [x] 2.3 Test integracyjny: żywy token nie przechodzi po zablokowaniu
+- [x] 2.4 `npm test` kodem wyjścia 0
+- [x] 2.5 `npx tsc --noEmit` i ESLint bez błędów
 
 #### Manual
 
-- [ ] 2.6 Zablokowanie przy otwartej sesji wypycha przy następnym żądaniu
-- [ ] 2.7 Próba logowania zablokowanego: komunikat o zawieszeniu
-- [ ] 2.8 Brak pętli przekierowań na ścieżce auth
+- [x] 2.6 Zablokowanie przy otwartej sesji wypycha przy następnym żądaniu
+- [x] 2.7 Próba logowania zablokowanego: komunikat o zawieszeniu
+- [x] 2.8 Brak pętli przekierowań na ścieżce auth
 
 ### Phase 3: Kontrakt — endpoint i moduł
 

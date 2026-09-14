@@ -83,4 +83,27 @@ describe("toApiErrorCode", () => {
   it("nieznana tresc konczy sie kodem domyslnym", () => {
     expect(toApiErrorCode({ message: "Coś zupełnie nowego od dostawcy" })).toBe(DEFAULT_ERROR_CODE);
   });
+
+  // S-11, FR-016. Odpowiedz dostawcy zmierzona 2026-09-14 wywolaniem
+  // `POST /auth/v1/token` dla konta z `banned_until` w przyszlosci:
+  // `400`, `{"code":400,"error_code":"user_banned","msg":"User is banned"}`.
+  describe("konto zawieszone (user_banned)", () => {
+    it("mapuje kod dostawcy na ACCOUNT_BLOCKED", () => {
+      expect(toApiErrorCode({ code: "user_banned", message: "User is banned" })).toBe("ACCOUNT_BLOCKED");
+    });
+
+    it("mapuje po samej tresci, gdy dostawca nie podal kodu", () => {
+      expect(toApiErrorCode({ message: "User is banned" })).toBe("ACCOUNT_BLOCKED");
+    });
+
+    // TO JEST PRZYPADEK ROZNICUJACY CALEJ ZMIANY. Status 400 nie jest >= 500,
+    // a tekst nie pasowal do zadnego wzorca — wiec PRZED S-11 ta odpowiedz
+    // schodzila do `INTERNAL` i zablokowany widzial "Coś poszło nie tak",
+    // czyli dokladnie ta ogolna awarie, ktorej FR-016 zabrania.
+    it("NIE konczy juz na kodzie domyslnym, mimo statusu 400", () => {
+      const odpowiedzDostawcy = { code: "user_banned", message: "User is banned", status: 400 };
+      expect(toApiErrorCode(odpowiedzDostawcy)).not.toBe(DEFAULT_ERROR_CODE);
+      expect(toApiErrorCode(odpowiedzDostawcy)).toBe("ACCOUNT_BLOCKED");
+    });
+  });
 });

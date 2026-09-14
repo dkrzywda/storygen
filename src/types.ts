@@ -37,6 +37,12 @@ export type ApiErrorCode =
   // jest poprawne i wykonalne, tylko wymaga potwierdzenia. Uzytkownik ma tu co
   // zrobic — powtorzyc je swiadomie — i komunikat musi powiedziec, co sie stanie.
   | "LAST_ADMIN_CONFIRM_REQUIRED"
+  // Konto zawieszone przez administratora (S-11, FR-016). Wlasny kod, a nie
+  // `INVALID_CREDENTIALS` i nie `UNAUTHORIZED`: dane logowania sa POPRAWNE,
+  // a sesja nie jest "wygasla". FR-016 wymaga, zeby zablokowany dowiedzial sie,
+  // ze dostep ZAWIESZONO — pokazanie mu ogolnej awarii jest naruszeniem wymogu,
+  // nie niedoskonaloscia komunikatu.
+  | "ACCOUNT_BLOCKED"
   | "INTERNAL";
 
 /** Format generowanego tekstu. `story` wchodzi z `S-07`, ale kontrakt zna go od poczatku. */
