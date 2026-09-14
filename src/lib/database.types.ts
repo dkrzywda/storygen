@@ -98,8 +98,12 @@ export type Database = {
         Returns: {
           email: string;
           generations: number;
+          id: string;
+          is_last_admin: boolean;
+          is_self: boolean;
           own_limit: number;
           registered_at: string;
+          role: string;
           row_limit: number;
           used_today: number;
         }[];
@@ -107,6 +111,10 @@ export type Database = {
       daily_app_ceiling: { Args: never; Returns: number };
       daily_per_account: { Args: never; Returns: number };
       record_attempt_if_allowed: { Args: { p_format: string }; Returns: string };
+      set_account_role: {
+        Args: { p_account: string; p_confirm_last?: boolean; p_role: string };
+        Returns: string;
+      };
       usage_today: {
         Args: never;
         Returns: {

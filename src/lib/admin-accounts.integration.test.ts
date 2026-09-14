@@ -20,6 +20,13 @@ import { beforeAll, describe, expect, it } from "vitest";
  *    `service_role` straznik ponizej odrzuca, bo omija RLS i uczynilby caly zestaw
  *    bezwartosciowym. Ze administrator dostaje wiersze, zmierzono recznie 2026-09-09
  *    (46 wierszy przed `db reset`, 1 po ponownej rejestracji).
+ *
+ *    **ZAMKNIETE OD S-10 innym narzedziem**: `context/changes/admin-grant-role/`
+ *    `test-set-account-role.sql` podszywa sie pod uzytkownika przez
+ *    `request.jwt.claims` — z czego `auth.uid()` czyta — wiec mierzy sciezke
+ *    pozytywna i bramke ostatniej roli bez zadnego klucza sekretnego. Trzynascie
+ *    przypadkow; zdjecie bramki z funkcji czerwieni szesc z nich (zmierzone
+ *    2026-09-09). Ten plik zostaje przy tym, co potrafi wyrazic klient JS.
  * 2. **Braku pol z trescia.** Dla konta bez roli wynik jest PUSTY, wiec nie ma czego
  *    obejrzec. Gwarancja jest STRUKTURALNA, nie testowa: funkcja zwraca piec kolumn
  *    (`email, registered_at, generations, used_today, own_limit`) i nie ma wsrod nich
@@ -88,6 +95,53 @@ describe("granica przegladu kont (R-09)", () => {
     // Bez wymienienia `anon` z nazwy niezalogowany wywolalby przeglad wszystkich kont.
     const anon = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
     const { data, error } = await anon.rpc("accounts_overview");
+
+    expect(error).not.toBeNull();
+    expect(data).toBeNull();
+  });
+
+  it("konto bez roli nie nada roli SAMEMU SOBIE", async () => {
+    // ESKALACJA UPRAWNIEN — najgrozniejsze wywolanie tej funkcji, i jedyne, ktore
+    // konto bez roli moze zlozyc w calosci samo: zna wlasny identyfikator, wiec nie
+    // potrzebuje niczyjego. Gdyby bramka nie dzialala, kazde konto w produkcie
+    // mogloby zostac administratorem jednym wywolaniem PostgREST.
+    const { data: own } = await bezRoli.auth.getUser();
+    const id = own.user?.id;
+    expect(id).toBeDefined();
+
+    const { data, error } = await bezRoli.rpc("set_account_role", {
+      p_account: id ?? "",
+      p_role: "admin",
+      p_confirm_last: false,
+    });
+
+    // Kod, nie wyjatek — endpoint mapuje go na 404, zeby nie potwierdzac istnienia
+    // operacji (FR-015). `error` jest `null`, bo funkcja WYKONALA sie poprawnie.
+    expect(error).toBeNull();
+    expect(data).toBe("FORBIDDEN");
+
+    // SKUTEK, NIE TYLKO ZWROT. Ta czesc jest istotniejsza od poprzedniej: gdyby
+    // zapis mimo odmowy przeszedl, `getUser()` czyta `app_metadata` Z BAZY
+    // (`GoTrueClient.js:2480` robi `GET /user` w obu galeziach), wiec zobaczylibysmy
+    // tu role. A przeglad kont oddalby wiersze zamiast pustki.
+    const { data: po } = await bezRoli.auth.getUser();
+    expect(po.user?.app_metadata.role).toBeUndefined();
+
+    const { data: przeglad } = await bezRoli.rpc("accounts_overview");
+    expect(przeglad).toEqual([]);
+  });
+
+  it("anon nie wykona zmiany roli", async () => {
+    // `drop function` w migracji S-10 skasowal granty przegladu, a nowa funkcja
+    // dostaje domyslne granty Supabase dla `anon`, `authenticated` i `service_role`.
+    // Zmierzone 2026-09-09: odtworzenie funkcji BEZ ponownego `revoke` zostawia
+    // `anon` prawo wykonania — i nie rzuca zadnego bledu.
+    const anon = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
+    const { data, error } = await anon.rpc("set_account_role", {
+      p_account: "11111111-1111-1111-1111-111111111111",
+      p_role: "admin",
+      p_confirm_last: false,
+    });
 
     expect(error).not.toBeNull();
     expect(data).toBeNull();

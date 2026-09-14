@@ -149,7 +149,7 @@ odziedziczą.
 | —    | `lighter-theme`              | (styl) jasny motyw z akcentem morskim i warstwą tokenów            | —             | — (poza planem i poza PRD)                    | done   |
 | F-02 | `account-roles`          | (foundation) konto niesie rolę, a serwer potrafi po niej odmówić | —    | Access Control (dwie role), FR-015 | done    |
 | S-09 | `admin-account-overview` | (admin) widzieć listę kont z liczbami, bez treści generacji      | F-02 | FR-014, FR-015                     | done |
-| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | ready |
+| S-10 | `admin-grant-role`       | (admin) nadać innemu kontu rolę administratora i odebrać ją      | F-02 | FR-018                             | in-progress |
 | S-11 | `admin-block-account`    | (admin) zablokować konto i odblokować je                         | S-10 | FR-016                             | proposed |
 | S-12 | `admin-delete-account`   | (admin) usunąć konto, wiedząc wprzód, co zostanie zniszczone     | S-11 | FR-017                             | proposed |
 
@@ -473,7 +473,7 @@ w celu wylistowania kont.
 - **Unknowns:**
   - ~~Czy administrator może działać na własnym koncie i czy da się odebrać **ostatnią** rolę?~~ **ROZSTRZYGNIĘTE 2026-09-09: tak na oba, bez podłogi.** PRD `## Open Questions` #9. Konsekwencja przyjęta świadomie i zapisana w PRD: produkt ma dziś jedno konto z rolą, więc jej odebranie kończy administrację, a żaden ekran w produkcie jej nie przywróci — droga powrotna jest poza produktem, w konsoli dostawcy. FR-018 wymaga dodatkowo ostrzeżenia przed odebraniem ostatniej roli. — Owner: autor. Block: —.
 - **Risk:** Pierwszy zapis do `auth.users` z wnętrza aplikacji, więc ten plaster wybiera mechanizm za cały kamień: funkcja `security definer` volatile (precedens w repo: `record_attempt_if_allowed`) albo nowy sekret `service_role` — a tego drugiego projekt świadomie nie ma i dołożenie go jest osobną decyzją, nie szczegółem planu. Druga rzecz do rozstrzygnięcia w planie, nie tutaj: `auth.users` niesie **dwa** różne pola o nazwie `role` — kolumnę bazodanową, po której PostgREST autoryzuje, i klucz w `raw_app_meta_data`. Pomylenie ich zepsułoby autoryzację całej aplikacji, nie tylko tego plastra.
-- **Status:** ready
+- **Status:** in-progress
 
 ### S-11: Administrator blokuje i odblokowuje konto
 
