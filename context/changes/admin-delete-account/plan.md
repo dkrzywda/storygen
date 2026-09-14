@@ -511,7 +511,7 @@ Zmierzone dwiema sesjami: A woła `delete_account(B)`, B woła `set_account_role
 #### Automated
 
 - [x] 3.1 `npm test` kodem wyjścia 0 — a9fc919
-- [ ] 3.2 `npx astro build` przechodzi
+- [x] 3.2 `npx astro build` przechodzi
 - [x] 3.3 ESLint i `npx tsc --noEmit` bez błędów — a9fc919
 
 #### Manual
@@ -529,7 +529,7 @@ Zmierzone dwiema sesjami: A woła `delete_account(B)`, B woła `set_account_role
 - [ ] 4.2 Test jednostkowy: przy ostatnim adminie wygrywa ostrzeżenie o administracji
 - [x] 4.3 Test jednostkowy: ostrzeżenie niesie liczbę generacji — fa39099
 - [x] 4.4 `npm test` kodem wyjścia 0 — fa39099
-- [ ] 4.5 `npx astro build` przechodzi
+- [x] 4.5 `npx astro build` przechodzi
 - [x] 4.6 ESLint i `npx tsc --noEmit` bez błędów — fa39099
 
 #### Manual

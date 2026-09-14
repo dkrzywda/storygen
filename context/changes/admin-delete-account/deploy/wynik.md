@@ -48,3 +48,26 @@ zawoła, póki interfejs tam nie trafi.
 **Wyścig F1 nie jest dziś na produkcji osiągalny** — wymaga dwóch administratorów, a jest
 jeden. Stanie się osiągalny, gdy rola trafi na drugie konto; wtedy `admin-lock-regate`
 przestaje być odłożone.
+
+## Wdrożenie aplikacji — 2026-09-14, po migracji
+
+`npx wrangler login` na konto **gmail** (`damiano.krzywda@gmail.com`, potwierdzone
+przez `wrangler whoami` przed wdrożeniem — służbowe rozwidliłoby produkcję).
+
+| Krok | Wynik |
+| --- | --- |
+| `npm run deploy:dry` | exit **0**; 42 moduły, 2116 KiB / gzip 436 KiB; bindingi `SESSION`, `IMAGES`, `AI`, `ASSETS` |
+| `npm run deploy` | exit **0**; `storygen`, wersja `18f43d9a-83d4-4aa8-9d20-b2228ba12b88`, start workera 23 ms |
+| sprawdzenie | `https://storygen.storygen.workers.dev/dashboard` → przekierowanie na `/auth/signin`, strona renderuje się |
+
+W paczce poszedł `AccountActions.A2Y3tzqc.js` — wyspa z trzecim przyciskiem.
+
+**Kryteria 3.2 i 4.5 odhaczone bez SHA, i to jest celowe.** Przeszły, bo wrangler
+został zalogowany, a nie dlatego, że zmienił się kod — dopisanie im SHA sugerowałoby
+commit, który je naprawił. Żaden nie istnieje.
+
+**Czego nie sprawdziłem na produkcji:** samego usunięcia konta. Produkcja ma dwa
+prawdziwe konta i 11 generacji, a to jedyna nieodwracalna operacja w produkcie —
+weryfikacja przez kliknięcie kosztowałaby czyjeś dane. Ścieżka jest zmierzona
+lokalnie end-to-end i potwierdzona na produkcji na poziomie bazy (`werdykt: OK`
+w osobnej sesji).
