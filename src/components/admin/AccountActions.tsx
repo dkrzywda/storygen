@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Lock, LockOpen, ShieldCheck, ShieldOff } from "lucide-react";
+import { Lock, LockOpen, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 import { readApiError } from "@/lib/api-errors";
 import {
   losesOwnAccess as roleLosesOwnAccess,
@@ -15,6 +15,13 @@ import {
   planBlockAction,
   type BlockActionContext,
 } from "@/lib/account-block-action";
+import {
+  canOfferDelete,
+  deleteActionAriaLabel,
+  deleteActionLabel,
+  planDeleteAction,
+  type DeleteActionContext,
+} from "@/lib/account-delete-action";
 import type { AccountRole } from "@/types";
 
 /**
@@ -69,10 +76,35 @@ interface Props {
   isSelf: boolean;
   isLastAdmin: boolean;
   isBlocked: boolean;
+  /** Ile generacji zniknie razem z kontem — liczba z przegladu, liczona w bazie. */
+  generations: number;
 }
 
 /** Ktora operacja jest w toku. `null` znaczy spoczynek. */
-type Akcja = "rola" | "blokada";
+type Akcja = "rola" | "blokada" | "usuniecie";
+
+/**
+ * Wyciaga `data.destroyedGenerations` z odpowiedzi endpointu, nie ufajac jej.
+ *
+ * Zwraca `null`, gdy czegokolwiek brakuje albo ma zly ksztalt — a `null` znaczy
+ * „nie wiem, ile", co stan koncowy potrafi powiedziec uczciwie. Rzutowanie
+ * obiecywaloby wiedze, ktorej nie ma: cialo przychodzi z sieci.
+ */
+function odczytajLiczbe(body: unknown): number | null {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
+    return null;
+  }
+
+  // `in` zaweza typ samo — asercje bylyby tu nie tylko zbedne, ale i mylace:
+  // sugerowalyby, ze wiemy cos ponad to, co sprawdzilismy.
+  const { data } = body;
+  if (typeof data !== "object" || data === null || !("destroyedGenerations" in data)) {
+    return null;
+  }
+
+  const n = data.destroyedGenerations;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+}
 
 /**
  * `done`, `demoted` i `blockedSelf` to stany koncowe, wszystkie istniejace dla
@@ -81,9 +113,9 @@ type Akcja = "rola" | "blokada";
  * jest juz zmieniony — czyli ekran klamalby w strone zachecajaca do drugiej proby
  * (ustalenie F4 przegladu calosci `S-10`).
  */
-type Status = "idle" | "confirming" | "sending" | "done" | "demoted" | "blockedSelf";
+type Status = "idle" | "confirming" | "sending" | "done" | "demoted" | "blockedSelf" | "deleted";
 
-export default function AccountActions({ accountId, email, role, isSelf, isLastAdmin, isBlocked }: Props) {
+export default function AccountActions({ accountId, email, role, isSelf, isLastAdmin, isBlocked, generations }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [akcja, setAkcja] = useState<Akcja | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -101,11 +133,21 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
    * czynny administrator, jest nim tak samo dla zdjecia roli, jak dla blokady.
    */
   const [knownLastAdmin, setKnownLastAdmin] = useState(false);
+  /**
+   * Ile generacji BAZA faktycznie zniszczyla. `null`, dopoki nie usuniemy.
+   *
+   * Liczba z przegladu (`generations`) sluzy do OSTRZEZENIA, ta do KOMUNIKATU
+   * po fakcie — i to sa dwie rozne rzeczy. Konto moglo generowac miedzy odczytem
+   * tabeli a klikinieciem, wiec ekran ma powiedziec, co sie stalo, a nie co
+   * przewidywal.
+   */
+  const [zniszczone, setZniszczone] = useState<number | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   const ostatni = isLastAdmin || knownLastAdmin;
   const roleContext: RoleActionContext = { role, isSelf, isLastAdmin: ostatni };
   const blockContext: BlockActionContext = { isBlocked, isSelf, isLastAdmin: ostatni };
+  const deleteContext: DeleteActionContext = { isSelf, generations };
 
   // Focus na „Anuluj", nie na „Tak" — domyslny cel focusu ma byc bezpieczny.
   // Galezie renderuja rozlaczne drzewa przyciskow, wiec bez tego focus spada na `body`.
@@ -123,25 +165,38 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
     setError(null);
   }
 
+  /**
+   * PLAN POWSTAJE W TEJ SAMEJ GALEZI, CO DECYZJA.
+   *
+   * Wczesniejsza wersja liczyla akcje raz, a potem odgadywala jej ksztalt przez
+   * `in` — czyli sprawdzeniem, ktore typ juz raz rozstrzygnal. Tutaj kazda galaz
+   * oddaje komplet: ostrzezenie albo gotowe zadanie. Trzy operacje, trzy
+   * kompletne odpowiedzi; `send-delete` jest osobne od `send`, bo idzie inna
+   * metoda HTTP.
+   */
+  function zaplanuj(ktora: Akcja, confirmed: boolean) {
+    if (ktora === "rola") {
+      const a = planRoleAction(roleContext, confirmed);
+      return a.kind === "confirm"
+        ? ({ kind: "confirm", warning: a.warning } as const)
+        : ({ kind: "send", body: { role: a.targetRole, confirmLast: a.confirmLast } } as const);
+    }
+
+    if (ktora === "blokada") {
+      const a = planBlockAction(blockContext, confirmed);
+      return a.kind === "confirm"
+        ? ({ kind: "confirm", warning: a.warning } as const)
+        : ({ kind: "send", body: { blocked: a.targetBlocked, confirmLast: a.confirmLast } } as const);
+    }
+
+    const a = planDeleteAction(deleteContext, confirmed);
+    return a.kind === "confirm"
+      ? ({ kind: "confirm", warning: a.warning } as const)
+      : ({ kind: "send-delete" } as const);
+  }
+
   async function apply(ktora: Akcja, confirmed: boolean) {
-    // CIALO ZADANIA POWSTAJE W TEJ SAMEJ GALEZI, CO DECYZJA. Wczesniejsza wersja
-    // liczyla akcje raz, a potem odgadywala jej ksztalt przez `in` — czyli
-    // sprawdzaniem, ktore typ juz raz rozstrzygnal. Tutaj kazda galaz oddaje
-    // komplet: ostrzezenie albo gotowe cialo.
-    const plan =
-      ktora === "rola"
-        ? (() => {
-            const a = planRoleAction(roleContext, confirmed);
-            return a.kind === "confirm"
-              ? ({ kind: "confirm", warning: a.warning } as const)
-              : ({ kind: "send", body: { role: a.targetRole, confirmLast: a.confirmLast } } as const);
-          })()
-        : (() => {
-            const a = planBlockAction(blockContext, confirmed);
-            return a.kind === "confirm"
-              ? ({ kind: "confirm", warning: a.warning } as const)
-              : ({ kind: "send", body: { blocked: a.targetBlocked, confirmLast: a.confirmLast } } as const);
-          })();
+    const plan = zaplanuj(ktora, confirmed);
 
     if (plan.kind === "confirm") {
       setAkcja(ktora);
@@ -156,13 +211,19 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
     setError(null);
 
     try {
-      const response = await fetch(`/api/accounts/${accountId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        // Cialo niesie `role` ALBO `blocked`, nigdy oba — endpoint odrzuca zadanie
-        // z obiema wartosciami.
-        body: JSON.stringify(plan.body),
-      });
+      // USUWANIE IDZIE INNA METODA I INNA DROGA — `DELETE` z parametrem w adresie,
+      // nie `PATCH` z cialem. `PATCH` znaczy „zmien pole", a to jest zniszczenie
+      // zasobu; ta roznica jest widoczna az tutaj i to jest zamierzone.
+      const response =
+        plan.kind === "send-delete"
+          ? await fetch(`/api/accounts/${accountId}?confirmDestroy=true`, { method: "DELETE" })
+          : await fetch(`/api/accounts/${accountId}`, {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              // Cialo niesie `role` ALBO `blocked`, nigdy oba — endpoint odrzuca
+              // zadanie z obiema wartosciami.
+              body: JSON.stringify(plan.body),
+            });
 
       if (!response.ok) {
         // `readApiError` zawsze zwraca komunikat — takze gdy cialo nie jest JSON-em
@@ -186,6 +247,25 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
         return;
       }
 
+      if (ktora === "usuniecie") {
+        // LICZBA Z ODPOWIEDZI, NIE Z PRZEGLADU. Baza policzyla ja w tej samej
+        // transakcji, co usuniecie, wiec jest faktem; `generations` z wiersza
+        // bylo tylko przewidywaniem sprzed klikniecia.
+        //
+        // CZYTANE OBRONNIE, a nie rzutowane. Odpowiedz przychodzi z sieci, wiec
+        // nie jest obietnica — a `null` znaczy tu „nie wiem, ile", co stan
+        // koncowy potrafi powiedziec uczciwie. To ta sama zasada, ktora
+        // `readApiError` stosuje do komunikatow bledu.
+        setZniszczone(odczytajLiczbe(await response.json().catch(() => null)));
+        // Stan koncowy PRZED przeladowaniem — gdy przeladowanie nie dojdzie,
+        // ekran mowi prawde zamiast wisiec na „Zapisuje…".
+        setStatus("deleted");
+        window.location.reload();
+        return;
+      }
+
+      // Usuniecie WLASNEGO konta jest niemozliwe (baza odmawia, a przycisku nie
+      // ma), wiec ta sciezka dotyczy wylacznie roli i blokady.
       const traciDostep = ktora === "rola" ? roleLosesOwnAccess(roleContext) : blockLosesOwnAccess(blockContext);
       if (traciDostep) {
         // NIE przeladowujemy. Przy roli sekcja administratora zniknie przy
@@ -261,6 +341,24 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
     );
   }
 
+  if (status === "deleted") {
+    return (
+      <div role="status" className="flex flex-col items-end gap-1">
+        {/* KOMUNIKAT MOWI, CO SIE STALO, liczba z odpowiedzi bazy. Nie „usunieto
+            konto" bez slowa o tekstach: guardrail PRD wymaga, zeby administrator
+            wiedzial, co zniknelo — takze PO fakcie, gdy juz nic nie odwroci. */}
+        <p className="text-ink-subtle max-w-xs text-right text-xs">
+          {zniszczone === null
+            ? "Usunięto konto"
+            : zniszczone === 0
+              ? "Usunięto konto. Nie miało zapisanych tekstów."
+              : `Usunięto konto wraz z ${String(zniszczone)} zapisanymi tekstami.`}
+        </p>
+        {odswiez}
+      </div>
+    );
+  }
+
   if (status === "done") {
     return (
       <div role="status" className="flex flex-col items-end gap-1">
@@ -284,7 +382,7 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
    * odblokowanie, dzialanie na cudzym koncie), ktore tez przechodzi przez `sending`.
    */
   if (warning !== null && akcja !== null && (status === "confirming" || status === "sending")) {
-    const Ikona = akcja === "rola" ? ShieldOff : Lock;
+    const Ikona = akcja === "rola" ? ShieldOff : akcja === "blokada" ? Lock : Trash2;
     return (
       <div role="alert" className="flex flex-col items-end gap-1">
         <p className="text-ink-muted max-w-xs text-right text-xs">{warning}</p>
@@ -296,7 +394,17 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
             className="bg-danger hover:bg-danger-strong flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white transition-colors disabled:opacity-50"
           >
             <Ikona className="size-3" />
-            {status === "sending" ? "Zapisuję…" : akcja === "rola" ? "Tak, zdejmij" : "Tak, zablokuj"}
+            {/* „Usuwam…", nie „Zapisuję…". Przy operacji, ktora niszczy dane,
+                slowo „zapisuje" jest po prostu nieprawda o tym, co sie dzieje. */}
+            {status === "sending"
+              ? akcja === "usuniecie"
+                ? "Usuwam…"
+                : "Zapisuję…"
+              : akcja === "rola"
+                ? "Tak, zdejmij"
+                : akcja === "blokada"
+                  ? "Tak, zablokuj"
+                  : "Tak, usuń"}
           </button>
           <button
             ref={cancelRef}
@@ -341,6 +449,21 @@ export default function AccountActions({ accountId, email, role, isSelf, isLastA
         <BlokadaIkona className="size-3" />
         {status === "sending" && akcja === "blokada" ? "Zapisuję…" : blockActionLabel(blockContext)}
       </button>
+      {/* PRZYCISKU NIE MA PRZY WLASNYM WIERSZU. Baza i tak odmowi
+          (`SELF_DELETE_FORBIDDEN`), ale rysowanie przycisku, ktory ZAWSZE
+          odmawia, byloby klamstwem ekranu — obiecuje operacje, ktorej nie ma. */}
+      {canOfferDelete(deleteContext) && (
+        <button
+          type="button"
+          disabled={status === "sending"}
+          onClick={() => void apply("usuniecie", false)}
+          aria-label={deleteActionAriaLabel(email)}
+          className={przycisk}
+        >
+          <Trash2 className="size-3" />
+          {status === "sending" && akcja === "usuniecie" ? "Usuwam…" : deleteActionLabel()}
+        </button>
+      )}
       {error && (
         <p role="alert" className="text-danger text-xs">
           {error}

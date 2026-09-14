@@ -409,6 +409,47 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 **Kryterium 3.2 (`astro build`) zostaje NIEODHACZONE — środowiskowo, nie przez tę zmianę.** Build pada na `Authentication error [code: 10000]` przy Cloudflare API, bo sięga po zdalny binding `AI`. Sprawdzone wcześniej przez `git stash`, że pada identycznie na commicie sprzed tych zmian. Wymaga `npx wrangler login` na konto gmail; do tego czasu kryterium jest **zablokowane**, nie niespełnione.
 
+## Addendum 2026-09-14 — adaptacja fazy 4
+
+**Blok `## Phase 4` powyżej zostaje nietknięty; ten addendum notuje, w czym implementacja od niego odeszła.**
+
+**Kryterium 4.2 jest MARTWE, tak samo jak 1.6 — i z tego samego powodu.** Opisuje ostrzeżenie o utracie administracji przy usuwaniu ostatniego administratora. Ta gałąź jest **nieosiągalna**: skoro usunięcie własnego konta jest zabronione (decyzja z fazy planowania), to wołający jest czynnym administratorem i pozostaje nim po operacji — usunięcie kogoś innego nigdy nie zabierze ostatniej roli. Kryterium zostaje **nieodhaczone jako puste**, a nie jako niespełnione. To interakcja dwóch niezależnych odpowiedzi z planowania, której plan nie przewidział.
+
+**Ostrzeżenie odmienia PRZYMIOTNIK, nie tylko rzeczownik.** Pierwsza wersja zmieniała samo `tekstem`/`tekstami` i produkowała na ekranie „wraz z jego **zapisanym tekstami**". Test tego nie złapał, bo sprawdzał wyłącznie formę pojedynczą — wyszło dopiero przy klikaniu. Doszedł `it.each([2, 3, 5, 12, 40])` z asercją negatywną; mutacja (powrót do stałego `zapisanym`) czerwieni go, więc kryterium ma teraz z czego czytać zielone.
+
+**Przycisk w trakcie usuwania mówi „Usuwam…", nie „Zapisuję…".** Pozostałe dwie operacje coś zapisują; ta niszczy. Zmierzone na ekranie, nie przeczytane z kodu — patrz nagrany przebieg niżej.
+
+**Stan końcowy usunięcia jest z założenia PRZELOTNY.** `setStatus("deleted")` stoi przed `window.location.reload()`, więc komunikat „Usunięto konto wraz z N zapisanymi tekstami." widać tylko w szczelinie przed odświeżeniem — dokładnie tak samo, jak przy roli i blokadzie. Stan końcowy nie jest tam po to, żeby go czytać na spokojnie, tylko po to, żeby ekran **mówił prawdę, gdy przeładowanie nie dojdzie**. Żeby to w ogóle zmierzyć, trzeba było nagrać mutacje wiersza do `sessionStorage`: `location.reload` jest niekonfigurowalne i nie da się go podmienić.
+
+**Nagrany przebieg jednego usunięcia** (konto zwykłe, 7 generacji, `MutationObserver` → `sessionStorage`):
+
+| #   | Stan wiersza                                                                                                                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `… 7 · 0 z 10 · Nadaj rolę · Zablokuj · Usuń`                                                                                    |
+| 2   | `Usuniesz to konto wraz z jego zapisanymi tekstami — zniknie 7 tekstów. Tej operacji nie da się cofnąć.` + `Tak, usuń` / `Anuluj` |
+| 3   | to samo pytanie, przycisk potwierdzenia na **`Usuwam…`**                                                                          |
+| 4   | **`Usunięto konto wraz z 7 zapisanymi tekstami.`** + `Odśwież panel`                                                             |
+
+**Liczba w komunikacie końcowym pochodzi z ODPOWIEDZI, nie z przeglądu.** Baza policzyła ją w tej samej transakcji co usunięcie; `generations` z wiersza było tylko przewidywaniem sprzed kliknięcia. Czytana obronnie przez `odczytajLiczbe`, bo przychodzi z sieci — `null` znaczy „nie wiem, ile", i stan końcowy potrafi to powiedzieć uczciwie.
+
+**Weryfikacja ręczna:**
+
+| Sprawdzenie                   | Wynik                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| pytanie nazywa liczbę         | `zniknie 7 tekstów` / `zniknie 3 teksty` — odmiana zgodna z liczbą         |
+| konto bez generacji           | `Nie ma zapisanych tekstów do utraty.` zamiast „0 tekstów"                 |
+| komunikat końcowy             | `Usunięto konto wraz z 7 zapisanymi tekstami.`                             |
+| focus w pytaniu               | na „Anuluj"                                                                 |
+| „Anuluj"                      | wraca do spoczynku, **wszystkie trzy** przyciski z powrotem                 |
+| usunięte konto w przeglądzie  | znika; `generacji osieroconych: 0`                                          |
+| żywa sesja usuniętego konta   | `/generations` i `/dashboard` → `/auth/signin`, **mimo obecnego ciastka**   |
+| własny wiersz                 | dwa przyciski, **bez** „Usuń"                                               |
+| konto zwykłe                  | nie widzi sekcji kont ani żadnego przycisku                                 |
+| wysp na wiersz                | **1** (bez zmiany po dołożeniu trzeciego przycisku)                         |
+| tabela                        | zero przewijania poziomego, zapas 0 px                                      |
+
+**Kryterium 4.5 (`astro build`) zostaje NIEODHACZONE — środowiskowo, jak 3.2.** Ten sam `Authentication error [code: 10000]`, ta sama diagnoza (`git stash` dowiódł, że pada również przed tymi zmianami), to samo odblokowanie: `npx wrangler login` na konto gmail.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -451,33 +492,33 @@ Po usunięciu: konto zniknęło z panelu, **zero osieroconych generacji** w bazi
 
 #### Automated
 
-- [x] 3.1 `npm test` kodem wyjścia 0
+- [x] 3.1 `npm test` kodem wyjścia 0 — a9fc919
 - [ ] 3.2 `npx astro build` przechodzi
-- [x] 3.3 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 3.3 ESLint i `npx tsc --noEmit` bez błędów — a9fc919
 
 #### Manual
 
-- [x] 3.4 Zmiana roli zachowuje się identycznie jak przed refaktorem
-- [x] 3.5 Blokowanie i odblokowanie zachowuje się identycznie
-- [x] 3.6 Jeden korzeń hydracji na wiersz zamiast dwóch — zmierzone
-- [x] 3.7 Tabela mieści się bez poziomego przewijania
+- [x] 3.4 Zmiana roli zachowuje się identycznie jak przed refaktorem — a9fc919
+- [x] 3.5 Blokowanie i odblokowanie zachowuje się identycznie — a9fc919
+- [x] 3.6 Jeden korzeń hydracji na wiersz zamiast dwóch — zmierzone — a9fc919
+- [x] 3.7 Tabela mieści się bez poziomego przewijania — a9fc919
 
 ### Phase 4: Interfejs — przycisk usunięcia
 
 #### Automated
 
-- [ ] 4.1 Test jednostkowy: usunięcie pyta zawsze, także bez generacji
+- [x] 4.1 Test jednostkowy: usunięcie pyta zawsze, także bez generacji
 - [ ] 4.2 Test jednostkowy: przy ostatnim adminie wygrywa ostrzeżenie o administracji
-- [ ] 4.3 Test jednostkowy: ostrzeżenie niesie liczbę generacji
-- [ ] 4.4 `npm test` kodem wyjścia 0
+- [x] 4.3 Test jednostkowy: ostrzeżenie niesie liczbę generacji
+- [x] 4.4 `npm test` kodem wyjścia 0
 - [ ] 4.5 `npx astro build` przechodzi
-- [ ] 4.6 ESLint i `npx tsc --noEmit` bez błędów
+- [x] 4.6 ESLint i `npx tsc --noEmit` bez błędów
 
 #### Manual
 
-- [ ] 4.7 Pytanie nazywa liczbę generacji, komunikat końcowy podaje liczbę z bazy
-- [ ] 4.8 Usunięte konto znika z przeglądu, generacje z bazy
-- [ ] 4.9 Żywa sesja usuniętego konta ląduje na logowaniu
-- [ ] 4.10 Przy własnym wierszu nie ma przycisku usunięcia
-- [ ] 4.11 Tabela mieści się bez poziomego przewijania
-- [ ] 4.12 Zwykłe konto nie widzi sekcji ani przycisków
+- [x] 4.7 Pytanie nazywa liczbę generacji, komunikat końcowy podaje liczbę z bazy
+- [x] 4.8 Usunięte konto znika z przeglądu, generacje z bazy
+- [x] 4.9 Żywa sesja usuniętego konta ląduje na logowaniu
+- [x] 4.10 Przy własnym wierszu nie ma przycisku usunięcia
+- [x] 4.11 Tabela mieści się bez poziomego przewijania
+- [x] 4.12 Zwykłe konto nie widzi sekcji ani przycisków
