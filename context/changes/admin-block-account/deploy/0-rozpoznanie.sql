@@ -15,13 +15,6 @@ select
   -- TOZSAMOSC SRODOWISKA JAKO PIERWSZA POZYCJA (`lessons.md` § "Weryfikacja bez
   -- tozsamosci srodowiska nie jest dowodem"). NIE `current_database()`: ta zwraca
   -- `postgres` i lokalnie, i tutaj, wiec nie odroznia niczego.
-  --
-  -- ADRES TEZ NIE WYSTARCZA, i to jest poprawka z ustalenia F7 przegladu `S-12`:
-  -- przez pooler Supabase `inet_server_addr()` zwraca adres POOLERA, wspolny dla
-  -- wszystkich projektow w regionie — dwa projekty w `eu-west-1` wypisza ten sam
-  -- ciag. `system_identifier` jest unikalny i staly per klaster, wiec to ON jest
-  -- dowodem, a adres zostaje jako czytelny dodatek.
-  (select system_identifier from pg_control_system())                   as klaster,
   coalesce(host(inet_server_addr())::text, 'socket lokalny')            as serwer,
   current_setting('server_version')                                     as wersja_pg,
 
