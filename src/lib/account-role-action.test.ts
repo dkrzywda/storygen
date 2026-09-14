@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   losesOwnAccess,
   planRoleAction,
+  roleActionAriaLabel,
   roleActionLabel,
   targetRoleFor,
   type RoleActionContext,
@@ -88,10 +89,33 @@ describe("targetRoleFor", () => {
 });
 
 describe("roleActionLabel", () => {
-  it("mowi, co sie stanie, i wyroznia wlasne konto", () => {
-    expect(roleActionLabel(ctx({ role: "user" }))).toBe("Nadaj rolę administratora");
+  it("mowi, co sie stanie, i jest krotki", () => {
+    expect(roleActionLabel(ctx({ role: "user" }))).toBe("Nadaj rolę");
     expect(roleActionLabel(ctx({ role: "admin" }))).toBe("Odbierz rolę");
-    expect(roleActionLabel(ctx({ role: "admin", isSelf: true }))).toBe("Odbierz rolę sobie");
+  });
+
+  it("NIE rozroznia wlasnego konta — to niesie wiersz, nie przycisk", () => {
+    expect(roleActionLabel(ctx({ role: "admin", isSelf: true }))).toBe(roleActionLabel(ctx({ role: "admin" })));
+  });
+});
+
+describe("roleActionAriaLabel", () => {
+  it("jest pelna, bo czytnik ekranu nie widzi wiersza", () => {
+    // Tekst widoczny moze byc krotki, bo obok stoi kolumna "Rola" i znacznik "to Ty".
+    // Nazwa dostepna musi wystarczyc SAMA — stad rola, adres i przypadek wlasnego konta.
+    expect(roleActionAriaLabel(ctx({ role: "user" }), "a@b.pl")).toBe("Nadaj rolę administratora — a@b.pl");
+    expect(roleActionAriaLabel(ctx({ role: "admin" }), "a@b.pl")).toBe("Odbierz rolę administratora — a@b.pl");
+    expect(roleActionAriaLabel(ctx({ role: "admin", isSelf: true }), "a@b.pl")).toBe(
+      "Odbierz rolę administratora sobie — a@b.pl",
+    );
+  });
+
+  it("kazda nazwa dostepna niesie adres konta", () => {
+    // Bez adresu dwa przyciski w tabeli mialyby identyczna nazwe i nie dalo by sie
+    // ich odroznic bez patrzenia na wiersz.
+    for (const c of [ctx({ role: "user" }), ctx({ role: "admin" }), ctx({ role: "admin", isSelf: true })]) {
+      expect(roleActionAriaLabel(c, "ktos@example.test")).toContain("ktos@example.test");
+    }
   });
 });
 

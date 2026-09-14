@@ -35,12 +35,32 @@ export function targetRoleFor(context: RoleActionContext): AccountRole {
   return context.role === "admin" ? "user" : "admin";
 }
 
-/** Etykieta przycisku. Mowi, co sie stanie, nie jaki jest stan. */
+/**
+ * Tekst WIDOCZNY na przycisku. Mowi, co sie stanie, nie jaki jest stan.
+ *
+ * Krotki celowo. Wczesniej bylo tu "Nadaj role administratora" i "Odbierz role sobie",
+ * przez co kolumna akcji zajmowala 169 px, a caly przeglad nie miescil sie w panelu
+ * (zmierzone 2026-09-14). Kontekst, ktory z tego tekstu zniknal, NIE ZNIKA z ekranu:
+ * kolumna "Rola" pokazuje stan konta, a wiersz wlasnego konta jest oznaczony "to Ty".
+ *
+ * Dla czytnika ekranu to jednak za malo, bo on czyta przycisk w oderwaniu od wiersza —
+ * stad `roleActionAriaLabel` ponizej, ktora zostaje pelna.
+ */
 export function roleActionLabel(context: RoleActionContext): string {
-  if (context.role === "admin") {
-    return context.isSelf ? "Odbierz rolę sobie" : "Odbierz rolę";
+  return context.role === "admin" ? "Odbierz rolę" : "Nadaj rolę";
+}
+
+/**
+ * Nazwa DOSTEPNA przycisku — pelna, bo czytnik ekranu nie widzi wiersza.
+ *
+ * Niesie trzy rzeczy, ktorych skrocony tekst juz nie ma: czego dotyczy operacja
+ * (rola administratora), ktorego konta (adres) i czy chodzi o wlasne konto.
+ */
+export function roleActionAriaLabel(context: RoleActionContext, email: string): string {
+  if (context.role !== "admin") {
+    return `Nadaj rolę administratora — ${email}`;
   }
-  return "Nadaj rolę administratora";
+  return context.isSelf ? `Odbierz rolę administratora sobie — ${email}` : `Odbierz rolę administratora — ${email}`;
 }
 
 /**

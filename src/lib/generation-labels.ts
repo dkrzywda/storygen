@@ -27,6 +27,22 @@ export function formatLabel(format: string): string {
 export const dateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short" });
 
 /**
+ * Data rejestracji konta w przegladzie administratora (FR-014).
+ *
+ * OSOBNY FORMATER, a nie `dateFormat` powyzej, i to nie jest kosmetyka: tamten
+ * niesie godzine, bo przy generacji ma ona sens — kilka tekstow tego samego dnia
+ * trzeba od siebie odroznic. Data REJESTRACJI konta takiej potrzeby nie ma, a FR-014
+ * mowi o dacie, nie o momencie. Godzina zabierala w tabeli okolo 45 px na kolumne,
+ * przez ktore caly przeglad nie miescil sie w panelu (zmierzone 2026-09-14: potrzeba
+ * 750 px, dostepne 638).
+ *
+ * `dateStyle: "medium"` zamiast `"long"`: "14 wrz 2026" zamiast "14 wrzesnia 2026".
+ * W kolumnie, ktora czyta sie wzrokiem jako date, a nie jako zdanie, skrot nie
+ * kosztuje zrozumialosci.
+ */
+export const accountDateFormat = new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium" });
+
+/**
  * Godzina odnowienia dziennych limitow (S-04).
  *
  * Strefa jest przypieta do `Europe/Warsaw`, nie brana z przegladarki, i to jest

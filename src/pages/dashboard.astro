@@ -5,7 +5,7 @@ import GenerationList from "@/components/generations/GenerationList.astro";
 import { createClient } from "@/lib/supabase";
 import { fetchFavourites, fetchRanking } from "@/lib/generations";
 import { fetchUsageToday, type UsageToday } from "@/lib/limits";
-import { dateFormat, resetTimeFormat } from "@/lib/generation-labels";
+import { accountDateFormat, resetTimeFormat } from "@/lib/generation-labels";
 import { logApiError } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/account-role";
 import { fetchAccountsOverview } from "@/lib/admin-accounts";
@@ -76,7 +76,7 @@ if (showAdmin && supabase) {
     // i wywracalo cala strone, lacznie z rankingiem i ulubionymi.
     accounts = rows.map((row) => ({
       ...row,
-      registeredLabel: dateFormat.format(row.registeredAt),
+      registeredLabel: accountDateFormat.format(row.registeredAt),
       roleLabel: row.role === "admin" ? "administrator" : "użytkownik",
     }));
   } catch (error) {
@@ -250,11 +250,20 @@ const idleClass = "border-hairline bg-panel text-ink-muted hover:bg-app";
                     <tbody class="text-ink-muted">
                       {accounts.map((account) => (
                         <tr class="border-hairline border-t">
-                          <td class="text-ink py-2 pr-4 break-all">
-                            {account.email}
+                          {/* `whitespace-nowrap`, NIE `break-all` ani `break-words`.
+                              Adres e-mail nie ma spacji, wiec `break-words` nie ma gdzie
+                              zlamac i zachowuje sie jak `break-all` — a ten rozbija adres
+                              w srodku slowa ("damiano.krz / ywda@gmai / l.com"), co czyni
+                              go nieczytelnym. Tabela ma `overflow-x-auto` na opakowaniu,
+                              wiec wlasciwa odpowiedzia na ciasnote jest PRZEWINIECIE, nie
+                              lamanie. Regres wprowadzony w S-10 przez dolozenie dwoch
+                              kolumn; przedtem adres miescil sie w jednej linii. */}
+                          <td class="text-ink py-2 pr-4">
+                            <span class="whitespace-nowrap">{account.email}</span>
                             {/* Wlasne konto oznaczone, bo dzialanie na sobie jest DOZWOLONE
-                                (PRD v4, OQ9) i klikajacy musi wiedziec, ze klika w siebie. */}
-                            {account.isSelf && <span class="text-ink-subtle"> (to Ty)</span>}
+                                (PRD v4, OQ9) i klikajacy musi wiedziec, ze klika w siebie.
+                                Osobna linia, zeby nie poszerzac kolumny o kolejne slowo. */}
+                            {account.isSelf && <span class="text-ink-subtle block text-xs">to Ty</span>}
                           </td>
                           <td class="py-2 pr-4 whitespace-nowrap">{account.roleLabel}</td>
                           <td class="py-2 pr-4 whitespace-nowrap">{account.registeredLabel}</td>

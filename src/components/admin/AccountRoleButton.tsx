@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, ShieldOff } from "lucide-react";
 import { readApiError } from "@/lib/api-errors";
-import { losesOwnAccess, planRoleAction, roleActionLabel, type RoleActionContext } from "@/lib/account-role-action";
+import {
+  losesOwnAccess,
+  planRoleAction,
+  roleActionAriaLabel,
+  roleActionLabel,
+  type RoleActionContext,
+} from "@/lib/account-role-action";
 
 /**
  * Nadanie i odebranie roli administratora przy wierszu konta (FR-018, S-10).
@@ -241,7 +247,7 @@ export default function AccountRoleButton({ accountId, email, role, isSelf, isLa
         type="button"
         disabled={status === "sending"}
         onClick={() => void apply(false)}
-        aria-label={`${label} — ${email}`}
+        aria-label={roleActionAriaLabel(context, email)}
         className="border-hairline bg-panel text-ink-muted hover:bg-app flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-xs whitespace-nowrap transition-colors disabled:opacity-50"
       >
         <Icon className="size-3" />

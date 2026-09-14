@@ -2,14 +2,27 @@
 const { user } = Astro.locals;
 ---
 
+{
+  /*
+  `flex-wrap` i `gap-y-1` — poprawka defektu ZASTANEGO, zmierzonego 2026-09-14.
+  Bez zawijania adres e-mail plus cztery odnosniki nie miescily sie na waskim
+  ekranie i rozpychaly CALA STRONE: `document.body.scrollWidth` wynosilo 416 px
+  przy oknie 375 px, i to samo 416 na `/generations`, gdzie tabeli kont nie ma —
+  czyli winien byl ten pasek, nie zadna z sekcji pod nim.
+
+  Poziome przewijanie CALEJ strony jest inne niz przewijanie jednego kontenera:
+  kontener przewijalny to swiadomy wybor (tak dziala tabela kont), a przewijana
+  strona to tresc, ktora uciekla poza ekran i nikt tego nie zaplanowal.
+*/
+}
 <div
-  class="border-hairline bg-panel text-ink-muted mb-4 flex items-center justify-between rounded-xl border px-4 py-2 text-sm"
+  class="border-hairline bg-panel text-ink-muted mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border px-4 py-2 text-sm"
 >
   {
     user ? (
       <>
         <span class="text-ink-muted">{user.email}</span>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
           {/* Generator jest pierwszy, bo to strona glowna i cel powrotu z kazdego
               innego ekranu. Link siedzi w Topbarze, nie w samym panelu — Topbar
               stoi na wszystkich ekranach, wiec jedno miejsce zamiast trzech. */}
